@@ -1,0 +1,36 @@
+# anchor,today,phrase (the quote),type,weekday,qualifier,days,day_of_month,expected_due,expected_status
+# Written from natural phrases for the resolver table (scaffolding until the native reviewer's blind set replaces it).
+# 2026-10-12 is a Monday.
+2026-10-12,2026-10-12,रविवार से पहले पाँच हज़ार भेज देना,weekday,sunday,before,,,2026-10-17,scheduled
+2026-10-12,2026-10-12,प्रिया का जन्मदिन गुरुवार को है उसे फ़ोन कर लेना,weekday,thursday,on,,,2026-10-15,scheduled
+2026-10-12,2026-10-12,डॉक्टर ने सोमवार को बुलाया है,weekday,monday,on,,,2026-10-19,scheduled
+2026-10-13,2026-10-13,हाँ माँ शुक्रवार को पैसे भेज दूँगा,weekday,friday,on,,,2026-10-16,scheduled
+2026-10-12,2026-10-12,अगले बुधवार को आ जाना,weekday,wednesday,next,,,2026-10-14,scheduled
+2026-10-12,2026-10-12,इस शनिवार को घर आना,weekday,saturday,this,,,2026-10-17,scheduled
+2026-10-12,2026-10-12,इतवार से पहले बिजली का बिल भर देना,weekday,sunday,before,,,2026-10-17,scheduled
+2026-10-12,2026-10-12,वीरवार को मंदिर चलेंगे,weekday,thursday,on,,,2026-10-15,scheduled
+2026-10-12,2026-10-12,बृहस्पतिवार तक बता देना,weekday,thursday,on,,,2026-10-15,scheduled
+2026-10-12,2026-10-12,संडे को फ़ोन करना,weekday,sunday,on,,,2026-10-18,scheduled
+2026-10-17,2026-10-17,रविवार से पहले पैसे भेज देना,weekday,sunday,before,,,2026-10-17,due_today
+2026-10-12,2026-10-14,रविवार से पहले पैसे भेज देना,weekday,sunday,before,,,2026-10-17,scheduled
+2026-10-12,2026-10-19,रविवार से पहले पैसे भेज देना,weekday,sunday,before,,,2026-10-17,passed
+2026-10-12,2026-10-12,सोमवार को डॉक्टर के पास जाना है,weekday,monday,on,,,2026-10-19,scheduled
+2026-10-18,2026-10-18,रविवार को आना,weekday,sunday,on,,,2026-10-25,scheduled
+2026-10-12,2026-10-12,कल पैसे भेज देना,relative_days,,,1,,2026-10-13,scheduled
+2026-10-12,2026-10-12,परसों डॉक्टर के पास जाऊंगी,relative_days,,,2,,2026-10-14,scheduled
+2026-10-12,2026-10-12,कल बारिश हुई थी,relative_days,,,1,,,unclear
+2026-10-12,2026-10-12,कल वो आया था,relative_days,,,1,,,unclear
+2026-10-12,2026-10-12,17 तारीख को फीस भरनी है,date,,,,17,2026-10-17,scheduled
+2026-10-20,2026-10-20,5 तारीख को किराया देना,date,,,,5,2026-11-05,scheduled
+2026-10-12,2026-10-12,दवाई ख़त्म हो गई है अगले हफ़्ते मँगवानी है,none,,,,,,unclear
+2026-10-12,2026-10-12,रविवार को पैसे भेज देना,weekday,sunday,before,,,,unclear
+2026-10-12,2026-10-12,प्रिया को फ़ोन कर लेना गुरुवार तक,weekday,thursday,on,,,2026-10-15,scheduled
+2026-10-12,2026-10-12,प्रिया को फ़ोन कर लेना,weekday,thursday,on,,,,unclear
+2026-10-12,2026-10-12,मंगलवार से पहले दवाई ले आना,weekday,tuesday,before,,,2026-10-12,due_today
+2026-10-12,2026-10-12,शनिवार के पहले बता देना,weekday,saturday,before,,,2026-10-16,scheduled
+2026-10-12,2026-10-12,आने वाले रविवार को पूजा है,weekday,sunday,next,,,2026-10-18,scheduled
+2026-10-12,2026-10-12,पिछले साल भी ऐसी बारिश हुई थी,none,,,,,,unclear
+2026-12-28,2026-12-28,5 तारीख को आना,date,,,,5,2027-01-05,scheduled
+2026-10-12,2026-10-12,31 तारीख को,date,,,,31,2026-10-31,scheduled
+2026-11-05,2026-11-05,31 तारीख को,date,,,,31,,unclear
+2026-10-12,2026-10-12,Sunday से पहले भेज देना,weekday,sunday,before,,,2026-10-17,scheduled
