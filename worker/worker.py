@@ -132,8 +132,10 @@ def wer(ref: list[str], hyp: list[str]) -> float:
 
 HEAD_FMT = "<4sBBHIHHIIHHHh"  # magic, version, n_cb, cb_size, sr, spf, bits, frames, n_samples, n_windows, lead, ctx,
 #                                gain applied before encoding (centi-dB; decoding undoes it)
-TARGET_DBFS = -20.0  # speech-active RMS the codec input is brought to (very quiet recordings broke the round trip)
+TARGET_DBFS = -20.0  # "always": speech-active RMS the codec input is brought to
+QUIET_DBFS, COND_TARGET_DBFS = -32.0, -26.0  # "conditional": only a recording quieter than -32 dBFS is raised to -26
 MAX_GAIN_DB, MIN_GAIN_DB, PEAK = 30.0, -12.0, 0.97
+GAIN_MODE = "conditional"  # chosen by the dev-set ablation (see the D0 notes); "none" | "conditional" | "always"
 LEAD_FRAMES = 3   # 0.24 s of silence encoded before the note, so the causal decoder starts warm on the first word
 CTX_FRAMES = 25   # 2 s of context around each window when encoding, and before it when decoding
 
@@ -178,12 +180,13 @@ def unpack_hct(blob: bytes):
                    "gain_db": gain / 100.0}
 
 
-def codec_gain_db(x22) -> float:
-    """Gain that brings the speech-active RMS (25 ms frames within 30 dB of the loudest) to TARGET_DBFS, clamped,
-    and never pushing the peak past PEAK. Stored in the .hct; decoding divides it back out."""
+def codec_gain_db(x22, mode: str = "always") -> float:
+    """Gain for the codec input from its speech-active RMS (25 ms frames within 30 dB of the loudest), clamped and
+    never pushing the peak past PEAK. "always" brings it to TARGET_DBFS; "conditional" raises only a recording
+    quieter than QUIET_DBFS, to COND_TARGET_DBFS; "none" is 0. Stored in the .hct; decoding divides it back out."""
     import numpy as np
 
-    if len(x22) < 552:
+    if mode == "none" or len(x22) < 552:
         return 0.0
     hop = 551
     usable = len(x22) // hop * hop
@@ -192,7 +195,13 @@ def codec_gain_db(x22) -> float:
     db = 10 * np.log10(power)
     active = power[db >= db.max() - 30]
     rms_db = 10 * np.log10(active.mean())
-    gain = min(MAX_GAIN_DB, max(MIN_GAIN_DB, TARGET_DBFS - rms_db))
+    if mode == "conditional":
+        if rms_db >= QUIET_DBFS:
+            return 0.0
+        gain = COND_TARGET_DBFS - rms_db
+    else:
+        gain = TARGET_DBFS - rms_db
+    gain = min(MAX_GAIN_DB, max(MIN_GAIN_DB, gain))
     peak = float(np.abs(x22).max()) or 1e-9
     gain = min(gain, 20 * np.log10(PEAK / peak))
     return round(float(gain), 2)
@@ -383,7 +392,15 @@ class Models:
 
         self.timings["asr_import_s"] = round(time.time() - t, 2)
         t = time.time()
-        self.asr = nemo_asr.models.ASRModel.restore_from(restore_path=asr_path, map_location="cpu").eval()
+        if os.path.isdir(asr_path):  # pre-extracted while downloading: tell NeMo not to unpack again
+            from nemo.core.connectors.save_restore_connector import SaveRestoreConnector
+
+            conn = SaveRestoreConnector()
+            conn.model_extracted_dir = asr_path
+            self.asr = nemo_asr.models.ASRModel.restore_from(restore_path=asr_path, map_location="cpu",
+                                                             save_restore_connector=conn).eval()
+        else:
+            self.asr = nemo_asr.models.ASRModel.restore_from(restore_path=asr_path, map_location="cpu").eval()
         self.asr.encoder.set_default_att_context_size(ATT_CONTEXT)
         self.timings["asr_restore_s"] = round(time.time() - t, 2)
         t = time.time()
@@ -409,20 +426,31 @@ class Models:
         log(f"models loaded: {self.timings} {self.runtime}")
 
     def fetch_weights(self, weights: dict, hf_hub_download) -> tuple[str, str]:
-        """Model files from presigned GETs on the in-region bucket when the manifest has them, else Hugging Face."""
+        """Model files from presigned GETs on the in-region bucket when the manifest has them, else Hugging Face.
+        From the bucket, the ASR .nemo is unpacked WHILE it downloads (a streamed tar), so restoring needs no
+        separate unpack step; the codec .nemo is small and is kept as a file."""
+        import tarfile
+
         if weights.get("asr") and weights.get("codec"):
-            os.makedirs("/tmp/weights", exist_ok=True)
-            paths = []
-            for name, fname in (("asr", ASR_FILE), ("codec", CODEC_FILE)):
-                dest = f"/tmp/weights/{fname}"
-                with urllib.request.urlopen(weights[name], timeout=900) as res, open(dest, "wb") as fh:
-                    while chunk := res.read(8 << 20):
-                        fh.write(chunk)
-                paths.append(dest)
-            self.weights_source = "bucket"
-            return paths[0], paths[1]
+            try:
+                return self._bucket_weights(weights, tarfile)
+            except Exception as exc:  # a missing or broken copy costs time, never the note
+                log(f"bucket weights failed ({exc}); falling back to Hugging Face")
         self.weights_source = "huggingface"
         return hf_hub_download(ASR_REPO, ASR_FILE), hf_hub_download(CODEC_REPO, CODEC_FILE)
+
+    def _bucket_weights(self, weights: dict, tarfile) -> tuple[str, str]:
+        asr_dir, codec_path = "/tmp/weights/asr", f"/tmp/weights/{CODEC_FILE}"
+        os.makedirs(asr_dir, exist_ok=True)
+        with urllib.request.urlopen(weights["asr"], timeout=900) as res, tarfile.open(fileobj=res, mode="r|*") as tar:
+            for member in tar:
+                if member.isfile():
+                    tar.extract(member, asr_dir)
+        with urllib.request.urlopen(weights["codec"], timeout=900) as res, open(codec_path, "wb") as fh:
+            while chunk := res.read(8 << 20):
+                fh.write(chunk)
+        self.weights_source = "bucket"
+        return asr_dir, codec_path
 
     def transcribe(self, clips: list, lang: str) -> list[str]:
         """clips: 16 kHz float32 arrays, passed as arrays (NeMo's file-path route builds Lhotse cuts with no
@@ -465,10 +493,12 @@ DETECTABLE = {"en-US", "en-GB", "es-US", "es-ES", "fr-FR", "fr-CA", "it-IT", "pt
               "tr-TR", "ru-RU", "ar-AR", "hi-IN", "vi-VN", "uk-UA"}
 
 
-def keep_note(m: Models, blob: bytes, ext: str, lang: str, lang_check: bool = True, max_s: float = MAX_NOTE_S) -> dict:
-    """One note end to end. Returns the result plus the artefacts ({hct, transcript, wav}) to upload."""
-    import numpy as np
+def _cut(arr, rate, a, b):
+    return arr[int(round(a * rate)): int(round(b * rate))]
 
+
+def prepare_note(m: Models, blob: bytes, ext: str, lang: str, lang_check: bool, max_s: float) -> dict:
+    """Load, resample, silence-split, check the language, transcribe the ORIGINAL."""
     tm: dict[str, float] = {}
     t = time.time()
     x, sr = load_audio(blob, ext)
@@ -479,55 +509,57 @@ def keep_note(m: Models, blob: bytes, ext: str, lang: str, lang_check: bool = Tr
         raise ValueError(f"note is {dur:.0f} s; this space keeps notes up to {max_s / 60:g} min")
     x16, x22 = resample(x, sr, ASR_SR), resample(x, sr, CODEC_SR)
     tm["load_s"] = time.time() - t
-
     t = time.time()
     segs, seginfo = segment(x16)
     tm["segment_s"] = time.time() - t
-
-    def cut(arr, rate, a, b):
-        return arr[int(round(a * rate)): int(round(b * rate))]
-
     lang_detected = None
     t = time.time()
     if lang_check or lang == "detect":
         first = next((s for s in segs if s[2]), segs[0])
-        _, lang_detected = strip_tags(m.transcribe([cut(x16, ASR_SR, first[0], first[1])], "auto")[0])
+        _, lang_detected = strip_tags(m.transcribe([_cut(x16, ASR_SR, first[0], first[1])], "auto")[0])
     if lang == "detect":
         lang = lang_detected if lang_detected in DETECTABLE else "hi-IN"
     tm["lang_check_s"] = time.time() - t
-
     t = time.time()
     speech = [i for i, s in enumerate(segs) if s[2]]
-    hyps = m.transcribe([cut(x16, ASR_SR, segs[i][0], segs[i][1]) for i in speech], lang)
+    hyps = m.transcribe([_cut(x16, ASR_SR, segs[i][0], segs[i][1]) for i in speech], lang)
     text = {i: strip_tags(h)[0] for i, h in zip(speech, hyps)}
     tm["asr_s"] = time.time() - t
+    return {"x16": x16, "x22": x22, "sr": sr, "dur": dur, "segs": segs, "seginfo": seginfo, "speech": speech,
+            "text": text, "lang": lang, "lang_detected": lang_detected, "tm": tm, "input_bytes": len(blob)}
 
-    wins = windows_for(segs, dur)
+
+def codec_roundtrip(m: Models, prep: dict, gain_mode: str = None, lead: int = None) -> dict:
+    """Encode the note to codes (per window, with context), pack the .hct, decode, transcribe again on the same
+    segment offsets, and measure the drift against the original transcript."""
+    import numpy as np
+
+    gain_mode = GAIN_MODE if gain_mode is None else gain_mode
+    lead = LEAD_FRAMES if lead is None else lead
+    tm: dict[str, float] = {}
+    x22, dur, segs, speech, text = prep["x22"], prep["dur"], prep["segs"], prep["speech"], prep["text"]
     n22 = len(x22)
+    wins = windows_for(segs, dur)
     bounds = [(int(round(w0 * CODEC_SR)), n22 if w1 >= dur else int(round(w1 * CODEC_SR))) for w0, w1 in wins]
-    lead_n = LEAD_FRAMES * m.spf
-    gain_db = codec_gain_db(x22)
+    lead_n = lead * m.spf
+    gain_db = codec_gain_db(x22, gain_mode)
     g = np.float32(10 ** (gain_db / 20))
     x_pad = np.concatenate([np.zeros(lead_n, dtype=np.float32), x22 * g])
-    plan = window_plan(bounds, m.spf, LEAD_FRAMES)
+    plan = window_plan(bounds, m.spf, lead)
     t = time.time()
     codes_all, frames_per_win = encode_windows(m.encode, x_pad, plan, m.spf, CTX_FRAMES)
     tm["encode_s"] = time.time() - t
-
     t = time.time()
-    hct = pack_hct(codes_all, n22, frames_per_win, m.spf, m.cb_size, gain_db=gain_db)
+    hct = pack_hct(codes_all, n22, frames_per_win, m.spf, m.cb_size, lead=lead, gain_db=gain_db)
     tm["pack_s"] = time.time() - t
-
     t = time.time()
     dec = decode_windows(m.decode, codes_all, frames_per_win, m.spf, CTX_FRAMES, len(x_pad))[lead_n:lead_n + n22] / g
     tm["decode_s"] = time.time() - t
-
     t = time.time()
     dec16 = resample(dec, CODEC_SR, ASR_SR)
-    rt_h = m.transcribe([cut(dec16, ASR_SR, segs[i][0], segs[i][1]) for i in speech], lang)
+    rt_h = m.transcribe([_cut(dec16, ASR_SR, segs[i][0], segs[i][1]) for i in speech], prep["lang"])
     rt = {i: strip_tags(h)[0] for i, h in zip(speech, rt_h)}
     tm["rt_asr_s"] = time.time() - t
-
     seg_out, all_o, all_r = [], [], []
     for i, (t0, t1, sp) in enumerate(segs):
         wo, wr = words(text.get(i, "")), words(rt.get(i, ""))
@@ -535,18 +567,40 @@ def keep_note(m: Models, blob: bytes, ext: str, lang: str, lang_check: bool = Tr
         all_r += wr
         seg_out.append({"i": i, "t0": t0, "t1": t1, "speech": sp, "text": text.get(i, ""), "rt_text": rt.get(i, ""),
                         "words": len(wo), "drift": round(wer(wo, wr), 4) if sp else None})
-    drift = round(wer(all_o, all_r), 4)
+    return {"hct": hct, "dec": dec, "codes": codes_all, "frames": frames_per_win, "gain_db": gain_db, "lead": lead,
+            "segments": seg_out, "drift": round(wer(all_o, all_r), 4), "tm": tm}
+
+
+def keep_note(m: Models, blob: bytes, ext: str, lang: str, lang_check: bool = True, max_s: float = MAX_NOTE_S) -> dict:
+    """One note end to end. Returns the result plus the artefacts ({hct, transcript, wav}) to upload."""
+    prep = prepare_note(m, blob, ext, lang, lang_check, max_s)
+    rt = codec_roundtrip(m, prep)
+    seg_out, hct = rt["segments"], rt["hct"]
     long_seg = [s["drift"] for s in seg_out if s["words"] >= 8 and s["drift"] is not None]
-    transcript = {"version": 1, "lang": lang, "lang_detected": lang_detected, "duration_s": round(dur, 3),
+    transcript = {"version": 1, "lang": prep["lang"], "lang_detected": prep["lang_detected"], "duration_s": round(prep["dur"], 3),
                   "runtime": dict(m.runtime), "segments": [{k: s[k] for k in ("i", "t0", "t1", "text")} for s in seg_out]}
     result = {
-        "audio_s": round(dur, 3), "input_bytes": len(blob), "input_sample_rate": sr, "bytes_hct": len(hct),
-        "sha256_hct": hashlib.sha256(hct).hexdigest(), "frames": int(codes_all.shape[1]), "windows": frames_per_win,
-        "segments": seg_out, "segmentation": seginfo, "drift_note": drift, "codec_gain_db": gain_db,
-        "max_drift_long_segment": max(long_seg) if long_seg else None, "lang_detected": lang_detected,
-        "timings": {k: round(v, 3) for k, v in tm.items()}, "peak_rss_mb": round(rss_mb(), 1),
+        "audio_s": round(prep["dur"], 3), "input_bytes": prep["input_bytes"], "input_sample_rate": prep["sr"], "bytes_hct": len(hct),
+        "sha256_hct": hashlib.sha256(hct).hexdigest(), "frames": int(rt["codes"].shape[1]), "windows": rt["frames"],
+        "segments": seg_out, "segmentation": prep["seginfo"], "drift_note": rt["drift"], "codec_gain_db": rt["gain_db"],
+        "codec_lead_frames": rt["lead"], "max_drift_long_segment": max(long_seg) if long_seg else None,
+        "lang_detected": prep["lang_detected"],
+        "timings": {k: round(v, 3) for k, v in {**prep["tm"], **rt["tm"]}.items()}, "peak_rss_mb": round(rss_mb(), 1),
     }
-    return {"result": result, "hct": hct, "transcript": transcript, "wav": wav_bytes(dec, CODEC_SR)}
+    return {"result": result, "hct": hct, "transcript": transcript, "wav": wav_bytes(rt["dec"], CODEC_SR)}
+
+
+def ablate_note(m: Models, blob: bytes, ext: str, lang: str, configs: list[dict]) -> dict:
+    """Codec settings compared on one note: the original is transcribed once, then each config round-trips it."""
+    prep = prepare_note(m, blob, ext, lang, False, MAX_NOTE_S)
+    out = {"audio_s": round(prep["dur"], 3), "text": {str(k): v for k, v in prep["text"].items()},
+           "timings": {k: round(v, 3) for k, v in prep["tm"].items()}, "configs": {}}
+    for c in configs:
+        rt = codec_roundtrip(m, prep, c["gain"], int(c["lead"]))
+        out["configs"][c["name"]] = {"gain_db": rt["gain_db"], "drift": rt["drift"], "bytes_hct": len(rt["hct"]),
+                                     "rt_text": {str(s["i"]): s["rt_text"] for s in rt["segments"]},
+                                     "timings": {k: round(v, 3) for k, v in rt["tm"].items()}}
+    return out
 
 
 # ---------------------------------------------------------------- job context and reporting
@@ -690,6 +744,13 @@ def run_d0(manifest: dict, rep: Reporter, m: Models, report: dict) -> dict:
         try:
             blob = http("GET", note["get"])
             entry["get_s"] = round(time.time() - t, 3)
+            if manifest.get("ablation"):
+                entry.update(ablate_note(m, blob, note.get("ext", ""), lang, manifest["ablation"]))
+                entry["status"] = "processed"
+                entry["wall_s"] = round(time.time() - t, 3)
+                items.append(entry)
+                put_json(manifest["result_put"], report)
+                continue
             out = keep_note(m, blob, note.get("ext", ""), lang)
             if first_audio is None:
                 first_audio = time.time()
@@ -703,7 +764,7 @@ def run_d0(manifest: dict, rep: Reporter, m: Models, report: dict) -> dict:
                 # codec determinism on CPU, on the first short clip: same input twice, same codes? same samples?
                 x, sr = load_audio(blob, note.get("ext", ""))
                 x22 = resample(x, sr, CODEC_SR)
-                gd = codec_gain_db(x22)
+                gd = codec_gain_db(x22, GAIN_MODE)
                 x_pad = np.concatenate([np.zeros(LEAD_FRAMES * m.spf, dtype=np.float32), x22 * np.float32(10 ** (gd / 20))])
                 c1, c2 = m.encode(x_pad), m.encode(x_pad)
                 d1, d2 = m.decode(c1, len(x_pad)), m.decode(c1, len(x_pad))
@@ -764,17 +825,18 @@ def d0_extras(manifest: dict, rep: Reporter, m: Models, report: dict) -> None:
         import shutil
         import tarfile
 
-        t = time.time()
-        tmp = tempfile.mkdtemp()
-        with tarfile.open(m.asr_path) as tar:
-            tar.extractall(tmp)
-        extras["asr_nemo_unpack_s"] = round(time.time() - t, 2)
-        shutil.rmtree(tmp, ignore_errors=True)
+        if os.path.isfile(m.asr_path):
+            t = time.time()
+            tmp = tempfile.mkdtemp()
+            with tarfile.open(m.asr_path) as tar:
+                tar.extractall(tmp)
+            extras["asr_nemo_unpack_s"] = round(time.time() - t, 2)
+            shutil.rmtree(tmp, ignore_errors=True)
     except Exception as exc:
         extras["asr_unpack_error"] = f"{exc}"[:400]
     for name, path in (("asr", m.asr_path), ("codec", m.codec_path)):
         url = (manifest.get("model_puts") or {}).get(name)
-        if not url:
+        if not url or not os.path.isfile(path):
             continue
         try:
             rep.status("d0-extras", step=f"upload {name}")

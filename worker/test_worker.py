@@ -134,10 +134,12 @@ def test_header_v2_carries_lead_and_context():
 def test_codec_gain_lifts_a_quiet_recording_and_respects_the_peak():
     t = np.arange(22050 * 3) / 22050
     quiet = (0.004 * np.sin(2 * np.pi * 180 * t)).astype(np.float32)  # about -51 dBFS RMS
-    g = w.codec_gain_db(quiet)
+    g = w.codec_gain_db(quiet, "always")
     assert 25 <= g <= 30
     loud = (0.9 * np.sin(2 * np.pi * 180 * t)).astype(np.float32)
-    assert w.codec_gain_db(loud) <= 20 * np.log10(0.97 / 0.9) + 1e-6
+    assert w.codec_gain_db(loud, "always") <= 20 * np.log10(0.97 / 0.9) + 1e-6
+    assert w.codec_gain_db(loud, "conditional") == 0.0 and w.codec_gain_db(quiet, "conditional") > 20
+    assert w.codec_gain_db(quiet, "none") == 0.0
     assert w.codec_gain_db(np.zeros(10, dtype=np.float32)) == 0.0
 
 
