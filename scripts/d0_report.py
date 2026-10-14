@@ -190,3 +190,33 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# ---------------------------------------------------------------- codec-settings ablation (dev split)
+
+SIMPLICITY = ["base", "lead3", "cond", "cond_lead3", "always_lead3"]  # tie-break order: simpler first
+
+
+def ablation_summary(raw: dict) -> dict:
+    """Corpus WER of the original and of each config's round trip on the FLEURS dev clips; the pre-registered rule
+    picks the lowest round-trip delta (folded WER), a tie (within 0.1 pt) going to the simpler config."""
+    devrefs: dict[str, str] = {}
+    with (ROOT / "bench" / "fleurs-dev20.tsv").open(encoding="utf-8") as fh:
+        for row in csv.DictReader(fh, delimiter="\t", quoting=csv.QUOTE_NONE, escapechar="\\"):
+            devrefs[row["file"].removesuffix(".wav")] = row["transcription"]
+    items = [i for i in raw["report"].get("items", []) if i.get("status") == "processed" and "configs" in i]
+    names = list(items[0]["configs"]) if items else []
+    orig_pairs = [(devrefs[i["id"]], " ".join(i["text"][k] for k in sorted(i["text"], key=int))) for i in items]
+    wer_orig = corpus_wer(orig_pairs, True)
+    out = {"clips": len(items), "wer_orig": wer_orig, "configs": {}}
+    for n in names:
+        pairs = [(devrefs[i["id"]], " ".join(i["configs"][n]["rt_text"][k] for k in sorted(i["configs"][n]["rt_text"], key=int))) for i in items]
+        w = corpus_wer(pairs, True)
+        drifts = [i["configs"][n]["drift"] for i in items]
+        out["configs"][n] = {"wer_rt": w, "delta_pts": round(((w or 0) - (wer_orig or 0)) * 100, 2),
+                             "clips_drift_over_30pct": sum(1 for d in drifts if d > 0.3),
+                             "median_drift": sorted(drifts)[len(drifts) // 2] if drifts else None}
+    best = min(names, key=lambda n: (round(out["configs"][n]["delta_pts"], 1), SIMPLICITY.index(n) if n in SIMPLICITY else 99)) if names else None
+    out["chosen"] = best
+    out["rule"] = "lowest corpus round-trip delta (folded WER) on the FLEURS dev clips; ties within 0.1 pt go to the simpler config"
+    return out

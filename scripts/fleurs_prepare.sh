@@ -51,5 +51,8 @@ for f in $(sed 's#^test/##' "$WORK/want.txt"); do
   if grep -q "$f" "$ROOT/bench/fleurs20.tsv" "$ROOT/bench/fleurs20b.tsv"; then upload "$WORK/wav/test/$f" "bench/fleurs/hi_in/$f"; fi
 done
 for f in "$WORK"/long/*.flac; do upload "$f" "bench/fleurs/long/$(basename "$f")"; done
+# The live keep test's note: the first 60 s of long1 as a 16 kbps mono Ogg Opus file, the format of a WhatsApp voice note.
+ffmpeg -nostdin -loglevel error -y -i "$WORK/long/long1.flac" -t 60 -ac 1 -c:a libopus -b:a 16k -application voip "$WORK/clip60.opus"
+upload "$WORK/clip60.opus" "bench/fleurs/clip60.opus"
 sort -k2 -o "$ROOT/bench/fleurs-files.sha256" "$ROOT/bench/fleurs-files.sha256"
 echo "uploaded $(wc -l < "$ROOT/bench/fleurs-files.sha256" | tr -d ' ') objects to s3://$BUCKET/bench/fleurs/"
