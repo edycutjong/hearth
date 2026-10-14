@@ -1,0 +1,105 @@
+{
+ "at": "2026-10-14T22:11:29.370Z",
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "request_id": "chatcmpl-86b6920b56793fdf",
+ "duration_ms": 5776,
+ "judged": [
+  {
+   "item": {
+    "kind": "money",
+    "who": "Maa",
+    "what_en": "Send five thousand rupees before Sunday for doctor visit.",
+    "quote": "रविवार से पहले पाँच हज़ार भेज देना",
+    "segment": 2,
+    "amount_inr": 5000,
+    "when": {
+     "type": "weekday",
+     "weekday": "sunday",
+     "qualifier": "before",
+     "days": null,
+     "day_of_month": null,
+     "raw": "रविवार से पहले"
+    },
+    "resolves": null
+   },
+   "quote_gate": {
+    "ok": true,
+    "segments": [
+     2
+    ],
+    "corrected": false
+   },
+   "field_gate": {
+    "amount": 5000,
+    "amountStatus": "verified",
+    "when": {
+     "type": "weekday",
+     "weekday": 0,
+     "qualifier": "before",
+     "raw": "रविवार से पहले"
+    },
+    "whenStatus": "verified"
+   },
+   "due": {
+    "due": "2026-10-17",
+    "status": "scheduled",
+    "label": "before Sunday → Sat 17 Oct"
+   }
+  },
+  {
+   "item": {
+    "kind": "call",
+    "who": "Maa",
+    "what_en": "Call Priya on her birthday Thursday.",
+    "quote": "उसे फ़ोन कर लेना",
+    "segment": 3,
+    "amount_inr": null,
+    "when": {
+     "type": "weekday",
+     "weekday": "thursday",
+     "qualifier": "on",
+     "days": null,
+     "day_of_month": null,
+     "raw": "गुरुवार को"
+    },
+    "resolves": null
+   },
+   "quote_gate": {
+    "ok": true,
+    "segments": [
+     3
+    ],
+    "corrected": false
+   },
+   "field_gate": {
+    "amount": null,
+    "amountStatus": "not_stated",
+    "when": null,
+    "whenStatus": "removed"
+   },
+   "due": {
+    "due": null,
+    "status": "unclear",
+    "label": "date unclear"
+   }
+  }
+ ],
+ "glosses": [
+  {
+   "segment": 0,
+   "en": "Son, how are you?"
+  },
+  {
+   "segment": 1,
+   "en": "My knee hurts again, the doctor has called for Monday."
+  },
+  {
+   "segment": 2,
+   "en": "Send five thousand before Sunday, need to go to the knee doctor."
+  },
+  {
+   "segment": 3,
+   "en": "And yes, Priya's birthday is on Thursday, give her a call."
+  }
+ ]
+}
