@@ -1,0 +1,30 @@
+.env
+.env.*
+!.env.example
+node_modules/
+__pycache__/
+.pytest_cache/
+.venv/
+.next/
+dist/
+coverage/
+.DS_Store
+*.tsbuildinfo
+.vercel
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Model weights and audio never enter the repo (downloaded at job time; user audio stays in the user's space)
+*.nemo
+*.gguf
+*.safetensors
+*.wav
+*.flac
+*.opus
+*.m4a
+*.mp3
+*.ogg
