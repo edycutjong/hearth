@@ -165,33 +165,6 @@ def summarize(raw: dict) -> dict:
     }
 
 
-def main() -> int:
-    if len(sys.argv) != 2:
-        print(__doc__)
-        return 2
-    src = Path(sys.argv[1]).resolve()
-    out = summarize(json.loads(src.read_text()))
-    dest = src.with_name(src.name.replace("-raw.json", ".json"))
-    dest.write_text(json.dumps(out, ensure_ascii=False, indent=1))
-    g = out["gates"]
-    print(f"D0 {out['run']} on {out['preset']} · job {out['nebius_job_id']} · {out['job_state']}")
-    for k, v in g.items():
-        print(f"  {'PASS' if v['pass'] else 'FAIL'}  {k:<28} {v['value']}  (limit {v['max']})")
-    w = out["wer"]["fleurs20"]
-    print(f"  WER fleurs20 folded {w['wer_orig']} -> {w['wer_rt']} · strict {w['wer_orig_strict']} -> {w['wer_rt_strict']}")
-    print(f"  bytes/hour {out['bytes']['bytes_per_audio_hour']} · x{out['bytes']['x_smaller_than_pcm_22k16']} vs PCM")
-    print(f"  RTF {out['rtf']['all']} · ${out['usd_per_audio_hour']}/audio-hour")
-    print(f"  cold start {out['cold_start']}")
-    print(f"  drift gate {json.dumps(out['drift_gate']['fleurs20'])[:400]}")
-    print(f"  determinism {out['determinism']} · load options {out['load_options']}")
-    print(f"  KILL: {out['kill']} -> {dest.relative_to(ROOT)}")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
-
-
 # ---------------------------------------------------------------- codec-settings ablation (dev split)
 
 SIMPLICITY = ["base", "lead3", "cond", "cond_lead3", "always_lead3"]  # tie-break order: simpler first
@@ -220,3 +193,39 @@ def ablation_summary(raw: dict) -> dict:
     out["chosen"] = best
     out["rule"] = "lowest corpus round-trip delta (folded WER) on the FLEURS dev clips; ties within 0.1 pt go to the simpler config"
     return out
+
+
+def main() -> int:
+    if len(sys.argv) != 2:
+        print(__doc__)
+        return 2
+    src = Path(sys.argv[1]).resolve()
+    raw = json.loads(src.read_text())
+    if any("configs" in i for i in (raw.get("report") or {}).get("items", [])):
+        out = {"run": raw.get("run"), "nebius_job_id": raw.get("nebius_job_id"), **ablation_summary(raw)}
+        dest = src.with_name(src.name.replace("d0-", "ablation-").replace("-ablation-raw.json", ".json"))
+        dest.write_text(json.dumps(out, ensure_ascii=False, indent=1))
+        for name, c in out["configs"].items():
+            print(f"  {name:<14} WER {out['wer_orig']} -> {c['wer_rt']}  (+{c['delta_pts']} pts, median drift {c['median_drift']})")
+        print(f"  chosen: {out['chosen']} ({out['rule']}) -> {dest.relative_to(ROOT)}")
+        return 0
+    out = summarize(raw)
+    dest = src.with_name(src.name.replace("-raw.json", ".json"))
+    dest.write_text(json.dumps(out, ensure_ascii=False, indent=1))
+    g = out["gates"]
+    print(f"D0 {out['run']} on {out['preset']} · job {out['nebius_job_id']} · {out['job_state']}")
+    for k, v in g.items():
+        print(f"  {'PASS' if v['pass'] else 'FAIL'}  {k:<28} {v['value']}  (limit {v['max']})")
+    w = out["wer"]["fleurs20"]
+    print(f"  WER fleurs20 folded {w['wer_orig']} -> {w['wer_rt']} · strict {w['wer_orig_strict']} -> {w['wer_rt_strict']}")
+    print(f"  bytes/hour {out['bytes']['bytes_per_audio_hour']} · x{out['bytes']['x_smaller_than_pcm_22k16']} vs PCM")
+    print(f"  RTF {out['rtf']['all']} · ${out['usd_per_audio_hour']}/audio-hour")
+    print(f"  cold start {out['cold_start']}")
+    print(f"  drift gate {json.dumps(out['drift_gate']['fleurs20'])[:400]}")
+    print(f"  determinism {out['determinism']} · load options {out['load_options']}")
+    print(f"  KILL: {out['kill']} -> {dest.relative_to(ROOT)}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

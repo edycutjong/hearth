@@ -135,7 +135,8 @@ HEAD_FMT = "<4sBBHIHHIIHHHh"  # magic, version, n_cb, cb_size, sr, spf, bits, fr
 TARGET_DBFS = -20.0  # "always": speech-active RMS the codec input is brought to
 QUIET_DBFS, COND_TARGET_DBFS = -32.0, -26.0  # "conditional": only a recording quieter than -32 dBFS is raised to -26
 MAX_GAIN_DB, MIN_GAIN_DB, PEAK = 30.0, -12.0, 0.97
-GAIN_MODE = "conditional"  # chosen by the dev-set ablation (see the D0 notes); "none" | "conditional" | "always"
+GAIN_MODE = "always"  # "none" | "conditional" | "always": the dev-set ablation's pick (bench/results/ablation-*.json,
+#                       rule fixed before the run: lowest round-trip WER delta on FLEURS dev clips, never the test clips)
 LEAD_FRAMES = 3   # 0.24 s of silence encoded before the note, so the causal decoder starts warm on the first word
 CTX_FRAMES = 25   # 2 s of context around each window when encoding, and before it when decoding
 
@@ -642,6 +643,7 @@ def versions() -> dict:
         frozen = sorted(f"{d.metadata['Name']}=={d.version}" for d in metadata.distributions())
         out["freeze_sha256"] = hashlib.sha256("\n".join(frozen).encode()).hexdigest()
         out["freeze_count"] = len(frozen)
+        out["freeze"] = frozen
     except Exception:
         pass
     return out
@@ -797,6 +799,8 @@ def d0_extras(manifest: dict, rep: Reporter, m: Models, report: dict) -> None:
     extras: dict = {}
     report["load_options"] = extras
     try:
+        if m.timings.get("codec_trimmed"):
+            raise RuntimeError("skipped: the main codec is already the trimmed load (full vs trimmed is checked by a run without --trimmed)")
         rep.status("d0-extras", step="trimmed codec")
         from nemo.collections.tts.models import AudioCodecModel
 

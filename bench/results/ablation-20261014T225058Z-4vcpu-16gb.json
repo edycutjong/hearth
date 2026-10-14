@@ -1,0 +1,40 @@
+{
+ "run": "20261014T225058Z-4vcpu-16gb-ablation",
+ "nebius_job_id": "aijob-e01jvtpajvk2wzm6xz",
+ "clips": 20,
+ "wer_orig": 0.1002,
+ "configs": {
+  "base": {
+   "wer_rt": 0.1263,
+   "delta_pts": 2.61,
+   "clips_drift_over_30pct": 2,
+   "median_drift": 0.0667
+  },
+  "lead3": {
+   "wer_rt": 0.1403,
+   "delta_pts": 4.01,
+   "clips_drift_over_30pct": 1,
+   "median_drift": 0.05
+  },
+  "cond": {
+   "wer_rt": 0.1222,
+   "delta_pts": 2.2,
+   "clips_drift_over_30pct": 1,
+   "median_drift": 0.0667
+  },
+  "cond_lead3": {
+   "wer_rt": 0.1343,
+   "delta_pts": 3.41,
+   "clips_drift_over_30pct": 1,
+   "median_drift": 0.0645
+  },
+  "always_lead3": {
+   "wer_rt": 0.1162,
+   "delta_pts": 1.6,
+   "clips_drift_over_30pct": 1,
+   "median_drift": 0.0323
+  }
+ },
+ "chosen": "always_lead3",
+ "rule": "lowest corpus round-trip delta (folded WER) on the FLEURS dev clips; ties within 0.1 pt go to the simpler config"
+}

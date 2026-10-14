@@ -90,6 +90,8 @@ def main() -> int:
     ap.add_argument("--only", default="", help="smoke run: only these clip ids (comma-separated; a dev Job, not a D0 run)")
     ap.add_argument("--ablation", action="store_true", help="compare codec settings per clip (a dev Job on the dev set)")
     ap.add_argument("--trimmed", action="store_true", help="load NanoCodec without its training-only parts")
+    ap.add_argument("--bucket-weights", action="store_true",
+                    help="read both model files from the in-region bucket (the product path) instead of Hugging Face")
     ap.add_argument("--attach", nargs=3, metavar=("RUN", "JOB_ID", "CREATED_EPOCH"), help="re-attach to a running harness Job")
     args = ap.parse_args()
 
@@ -113,6 +115,9 @@ def main() -> int:
         "result_put": s3.presign("PUT", f"bench/d0/{run}/result.json", week),
         "status_put": s3.presign("PUT", f"bench/d0/{run}/status.json", week),
         "trimmed_codec": bool(args.trimmed),
+        "weights": {"asr": s3.presign("GET", "models/nemotron-3.5-asr-streaming-0.6b.nemo", week),
+                    "codec": s3.presign("GET", "models/nemo-nano-codec-22khz-1.78kbps-12.5fps.nemo", week)}
+        if args.bucket_weights else None,
         "ablation": ABLATION if args.ablation else None,
         "notes": [n for n in build_notes(s3, run, args.sets.split(",")) if not args.only or n["id"] in args.only.split(",")][: args.limit or None],
         # The harness also copies both model files into the in-region bucket for the product Jobs.
