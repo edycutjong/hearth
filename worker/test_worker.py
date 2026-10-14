@@ -23,7 +23,7 @@ def test_pack_roundtrip_all_code_values():
 def test_pack_is_11_bits_per_code():
     codes = np.zeros((13, 1000), dtype=np.int64)
     blob = w.pack_hct(codes, 1000 * 1764, [1000], 1764, 2016)
-    header = struct.calcsize("<4sBBHIHHIIH") + 4 + 32
+    header = struct.calcsize(w.HEAD_FMT) + 4 + 32
     assert len(blob) - header == (13 * 1000 * 11 + 7) // 8  # 17,875 B for 80 s of voice
 
 
@@ -81,9 +81,66 @@ def test_windows_group_segments_up_to_30s():
 def test_wer_and_words():
     assert w.wer(["a", "b", "c"], ["a", "x", "c"]) == pytest.approx(1 / 3)
     assert w.wer([], []) == 0.0 and w.wer([], ["a"]) == 1.0
-    assert w.words("रविवार से पहले, पाँच हज़ार भेज देना।") == ["रविवार", "से", "पहले", "पाँच", "हज़ार", "भेज", "देना"]
+    assert w.words("रविवार से पहले, पाँच हज़ार भेज देना।") == ["रविवार", "से", "पहले", "पांच", "हजार", "भेज", "देना"]
+    assert w.words("₹5,000 <hi-IN>") == ["5000"]
 
 
 def test_strip_language_tag():
     assert w.strip_tags("नमस्ते दुनिया। <hi-IN>") == ("नमस्ते दुनिया।", "hi-IN")
     assert w.strip_tags("hello")[1] is None
+
+
+SPF = 1764
+
+
+def _fake_encode(x):
+    """Stand-in codec: the code of frame k is the absolute frame index carried in the signal's first sample of it."""
+    n = -(-len(x) // SPF)
+    return np.array([[int(round(x[min(k * SPF, len(x) - 1)])) for k in range(n)]], dtype=np.int64)
+
+
+def _fake_decode(codes, n):
+    return np.repeat(codes[0].astype(np.float32), SPF)[:n]
+
+
+def test_windowed_encode_keeps_each_window_aligned_to_absolute_frames():
+    frames_total = 900
+    x = np.repeat(np.arange(frames_total, dtype=np.float32), SPF)[: frames_total * SPF - 500]
+    lead = 3
+    x_pad = np.concatenate([np.full(lead * SPF, -1.0, dtype=np.float32), x + lead])
+    n22 = len(x)
+    bounds = [(0, 300 * SPF), (300 * SPF, 650 * SPF), (650 * SPF, n22)]
+    plan = w.window_plan(bounds, SPF, lead)
+    codes, frames = w.encode_windows(_fake_encode, x_pad, plan, SPF, 25)
+    assert frames == [303, 350, 250]
+    assert codes[0, lead:].tolist() == list(range(lead, frames_total + lead))
+
+
+def test_windowed_decode_restores_the_timeline_with_left_context():
+    frames = [303, 350, 250]
+    codes = np.arange(sum(frames), dtype=np.int64)[None]
+    n_total = sum(frames) * SPF - 500
+    out = w.decode_windows(_fake_decode, codes, frames, SPF, 25, n_total)
+    assert len(out) == n_total
+    assert np.array_equal(out, np.repeat(np.arange(sum(frames), dtype=np.float32), SPF)[:n_total])
+
+
+def test_header_v2_carries_lead_and_context():
+    blob = w.pack_hct(np.zeros((13, 20), dtype=np.int64), 30_000, [20], SPF, 2016)
+    _, head = w.unpack_hct(blob)
+    assert head["lead_frames"] == w.LEAD_FRAMES and head["context_frames"] == w.CTX_FRAMES
+
+
+def test_codec_gain_lifts_a_quiet_recording_and_respects_the_peak():
+    t = np.arange(22050 * 3) / 22050
+    quiet = (0.004 * np.sin(2 * np.pi * 180 * t)).astype(np.float32)  # about -51 dBFS RMS
+    g = w.codec_gain_db(quiet)
+    assert 25 <= g <= 30
+    loud = (0.9 * np.sin(2 * np.pi * 180 * t)).astype(np.float32)
+    assert w.codec_gain_db(loud) <= 20 * np.log10(0.97 / 0.9) + 1e-6
+    assert w.codec_gain_db(np.zeros(10, dtype=np.float32)) == 0.0
+
+
+def test_gain_round_trips_through_the_header():
+    blob = w.pack_hct(np.zeros((13, 4), dtype=np.int64), 7000, [4], SPF, 2016, gain_db=27.31)
+    assert w.unpack_hct(blob)[1]["gain_db"] == 27.31

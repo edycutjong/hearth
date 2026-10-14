@@ -108,8 +108,11 @@ def strip_tags(text: str) -> tuple[str, str | None]:
 
 
 def words(text: str) -> list[str]:
-    t = unicodedata.normalize("NFC", text).lower()
-    return PUNCT.sub(" ", t).split()
+    """The published normaliser (scripts/textnorm.py, src/lib/hindi/normalize.ts): NFC, nukta deleted,
+    chandrabindu -> anusvara, ZWJ/ZWNJ stripped, digit groups joined, punctuation and danda -> space."""
+    t = unicodedata.normalize("NFC", LANG_TAG.sub(" ", text)).replace("\u093c", "").replace("\u0901", "\u0902")
+    t = re.sub(r"(\d),(?=\d)", r"\1", t.replace("\u200c", "").replace("\u200d", ""))
+    return PUNCT.sub(" ", t.replace("₹", " ")).lower().split()
 
 
 def wer(ref: list[str], hyp: list[str]) -> float:
@@ -127,8 +130,18 @@ def wer(ref: list[str], hyp: list[str]) -> float:
 
 # ---------------------------------------------------------------- .hct: 11-bit packed NanoCodec codes
 
-def pack_hct(codes, n_samples: int, windows: list[int], samples_per_frame: int, codebook_size: int) -> bytes:
-    """codes: int array [n_codebooks, T]. Frame-major, 11 bits per code, little-endian bit order."""
+HEAD_FMT = "<4sBBHIHHIIHHHh"  # magic, version, n_cb, cb_size, sr, spf, bits, frames, n_samples, n_windows, lead, ctx,
+#                                gain applied before encoding (centi-dB; decoding undoes it)
+TARGET_DBFS = -20.0  # speech-active RMS the codec input is brought to (very quiet recordings broke the round trip)
+MAX_GAIN_DB, MIN_GAIN_DB, PEAK = 30.0, -12.0, 0.97
+LEAD_FRAMES = 3   # 0.24 s of silence encoded before the note, so the causal decoder starts warm on the first word
+CTX_FRAMES = 25   # 2 s of context around each window when encoding, and before it when decoding
+
+
+def pack_hct(codes, n_samples: int, windows: list[int], samples_per_frame: int, codebook_size: int,
+             lead: int = LEAD_FRAMES, ctx: int = CTX_FRAMES, gain_db: float = 0.0) -> bytes:
+    """codes: int array [n_codebooks, T] (T includes the lead-in frames). Frame-major, 11 bits per code,
+    little-endian bit order. n_samples is the note's own length at 22.05 kHz (lead-in excluded)."""
     import numpy as np
 
     c = np.asarray(codes, dtype=np.int64)
@@ -138,8 +151,8 @@ def pack_hct(codes, n_samples: int, windows: list[int], samples_per_frame: int, 
     flat = c.T.reshape(-1).astype(np.uint32)
     bits = ((flat[:, None] >> np.arange(BITS, dtype=np.uint32)) & 1).astype(np.uint8).reshape(-1)
     payload = np.packbits(bits, bitorder="little").tobytes()
-    head = struct.pack("<4sBBHIHHIIH", MAGIC, 1, n_cb, codebook_size, CODEC_SR, samples_per_frame, BITS,
-                       t, n_samples, len(windows))
+    head = struct.pack(HEAD_FMT, MAGIC, 2, n_cb, codebook_size, CODEC_SR, samples_per_frame, BITS,
+                       t, n_samples, len(windows), lead, ctx, int(round(gain_db * 100)))
     head += struct.pack(f"<{len(windows)}I", *windows)
     return head + hashlib.sha256(payload).digest() + payload
 
@@ -147,10 +160,10 @@ def pack_hct(codes, n_samples: int, windows: list[int], samples_per_frame: int, 
 def unpack_hct(blob: bytes):
     import numpy as np
 
-    fixed = struct.calcsize("<4sBBHIHHIIH")
-    magic, ver, n_cb, cb_size, sr, spf, bits, t, n_samples, n_win = struct.unpack_from("<4sBBHIHHIIH", blob)
-    if magic != MAGIC or ver != 1 or bits != BITS:
-        raise ValueError("not a version-1 .hct file")
+    fixed = struct.calcsize(HEAD_FMT)
+    magic, ver, n_cb, cb_size, sr, spf, bits, t, n_samples, n_win, lead, ctx, gain = struct.unpack_from(HEAD_FMT, blob)
+    if magic != MAGIC or ver != 2 or bits != BITS:
+        raise ValueError("not a version-2 .hct file")
     windows = list(struct.unpack_from(f"<{n_win}I", blob, fixed))
     off = fixed + 4 * n_win
     digest, payload = blob[off:off + 32], blob[off + 32:]
@@ -161,7 +174,67 @@ def unpack_hct(blob: bytes):
     vals = (raw.reshape(n, BITS).astype(np.int64) << np.arange(BITS)).sum(axis=1)
     codes = vals.reshape(t, n_cb).T
     return codes, {"n_codebooks": n_cb, "codebook_size": cb_size, "sample_rate": sr, "samples_per_frame": spf,
-                   "frames": t, "n_samples": n_samples, "windows": windows}
+                   "frames": t, "n_samples": n_samples, "windows": windows, "lead_frames": lead, "context_frames": ctx,
+                   "gain_db": gain / 100.0}
+
+
+def codec_gain_db(x22) -> float:
+    """Gain that brings the speech-active RMS (25 ms frames within 30 dB of the loudest) to TARGET_DBFS, clamped,
+    and never pushing the peak past PEAK. Stored in the .hct; decoding divides it back out."""
+    import numpy as np
+
+    if len(x22) < 552:
+        return 0.0
+    hop = 551
+    usable = len(x22) // hop * hop
+    frames = x22[:usable].astype(np.float64).reshape(-1, hop)
+    power = (frames ** 2).mean(axis=1) + 1e-12
+    db = 10 * np.log10(power)
+    active = power[db >= db.max() - 30]
+    rms_db = 10 * np.log10(active.mean())
+    gain = min(MAX_GAIN_DB, max(MIN_GAIN_DB, TARGET_DBFS - rms_db))
+    peak = float(np.abs(x22).max()) or 1e-9
+    gain = min(gain, 20 * np.log10(PEAK / peak))
+    return round(float(gain), 2)
+
+
+def window_plan(win_bounds: list[tuple[int, int]], spf: int, lead: int) -> list[tuple[int, int]]:
+    """Sample bounds of each window on the lead-padded signal: the first window absorbs the lead-in."""
+    plan = []
+    for k, (a, b) in enumerate(win_bounds):
+        plan.append((0 if k == 0 else a + lead * spf, b + lead * spf))
+    return plan
+
+
+def encode_windows(encode, x_padded, plan: list[tuple[int, int]], spf: int, ctx: int):
+    """Encode each window with up to `ctx` frames of real audio on both sides, keeping only its own frames.
+    Window starts sit on the frame grid, so frame k of the context-extended input is time lo + k*spf."""
+    import numpy as np
+
+    parts, frames = [], []
+    n = len(x_padded)
+    for a, b in plan:
+        lo, hi = max(0, a - ctx * spf), min(n, b + ctx * spf)
+        c = encode(np.ascontiguousarray(x_padded[lo:hi]))
+        start = (a - lo) // spf
+        want = -(-(b - a) // spf)
+        parts.append(c[:, start:start + want])
+        frames.append(int(parts[-1].shape[1]))
+    return np.concatenate(parts, axis=1), frames
+
+
+def decode_windows(decode, codes, frames: list[int], spf: int, ctx: int, n_total: int):
+    """Decode window by window, each with up to `ctx` frames of left context (the decoder is causal), and drop
+    the context's samples. n_total = samples of the lead-padded signal."""
+    import numpy as np
+
+    out, f0 = [], 0
+    for f in frames:
+        lo = max(0, f0 - ctx)
+        audio = decode(codes[:, lo:f0 + f], (f0 + f - lo) * spf)
+        out.append(audio[(f0 - lo) * spf:])
+        f0 += f
+    return np.concatenate(out)[:n_total]
 
 
 # ---------------------------------------------------------------- audio
@@ -273,8 +346,26 @@ def rss_mb() -> float:
 
 # ---------------------------------------------------------------- models
 
+def load_codec_trimmed(codec_cls, path: str):
+    """NanoCodec for inference only. Its config also builds training-only parts — discriminators (one of them
+    downloads microsoft/wavlm-base-plus) and a speaker encoder (downloaded from Hugging Face) for its losses.
+    Dropping them changes no encoder, quantizer or decoder weight; the D0 harness checks the output is identical."""
+    import tarfile
+
+    from omegaconf import OmegaConf, open_dict
+
+    with tarfile.open(path) as tar:
+        member = next(m for m in tar.getmembers() if m.name.endswith("model_config.yaml"))
+        cfg = OmegaConf.create(tar.extractfile(member).read().decode())
+    with open_dict(cfg):
+        cfg.discriminator = None
+        cfg.use_scl_loss = False
+        cfg.use_slm_loss = False
+    return codec_cls.restore_from(restore_path=path, override_config_path=cfg, map_location="cpu", strict=False).eval()
+
+
 class Models:
-    def __init__(self) -> None:
+    def __init__(self, weights: dict | None = None, trimmed_codec: bool = False) -> None:
         import torch
 
         torch.set_num_threads(os.cpu_count() or 4)
@@ -282,10 +373,10 @@ class Models:
 
         self.timings: dict[str, float] = {}
         t = time.time()
-        asr_path = hf_hub_download(ASR_REPO, ASR_FILE)
-        codec_path = hf_hub_download(CODEC_REPO, CODEC_FILE)
+        asr_path, codec_path = self.fetch_weights(weights or {}, hf_hub_download)
+        self.asr_path, self.codec_path = asr_path, codec_path
         self.timings["download_s"] = round(time.time() - t, 2)
-        log(f"weights downloaded in {self.timings['download_s']} s")
+        log(f"weights ready in {self.timings['download_s']} s from {self.weights_source}")
 
         t = time.time()
         import nemo.collections.asr as nemo_asr
@@ -300,8 +391,10 @@ class Models:
 
         self.timings["codec_import_s"] = round(time.time() - t, 2)
         t = time.time()
-        self.codec = AudioCodecModel.restore_from(restore_path=codec_path, map_location="cpu").eval()
+        self.codec = (load_codec_trimmed(AudioCodecModel, codec_path) if trimmed_codec
+                      else AudioCodecModel.restore_from(restore_path=codec_path, map_location="cpu").eval())
         self.timings["codec_restore_s"] = round(time.time() - t, 2)
+        self.timings["codec_trimmed"] = 1.0 if trimmed_codec else 0.0
         self.asr_sr = int(self.asr.cfg.preprocessor.get("sample_rate", ASR_SR))
         self.spf = int(getattr(self.codec, "samples_per_frame", 1764))
         self.cb_size = int(getattr(getattr(self.codec, "vector_quantizer", None), "codebook_size", 2016) or 2016)
@@ -311,9 +404,25 @@ class Models:
             "att_context_size_all": [list(a) for a in getattr(enc, "att_context_size_all", []) or []],
             "chunk_s": round((ATT_CONTEXT[1] + 1) * 0.08, 2), "codec_samples_per_frame": self.spf,
             "codec_sample_rate": int(self.codec.sample_rate), "asr_sample_rate": self.asr_sr,
-            "torch_threads": torch.get_num_threads(),
+            "torch_threads": torch.get_num_threads(), "weights_source": self.weights_source,
         }
         log(f"models loaded: {self.timings} {self.runtime}")
+
+    def fetch_weights(self, weights: dict, hf_hub_download) -> tuple[str, str]:
+        """Model files from presigned GETs on the in-region bucket when the manifest has them, else Hugging Face."""
+        if weights.get("asr") and weights.get("codec"):
+            os.makedirs("/tmp/weights", exist_ok=True)
+            paths = []
+            for name, fname in (("asr", ASR_FILE), ("codec", CODEC_FILE)):
+                dest = f"/tmp/weights/{fname}"
+                with urllib.request.urlopen(weights[name], timeout=900) as res, open(dest, "wb") as fh:
+                    while chunk := res.read(8 << 20):
+                        fh.write(chunk)
+                paths.append(dest)
+            self.weights_source = "bucket"
+            return paths[0], paths[1]
+        self.weights_source = "huggingface"
+        return hf_hub_download(ASR_REPO, ASR_FILE), hf_hub_download(CODEC_REPO, CODEC_FILE)
 
     def transcribe(self, clips: list, lang: str) -> list[str]:
         """clips: 16 kHz float32 arrays, passed as arrays (NeMo's file-path route builds Lhotse cuts with no
@@ -351,7 +460,12 @@ class Models:
 
 # ---------------------------------------------------------------- the keep pipeline
 
-def keep_note(m: Models, blob: bytes, ext: str, lang: str, lang_check: bool = True) -> dict:
+# Transcription-ready locales (card) a judge may upload in; Japanese and Korean are scored by CER, so excluded.
+DETECTABLE = {"en-US", "en-GB", "es-US", "es-ES", "fr-FR", "fr-CA", "it-IT", "pt-BR", "pt-PT", "nl-NL", "de-DE",
+              "tr-TR", "ru-RU", "ar-AR", "hi-IN", "vi-VN", "uk-UA"}
+
+
+def keep_note(m: Models, blob: bytes, ext: str, lang: str, lang_check: bool = True, max_s: float = MAX_NOTE_S) -> dict:
     """One note end to end. Returns the result plus the artefacts ({hct, transcript, wav}) to upload."""
     import numpy as np
 
@@ -361,8 +475,8 @@ def keep_note(m: Models, blob: bytes, ext: str, lang: str, lang_check: bool = Tr
     dur = len(x) / sr
     if dur <= 0.3:
         raise ValueError("no audio in this file")
-    if dur > MAX_NOTE_S + 0.5:
-        raise ValueError(f"note is {dur:.0f} s; v1 keeps notes up to 5 min")
+    if dur > max_s + 0.5:
+        raise ValueError(f"note is {dur:.0f} s; this space keeps notes up to {max_s / 60:g} min")
     x16, x22 = resample(x, sr, ASR_SR), resample(x, sr, CODEC_SR)
     tm["load_s"] = time.time() - t
 
@@ -375,9 +489,11 @@ def keep_note(m: Models, blob: bytes, ext: str, lang: str, lang_check: bool = Tr
 
     lang_detected = None
     t = time.time()
-    if lang_check:
+    if lang_check or lang == "detect":
         first = next((s for s in segs if s[2]), segs[0])
         _, lang_detected = strip_tags(m.transcribe([cut(x16, ASR_SR, first[0], first[1])], "auto")[0])
+    if lang == "detect":
+        lang = lang_detected if lang_detected in DETECTABLE else "hi-IN"
     tm["lang_check_s"] = time.time() - t
 
     t = time.time()
@@ -388,23 +504,22 @@ def keep_note(m: Models, blob: bytes, ext: str, lang: str, lang_check: bool = Tr
 
     wins = windows_for(segs, dur)
     n22 = len(x22)
+    bounds = [(int(round(w0 * CODEC_SR)), n22 if w1 >= dur else int(round(w1 * CODEC_SR))) for w0, w1 in wins]
+    lead_n = LEAD_FRAMES * m.spf
+    gain_db = codec_gain_db(x22)
+    g = np.float32(10 ** (gain_db / 20))
+    x_pad = np.concatenate([np.zeros(lead_n, dtype=np.float32), x22 * g])
+    plan = window_plan(bounds, m.spf, LEAD_FRAMES)
     t = time.time()
-    parts, frames_per_win, bounds = [], [], []
-    for w0, w1 in wins:
-        a, b = int(round(w0 * CODEC_SR)), (n22 if w1 >= dur else int(round(w1 * CODEC_SR)))
-        codes = m.encode(np.ascontiguousarray(x22[a:b]))
-        parts.append(codes)
-        frames_per_win.append(int(codes.shape[1]))
-        bounds.append((a, b))
-    codes_all = np.concatenate(parts, axis=1)
+    codes_all, frames_per_win = encode_windows(m.encode, x_pad, plan, m.spf, CTX_FRAMES)
     tm["encode_s"] = time.time() - t
 
     t = time.time()
-    hct = pack_hct(codes_all, n22, frames_per_win, m.spf, m.cb_size)
+    hct = pack_hct(codes_all, n22, frames_per_win, m.spf, m.cb_size, gain_db=gain_db)
     tm["pack_s"] = time.time() - t
 
     t = time.time()
-    dec = np.concatenate([m.decode(c, b - a) for c, (a, b) in zip(parts, bounds)])
+    dec = decode_windows(m.decode, codes_all, frames_per_win, m.spf, CTX_FRAMES, len(x_pad))[lead_n:lead_n + n22] / g
     tm["decode_s"] = time.time() - t
 
     t = time.time()
@@ -427,7 +542,7 @@ def keep_note(m: Models, blob: bytes, ext: str, lang: str, lang_check: bool = Tr
     result = {
         "audio_s": round(dur, 3), "input_bytes": len(blob), "input_sample_rate": sr, "bytes_hct": len(hct),
         "sha256_hct": hashlib.sha256(hct).hexdigest(), "frames": int(codes_all.shape[1]), "windows": frames_per_win,
-        "segments": seg_out, "segmentation": seginfo, "drift_note": drift,
+        "segments": seg_out, "segmentation": seginfo, "drift_note": drift, "codec_gain_db": gain_db,
         "max_drift_long_segment": max(long_seg) if long_seg else None, "lang_detected": lang_detected,
         "timings": {k: round(v, 3) for k, v in tm.items()}, "peak_rss_mb": round(rss_mb(), 1),
     }
@@ -518,7 +633,7 @@ def run_keep(manifest: dict, rep: Reporter, m: Models) -> dict:
         entry = {"id": note["id"]}
         try:
             blob = http("GET", note["get"])
-            out = keep_note(m, blob, note.get("ext", ""), lang)
+            out = keep_note(m, blob, note.get("ext", ""), lang, max_s=float(manifest.get("max_note_s", MAX_NOTE_S)))
             put(note["put"]["hct"], out["hct"])
             put_json(note["put"]["transcript"], {**out["transcript"], "note": note["id"]})
             put(note["put"].get("wav"), out["wav"])
@@ -543,12 +658,9 @@ def run_decode(manifest: dict, rep: Reporter, m: Models) -> dict:
         try:
             t = time.time()
             codes, head = unpack_hct(http("GET", note["hct_get"]))
-            pieces, f0, s0 = [], 0, 0
-            for k, f in enumerate(head["windows"]):
-                n = f * head["samples_per_frame"] if k < len(head["windows"]) - 1 else head["n_samples"] - s0
-                pieces.append(m.decode(codes[:, f0:f0 + f], n))
-                f0, s0 = f0 + f, s0 + n
-            audio = np.concatenate(pieces)
+            lead_n = head["lead_frames"] * head["samples_per_frame"]
+            audio = decode_windows(m.decode, codes, head["windows"], head["samples_per_frame"], head["context_frames"],
+                                   lead_n + head["n_samples"])[lead_n:] / (10 ** (head["gain_db"] / 20))
             put(note["put"]["wav"], wav_bytes(audio, CODEC_SR))
             entry.update({"status": "decoded", "audio_s": round(len(audio) / CODEC_SR, 3),
                           "decode_s": round(time.time() - t, 3)})
@@ -591,11 +703,15 @@ def run_d0(manifest: dict, rep: Reporter, m: Models, report: dict) -> dict:
                 # codec determinism on CPU, on the first short clip: same input twice, same codes? same samples?
                 x, sr = load_audio(blob, note.get("ext", ""))
                 x22 = resample(x, sr, CODEC_SR)
-                c1, c2 = m.encode(x22), m.encode(x22)
-                d1, d2 = m.decode(c1, len(x22)), m.decode(c1, len(x22))
+                gd = codec_gain_db(x22)
+                x_pad = np.concatenate([np.zeros(LEAD_FRAMES * m.spf, dtype=np.float32), x22 * np.float32(10 ** (gd / 20))])
+                c1, c2 = m.encode(x_pad), m.encode(x_pad)
+                d1, d2 = m.decode(c1, len(x_pad)), m.decode(c1, len(x_pad))
                 stored, _ = unpack_hct(out["hct"])
+                twice = bool(np.array_equal(c1, c2))
+                c1 = c1[:, : stored.shape[1]]
                 report["determinism"] = {
-                    "encode_twice_equal": bool(np.array_equal(c1, c2)),
+                    "encode_twice_equal": twice,
                     "hct_roundtrip_equals_fresh_encode": bool(stored.shape == c1.shape and np.array_equal(stored, c1)),
                     "decode_twice_max_abs_diff": float(np.abs(d1 - d2).max()),
                 }
@@ -606,7 +722,71 @@ def run_d0(manifest: dict, rep: Reporter, m: Models, report: dict) -> dict:
         items.append(entry)
         report["peak_rss_mb"] = round(rss_mb(), 1)
         put_json(manifest["result_put"], report)
+    d0_extras(manifest, rep, m, report)
+    put_json(manifest["result_put"], report)
     return report
+
+
+def d0_extras(manifest: dict, rep: Reporter, m: Models, report: dict) -> None:
+    """Load-time options for the product path, measured on the same box: a trimmed codec load (checked bit-exact
+    against the full one), how much of the ASR load is unpacking the .nemo, and a copy of both model files to the
+    in-region bucket (so product Jobs read them from Object Storage, not Hugging Face)."""
+    import numpy as np
+
+    extras: dict = {}
+    report["load_options"] = extras
+    try:
+        rep.status("d0-extras", step="trimmed codec")
+        from nemo.collections.tts.models import AudioCodecModel
+
+        t = time.time()
+        trimmed = load_codec_trimmed(AudioCodecModel, m.codec_path)
+        extras["codec_trimmed_restore_s"] = round(time.time() - t, 2)
+        rng = np.random.default_rng(0)
+        probe = (0.1 * rng.standard_normal(CODEC_SR * 6)).astype("float32")
+        full_codes = m.encode(probe)
+        import torch
+
+        with torch.inference_mode():
+            a = torch.from_numpy(probe)[None]
+            tok, tlen = trimmed.encode(audio=a, audio_len=torch.tensor([a.shape[1]]))
+            trim_codes = tok[0, :, : int(tlen[0])].cpu().numpy()
+            dec_t, _ = trimmed.decode(tokens=torch.from_numpy(full_codes.astype("int64"))[None],
+                                      tokens_len=torch.tensor([full_codes.shape[1]]))
+        dec_f = m.decode(full_codes, len(probe))
+        extras["codec_trimmed_codes_equal"] = bool(np.array_equal(full_codes, trim_codes))
+        extras["codec_trimmed_decode_max_abs_diff"] = float(np.abs(dec_t[0].cpu().numpy()[: len(probe)] - dec_f).max())
+        del trimmed
+    except Exception as exc:
+        extras["codec_trimmed_error"] = f"{exc}"[:400]
+    try:
+        rep.status("d0-extras", step="asr unpack")
+        import shutil
+        import tarfile
+
+        t = time.time()
+        tmp = tempfile.mkdtemp()
+        with tarfile.open(m.asr_path) as tar:
+            tar.extractall(tmp)
+        extras["asr_nemo_unpack_s"] = round(time.time() - t, 2)
+        shutil.rmtree(tmp, ignore_errors=True)
+    except Exception as exc:
+        extras["asr_unpack_error"] = f"{exc}"[:400]
+    for name, path in (("asr", m.asr_path), ("codec", m.codec_path)):
+        url = (manifest.get("model_puts") or {}).get(name)
+        if not url:
+            continue
+        try:
+            rep.status("d0-extras", step=f"upload {name}")
+            t = time.time()
+            size = os.path.getsize(path)
+            with open(path, "rb") as fh:
+                req = urllib.request.Request(url, data=fh, method="PUT", headers={"Content-Length": str(size)})
+                urllib.request.urlopen(req, timeout=1800).read()
+            extras[f"{name}_upload_s"] = round(time.time() - t, 2)
+            extras[f"{name}_bytes"] = size
+        except Exception as exc:
+            extras[f"{name}_upload_error"] = f"{exc}"[:400]
 
 
 def main() -> int:
@@ -625,7 +805,7 @@ def main() -> int:
             raise RuntimeError("dependency install failed (see install_tail)")
         rep.status("loading")
         t = time.time()
-        m = Models()
+        m = Models(manifest.get("weights"), trimmed_codec=bool(manifest.get("trimmed_codec")))
         report["load"] = {**m.timings, "total_s": round(time.time() - t, 2)}
         report["runtime"] = m.runtime
         report["versions"] = versions()
