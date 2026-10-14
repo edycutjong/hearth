@@ -1,0 +1,26 @@
+{
+ "what": "Nebius Serverless Jobs: the 64 KiB injected-file limit applies to the TOTAL of all injected files after base64, not to each file",
+ "when": "2026-10-15T00:05Z",
+ "how": "nebius ai job create --inject-file x3 (worker.py, run.sh, requirements.txt), cpu-d3 4vcpu-16gb, eu-west1",
+ "files": {
+  "worker/worker.py": {
+   "bytes": 44897,
+   "base64_bytes": 59864
+  },
+  "worker/run.sh": {
+   "bytes": 994,
+   "base64_bytes": 1328
+  },
+  "worker/requirements.txt": {
+   "bytes": 3459,
+   "base64_bytes": 4612
+  }
+ },
+ "total_bytes": 49350,
+ "total_base64_bytes": 65804,
+ "response": "rpc error: code = InvalidArgument desc = plaintext must not exceed 65536 bytes; service kms-dpl, violations: plaintext: plaintext must not exceed 65536 bytes",
+ "request_id": "966dd6c8-bd5b-4324-b3a2-1f7bc180448c",
+ "previous_working_set_base64_bytes": 57584,
+ "docs_say": "_docs/nebius/serverless/jobs/manage.md:160 and :306 \u2014 'Each mounted file is read-only and limited to 64 KiB.'",
+ "fix": "worker.py and requirements.txt are injected gzipped; run.sh unpacks them (src/lib/injected.ts, worker/run.sh)"
+}

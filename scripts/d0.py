@@ -25,7 +25,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
-from nebius_jobs import TERMINAL, create_job, get_job, running_jobs, state  # noqa: E402
+from nebius_jobs import TERMINAL, create_job, get_job, running_jobs, state, worker_files  # noqa: E402
 from s3 import S3, load_env  # noqa: E402
 
 
@@ -127,16 +127,13 @@ def main() -> int:
         },
     }
     s3.put(f"bench/d0/{run}/manifest.json", json.dumps(manifest).encode(), content_type="application/json")
-    worker = ROOT / "worker"
     env = {"MODE": "d0", "MANIFEST_URL": s3.presign("GET", f"bench/d0/{run}/manifest.json", week),
            "HEARTH_JOB_NAME": f"hearth-d0-{run.lower()}"}
     if args.prebuilt:
         env["HEARTH_PREBUILT"] = "1"
-    job_id, t_create = create_job(
-        f"hearth-d0-{run.lower()}"[:60], args.image, env,
-        {str(worker / "worker.py"): "/opt/hearth/worker.py", str(worker / "run.sh"): "/opt/hearth/run.sh",
-         str(worker / "requirements.txt"): "/opt/hearth/requirements.txt"},
-        preset=args.preset, timeout=args.timeout)
+    with tempfile.TemporaryDirectory() as tmp:
+        job_id, t_create = create_job(f"hearth-d0-{run.lower()}"[:60], args.image, env, worker_files(tmp),
+                                      preset=args.preset, timeout=args.timeout)
     print(f"run {run}: job {job_id} created at {datetime.fromtimestamp(t_create, timezone.utc).isoformat()} "
           f"(re-attach: scripts/d0.py --attach {run} {job_id} {t_create:.3f})", flush=True)
     return follow(s3, run, job_id, t_create, args)

@@ -22,7 +22,7 @@ import { JOB_TIMEOUT_HOURS, release, reserve, settle } from "./caps";
 import { keys, spaceTag } from "./keys";
 import type { SpaceDoc } from "./space";
 import type { Store } from "./store";
-import { REQUIREMENTS_SOURCE, RUN_SOURCE, WORKER_SOURCE } from "./worker-source";
+import { injectedFiles } from "./injected";
 
 /** Fixed prior, set before any data (complexity.md §2): note drift <= 5 %, and <= 30 % for segments of >= 8 words. */
 export const DRIFT_GATE_NOTE = 0.05;
@@ -38,7 +38,7 @@ export interface JobsBackend {
     name: string;
     image: string;
     env: Record<string, string>;
-    files: Array<{ containerPath: string; content: string }>;
+    files: Array<{ containerPath: string; content: string; encoding?: "utf8" | "base64" }>;
     preset: string;
     timeoutSeconds: number;
   }): Promise<string>;
@@ -202,6 +202,9 @@ export function driftPasses(driftNote: number, segments: Array<{ words: number; 
 
 // ---------------------------------------------------------------- enqueue
 
+/** Orders entries created in the same millisecond on one instance (the queue is listed in key order: FIFO). */
+let enqueued = 0;
+
 export async function enqueue(
   ctx: PipelineCtx,
   uid: string,
@@ -210,7 +213,8 @@ export async function enqueue(
   opts: { maxNoteSeconds?: number; lang?: string } = {},
 ): Promise<{ job: string; queueKey: string }> {
   const now = clock(ctx);
-  const stamp = `${now.getTime().toString().padStart(14, "0")}-${Math.random().toString(16).slice(2, 8)}`;
+  enqueued = (enqueued + 1) % 1_000_000;
+  const stamp = `${now.getTime().toString().padStart(14, "0")}-${enqueued.toString().padStart(6, "0")}${Math.random().toString(16).slice(2, 6)}`;
   const job = `${now.toISOString().slice(0, 10).replace(/-/g, "")}${Math.random().toString(16).slice(2, 10)}`;
   const queueKey = keys.queueEntry(stamp, uid);
   const entry: QueueEntry = {
@@ -390,11 +394,7 @@ async function createJob(ctx: PipelineCtx, entry: QueueEntry): Promise<string> {
     name: `hearth-${entry.job}`,
     image: ctx.image,
     env,
-    files: [
-      { containerPath: "/opt/hearth/worker.py", content: WORKER_SOURCE },
-      { containerPath: "/opt/hearth/run.sh", content: RUN_SOURCE },
-      { containerPath: "/opt/hearth/requirements.txt", content: REQUIREMENTS_SOURCE },
-    ],
+    files: injectedFiles(),
     preset: ctx.preset,
     timeoutSeconds: JOB_TIMEOUT_HOURS * 3600,
   });

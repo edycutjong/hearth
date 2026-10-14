@@ -54,10 +54,12 @@ export interface NebiusJob {
   };
 }
 
-/** A small file materialised in the container before the entrypoint runs (≤ 64 KiB). */
+/** A small file materialised in the container before the entrypoint runs. */
 export interface InjectedFile {
   containerPath: string;
+  /** Text, or the file's bytes already base64-encoded when `encoding` is "base64" (e.g. gzip). */
   content: string;
+  encoding?: "utf8" | "base64";
 }
 
 export interface CreateJobOptions {
@@ -79,6 +81,11 @@ export interface CreateJobOptions {
 
 /** The API's documented ceiling for one injected file. */
 export const INJECTED_FILE_MAX_BYTES = 64 * 1024;
+/**
+ * The ceiling the API actually enforces: all injected files are encrypted together, and the base64 of all of them
+ * may not pass 64 KiB ("plaintext must not exceed 65536 bytes", evidence/injected-files-limit.json).
+ */
+export const INJECTED_TOTAL_MAX_BASE64 = 64 * 1024;
 
 interface OperationResponse {
   resourceId?: string;
@@ -200,8 +207,8 @@ export async function createJob(
   }
 
   if (options.files?.length) {
-    spec.injectedFiles = options.files.map((file) => {
-      const bytes = Buffer.from(file.content, "utf8");
+    const injected = options.files.map((file) => {
+      const bytes = Buffer.from(file.content, file.encoding === "base64" ? "base64" : "utf8");
       if (bytes.length === 0 || bytes.length > INJECTED_FILE_MAX_BYTES) {
         throw new NebiusApiError(
           `injected file ${file.containerPath} is ${bytes.length} bytes; the API accepts 1 B – 64 KiB`,
@@ -211,6 +218,15 @@ export async function createJob(
       }
       return { containerPath: file.containerPath, content: bytes.toString("base64") };
     });
+    const total = injected.reduce((n, f) => n + f.content.length, 0);
+    if (total > INJECTED_TOTAL_MAX_BASE64) {
+      throw new NebiusApiError(
+        `injected files total ${total} bytes of base64; the API refuses more than ${INJECTED_TOTAL_MAX_BASE64} in all`,
+        400,
+        "",
+      );
+    }
+    spec.injectedFiles = injected;
   }
 
   const op = await api<OperationResponse>(

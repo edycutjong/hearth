@@ -5,13 +5,31 @@ Every create sets the timeout and disk size explicitly: the API's defaults are 2
 """
 from __future__ import annotations
 
+import base64
+import gzip
 import json
 import os
 import re
 import subprocess
 import time
+from pathlib import Path
 
 TERMINAL = {"COMPLETED", "FAILED", "CANCELLED", "ERROR", "DELETED"}
+# All injected files are encrypted together; their base64 may not pass 64 KiB in total
+# (evidence/injected-files-limit.json), so the worker and its requirements travel gzipped and run.sh unpacks them.
+INJECTED_TOTAL_MAX_BASE64 = 64 * 1024
+WORKER_DIR = Path(__file__).resolve().parent.parent / "worker"
+
+
+def worker_files(tmpdir: str) -> dict[str, str]:
+    """{local path: container path} for a Job: run.sh as is, worker.py and requirements.txt gzipped (mtime 0, so
+    the bytes are the same every time), exactly as the app injects them (src/lib/injected.ts)."""
+    files = {str(WORKER_DIR / "run.sh"): "/opt/hearth/run.sh"}
+    for name in ("worker.py", "requirements.txt"):
+        dest = Path(tmpdir) / f"{name}.gz"
+        dest.write_bytes(gzip.compress((WORKER_DIR / name).read_bytes(), compresslevel=9, mtime=0))
+        files[str(dest)] = f"/opt/hearth/{name}.gz"
+    return files
 
 
 def _ids() -> tuple[str, str]:
@@ -37,11 +55,15 @@ def create_job(name: str, image: str, env: dict[str, str], files: dict[str, str]
            "--disk-size", disk, "--container-command", command, "--args", args]
     for k, v in env.items():
         cmd += ["--env", f"{k}={v}"]
+    total = 0
     for local, remote in files.items():
         size = os.path.getsize(local)
         if not 0 < size <= 64 * 1024:
             raise ValueError(f"{local} is {size} bytes; injected files must be 1 B - 64 KiB")
+        total += len(base64.b64encode(Path(local).read_bytes()))
         cmd += ["--inject-file", f"{local}:{remote}"]
+    if total > INJECTED_TOTAL_MAX_BASE64:
+        raise ValueError(f"injected files total {total} bytes of base64; the API refuses more than {INJECTED_TOTAL_MAX_BASE64}")
     t = time.time()
     op = _cli(cmd)
     job_id = op.get("resource_id") or op.get("resourceId")

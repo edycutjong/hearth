@@ -32,7 +32,7 @@ describe("dispatch", () => {
     const { job } = await enqueue(ctx, UID, "keep", [{ id: "aa000001", ext: "opus" }]);
     expect(await dispatch(ctx)).toBe("dispatched");
     const run = [...ctx.backend.runs.values()][0];
-    expect(run?.files.map((f) => f.containerPath)).toEqual(["/opt/hearth/worker.py", "/opt/hearth/run.sh", "/opt/hearth/requirements.txt"]);
+    expect(run?.files.map((f) => f.containerPath)).toEqual(["/opt/hearth/run.sh", "/opt/hearth/worker.py.gz", "/opt/hearth/requirements.txt.gz"]);
     expect(run?.env.MODE).toBe("keep");
     const manifest = must((await ctx.store.getJson<{ notes: Array<{ put: { hct: { headers: Record<string, string> } } }>; tick_url: string }>(keys.jobManifest(UID, job)))?.value);
     expect(manifest.notes[0]?.put.hct.headers["x-amz-tagging"]).toBe("space=anon");
