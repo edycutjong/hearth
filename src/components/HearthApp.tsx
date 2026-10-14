@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { Consent } from "./app/Consent";
+import { Agree } from "./app/Agree";
 import { Find } from "./app/Find";
 import { Forward } from "./app/Forward";
 import { Keeping } from "./app/Keeping";
@@ -70,7 +70,7 @@ export function HearthApp() {
 
   const s = status?.space ?? space;
   if (!s) return <p className="muted">Opening your space…</p>;
-  if (!s.consent) return <Consent zdrConfirmed={status?.flags.zdrConfirmed ?? false} onDone={() => void refresh().then(() => setSpace({ ...s, consent: { at: "", textVersion: "", deleteOriginals: true } }))} />;
+  if (!s.consent) return <Agree zdrConfirmed={status?.flags.zdrConfirmed ?? false} onDone={() => void refresh().then(() => setSpace({ ...s, consent: { at: "", textVersion: "", deleteOriginals: true } }))} />;
 
   const notes = status?.notes ?? [];
   const jobs = status?.jobs ?? [];

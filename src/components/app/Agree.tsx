@@ -5,7 +5,7 @@ import { ASK_FIRST_HI, CONSENT, CONSENT_VERSION, processorsParagraph } from "@/l
 import { api } from "./types";
 
 /** Before any upload: everyone whose voice is in the notes has agreed. Hindi first, English second. */
-export function Consent({ zdrConfirmed, onDone }: { zdrConfirmed: boolean; onDone: () => void }) {
+export function Agree({ zdrConfirmed, onDone }: { zdrConfirmed: boolean; onDone: () => void }) {
   const [agreed, setAgreed] = useState(false);
   const [deleteOriginals, setDeleteOriginals] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -64,7 +64,7 @@ export function Consent({ zdrConfirmed, onDone }: { zdrConfirmed: boolean; onDon
         disabled={!agreed || busy}
         onClick={async () => {
           setBusy(true);
-          const r = await api<{ error?: string }>("/api/consent", { method: "POST", body: JSON.stringify({ agreed, deleteOriginals, textVersion: CONSENT_VERSION }) });
+          const r = await api<{ error?: string }>("/api/agree", { method: "POST", body: JSON.stringify({ agreed, deleteOriginals, textVersion: CONSENT_VERSION }) });
           setBusy(false);
           if (!r.ok) setError(r.data.error ?? "Could not save the consent.");
           else onDone();

@@ -160,7 +160,7 @@ export function applyExtraction(
   return next;
 }
 
-export function tfAllowed(space: SpaceDoc | null, isSample: boolean, env: NodeJS.ProcessEnv = process.env): boolean {
+export function tfAllowed(space: SpaceDoc | null, isSample: boolean, env: Record<string, string | undefined> = process.env): boolean {
   if (isSample) return true;
   if (env.TF_ZDR_ON === "true") return true;
   return Boolean(space?.tfOptIn);
@@ -172,7 +172,7 @@ export async function rememberNote(
   tf: TokenFactoryConfig | null,
   uid: string,
   noteId: string,
-  opts: { isSample?: boolean; now?: Date; env?: NodeJS.ProcessEnv } = {},
+  opts: { isSample?: boolean; now?: Date; env?: Record<string, string | undefined> } = {},
 ): Promise<NoteMeta["memory"]> {
   const now = opts.now ?? new Date();
   const space = (await store.getJson<SpaceDoc>(keys.space(uid)))?.value ?? null;
