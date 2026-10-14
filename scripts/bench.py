@@ -142,6 +142,8 @@ def live(args) -> int:
         t_kept = time.time()
         created = next((h["at"] for h in (job or {}).get("history", []) if h["event"].startswith("Nebius job")), None)
         queue_wait = (datetime.fromisoformat(created.replace("Z", "+00:00")).timestamp() - t_up) if created else None
+        st, proof = c.call("GET", "/api/proof")
+        timings = ((proof.get("visitor") or {}).get("job") or {}).get("timings")
         st, gone = c.call("POST", "/api/delete-all", {"confirm": "delete"})
         runs.append({
             "run": r + 1, "status": (note or {}).get("status"), "time_to_kept_s": round(t_kept - t_up, 1),
@@ -149,9 +151,10 @@ def live(args) -> int:
             "nebius_job": (job or {}).get("nebiusId"), "hearth_job": (job or {}).get("job"), "polls": polls,
             "audio_s": ((note or {}).get("kept") or {}).get("audioS"), "bytes_hct": ((note or {}).get("kept") or {}).get("bytesHct"),
             "drift": ((note or {}).get("kept") or {}).get("driftNote"), "error": (note or {}).get("error"),
+            "job_timings_s": timings,
             "delete_all_listings": gone.get("listings"),
         })
-        print(json.dumps(runs[-1]))
+        print(json.dumps(runs[-1]), flush=True)
     ok = [x["time_to_kept_s"] for x in runs if x["status"] == "kept"]
     q = [x["queue_wait_s"] for x in runs if x["queue_wait_s"] is not None]
 

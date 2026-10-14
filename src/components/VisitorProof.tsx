@@ -8,6 +8,18 @@ interface ProofResp {
   visitor?: { job: JobRecord | null; notes: NoteMeta[]; memory: { stats: Record<string, number>; calls: Array<{ requestId: string | null; model: string; ms: number; at: string; error?: string }> } | null };
 }
 
+function timeline(t: NonNullable<JobRecord["timings"]>): string {
+  const s = (x: number | null) => (x === null ? "—" : `${Math.round(x)} s`);
+  const parts = [
+    `queue ${s(t.queueS)}`,
+    `Nebius start-up (provision, image pull) ${s(t.startupS)}`,
+    `install ${s(t.installS)}`,
+    `models ready ${s(t.modelsS)}${t.prefetchS !== null ? ` (weights streamed in ${s(t.prefetchS)}, during the install)` : ""}`,
+    `your notes ${s(t.workS)}`,
+  ];
+  return parts.join(" · ");
+}
+
 /** The visitor's own last run, read live from their space. */
 export function VisitorProof() {
   const [p, setP] = useState<ProofResp | null>(null);
@@ -24,6 +36,12 @@ export function VisitorProof() {
           <tr><th>Hearth job</th><td className="num">{v.job.job} · {v.job.state}</td></tr>
           <tr><th>Nebius job</th><td className="num">{v.job.nebiusId ?? "—"} · cpu-d3 · {v.job.preset}</td></tr>
           <tr><th>Created → finished</th><td className="num">{v.job.created} → {v.job.finished ?? "…"}</td></tr>
+          {v.job.timings ? (
+            <tr>
+              <th>Where the time went</th>
+              <td className="num">{timeline(v.job.timings)}</td>
+            </tr>
+          ) : null}
         </tbody>
       </table>
       <table className="plain">

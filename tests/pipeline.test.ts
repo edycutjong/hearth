@@ -8,6 +8,7 @@ import {
   driftPasses,
   enqueue,
   holdsSlot,
+  jobTimings,
   reconcileJob,
   sweepGrace,
   tickToken,
@@ -180,6 +181,27 @@ describe("reconcile and finalize", () => {
     const m = await meta(ctx, "aa000001");
     expect(m.status).toBe("failed");
     expect(m.raw.state).toBe("kept_original");
+  });
+});
+
+describe("where a Job's time goes", () => {
+  const at = (iso: string) => Date.parse(iso) / 1000;
+  it("splits it from the Job's own report: queue, start-up, install, models, the notes", () => {
+    const t = jobTimings(
+      { created: "2026-10-14T23:20:00.000Z", dispatched: "2026-10-14T23:20:30.000Z" },
+      {
+        context: { t0: at("2026-10-14T23:23:10Z"), t_install: at("2026-10-14T23:23:30Z"), worker_start: at("2026-10-14T23:23:31Z") },
+        load: { total_s: 95.04, prefetch_s: 71.2 },
+        finished: at("2026-10-14T23:26:26Z"),
+      },
+    );
+    expect(t).toEqual({ queueS: 30, startupS: 160, installS: 20, modelsS: 95, workS: 80, prefetchS: 71.2 });
+  });
+
+  it("leaves what the report does not carry as null instead of guessing", () => {
+    expect(jobTimings({ created: "2026-10-14T23:20:00.000Z" }, {})).toEqual({
+      queueS: null, startupS: null, installS: null, modelsS: null, workS: null, prefetchS: null,
+    });
   });
 });
 

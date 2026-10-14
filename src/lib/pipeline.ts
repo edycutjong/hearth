@@ -123,7 +123,24 @@ export interface JobRecord {
   backoffs: number;
   preset: string;
   error?: string;
+  /** Where the time went, in seconds, from the Job's own report (see jobTimings). */
+  timings?: JobTimings;
   history: Array<{ at: string; event: string }>;
+}
+
+export interface JobTimings {
+  /** queued -> Nebius job created */
+  queueS: number | null;
+  /** created -> container running: Nebius provisioning, image pull, container start */
+  startupS: number | null;
+  /** dependency install in the container */
+  installS: number | null;
+  /** both models ready (the weights stream in during the install) */
+  modelsS: number | null;
+  /** the notes themselves: ASR, encode, decode, ASR again, uploads */
+  workS: number | null;
+  /** the weight prefetch's own duration, overlapped with the install */
+  prefetchS: number | null;
 }
 
 export type RawState = "uploaded" | "grace" | "deleted" | "kept_original";
@@ -442,6 +459,30 @@ interface WorkerReport {
   notes?: WorkerNoteResult[];
   load?: Record<string, number>;
   context?: Record<string, unknown>;
+  /** epoch seconds when the worker wrote its final report */
+  finished?: number;
+}
+
+/** The time of one Job, split where it is spent; null where the report lacks a mark. Clocks: the app's and the VM's. */
+export function jobTimings(rec: Pick<JobRecord, "created" | "dispatched">, report: Pick<WorkerReport, "context" | "load" | "finished">): JobTimings {
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+  const epoch = (iso?: string) => (iso ? new Date(iso).getTime() / 1000 : null);
+  const diff = (a: number | null, b: number | null) => (a === null || b === null ? null : Math.round((a - b) * 10) / 10);
+  const created = epoch(rec.created);
+  const dispatched = epoch(rec.dispatched);
+  const t0 = num(report.context?.t0);
+  const tInstall = num(report.context?.t_install);
+  const start = num(report.context?.worker_start);
+  const load = num(report.load?.total_s);
+  const finished = num(report.finished);
+  return {
+    queueS: diff(dispatched, created),
+    startupS: diff(t0, dispatched),
+    installS: diff(tInstall, t0),
+    modelsS: load === null ? null : Math.round(load * 10) / 10,
+    workS: finished === null || start === null || load === null ? null : diff(finished, start + load),
+    prefetchS: num(report.load?.prefetch_s),
+  };
 }
 
 /** Bring one job forward. Safe to call any number of times, from any request. */
@@ -582,6 +623,7 @@ async function finalize(
   return updateRecord(ctx, uid, rec.job, (r) => {
     r.state = report.status === "done" ? "done" : "failed";
     r.finished = finished;
+    r.timings = jobTimings(r, report);
     r.nebiusState = nebius?.state ?? r.nebiusState;
     if (report.error) r.error = report.error;
     r.history.push({ at: iso(now), event: `report ${report.status}; ${rec.notes.length} note(s) validated` });
