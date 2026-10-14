@@ -1,0 +1,18 @@
+import { CONSENT_VERSION } from "@/lib/copy";
+import { json, loadSpace, notConfigured, ready, saveSpace } from "@/lib/server";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+/** Record the consent tick (date + text version) and the one choice: delete originals after a verified round trip. */
+export async function POST(req: Request) {
+  const r = ready();
+  if (!r.ok) return notConfigured(r.missing);
+  const body = (await req.json().catch(() => ({}))) as { agreed?: boolean; deleteOriginals?: boolean; textVersion?: string };
+  if (body.agreed !== true || body.textVersion !== CONSENT_VERSION) return json({ error: "consent must be ticked on the current text" }, 400);
+  const space = await loadSpace(r.store, { create: true });
+  if (!space) return json({ error: "no space" }, 500);
+  space.doc.consent = { at: new Date().toISOString(), textVersion: CONSENT_VERSION, deleteOriginals: body.deleteOriginals !== false };
+  await saveSpace(r.store, space.uid, space.doc);
+  return json({ consent: space.doc.consent });
+}
