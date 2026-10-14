@@ -1,0 +1,419 @@
+{
+ "run": "20261014T223854Z-4vcpu-16gb-smoke",
+ "preset": "4vcpu-16gb",
+ "image": "python:3.11",
+ "nebius_job_id": "aijob-e01cwcb5ngjvcsf9z3",
+ "created": 1792017534.8988328,
+ "job": {
+  "metadata": {
+   "id": "aijob-e01cwcb5ngjvcsf9z3",
+   "parent_id": "project-e01phrcvpa003r6v2aep14",
+   "name": "hearth-d0-20261014t223854z-4vcpu-16gb-smoke",
+   "resource_version": "1",
+   "created_at": "2026-10-14T22:38:55.277185Z",
+   "updated_at": "2026-10-14T22:38:55.277185Z"
+  },
+  "spec": {
+   "image": "python:3.11",
+   "environment_variables": [
+    {
+     "name": "MODE",
+     "value": "d0"
+    },
+    {
+     "name": "MANIFEST_URL",
+     "value": "https://storage.eu-west1.nebius.cloud/hearth-data/bench/d0/20261014T223854Z-4vcpu-16gb-smoke/manifest.json?<presigned>"
+    },
+    {
+     "name": "HEARTH_JOB_NAME",
+     "value": "hearth-d0-20261014t223854z-4vcpu-16gb-smoke"
+    }
+   ],
+   "container_command": "bash",
+   "args": "/opt/hearth/run.sh",
+   "platform": "cpu-d3",
+   "preset": "4vcpu-16gb",
+   "disk": {
+    "type": "NETWORK_SSD",
+    "size_bytes": "68719476736"
+   },
+   "subnet_id": "vpcsubnet-e01mdp8yxx4t2hccw5",
+   "timeout": "3600s",
+   "injected_files": [
+    {
+     "container_path": "/opt/hearth/worker.py"
+    },
+    {
+     "container_path": "/opt/hearth/run.sh"
+    },
+    {
+     "container_path": "/opt/hearth/requirements.txt"
+    }
+   ]
+  },
+  "status": {
+   "instances": [
+    {
+     "state": "RUNNING",
+     "compute_instance_id": "computeinstance-e01c67z5n4sx9gfzq3",
+     "compute_instance_state": "RUNNING",
+     "private_ip": "10.48.0.40"
+    }
+   ],
+   "state": "COMPLETED",
+   "started_at": "2026-10-14T22:41:41.200792769Z",
+   "finished_at": "2026-10-14T22:48:29.748067834Z"
+  }
+ },
+ "report": {
+  "version": 1,
+  "context": {
+   "python": "3.11.17",
+   "machine": "x86_64",
+   "cpus": 4,
+   "worker_start": 1792017716.6859095,
+   "nebius_job_hint": "hearth-d0-20261014t223854z-4vcpu-16gb-smoke",
+   "t0": 1792017701.3984811,
+   "t_install": 1792017716.62783,
+   "install_rc": 0,
+   "cpu_model": "AMD EPYC-Genoa Processor",
+   "mem_total_kb": 16376124
+  },
+  "mode": "d0",
+  "job": "d0-20261014T223854Z-4vcpu-16gb-smoke",
+  "load": {
+   "download_s": 153.95,
+   "asr_import_s": 13.25,
+   "asr_restore_s": 46.15,
+   "codec_import_s": 2.38,
+   "codec_restore_s": 46.8,
+   "codec_trimmed": 0.0,
+   "total_s": 268.33
+  },
+  "runtime": {
+   "asr": "nemo",
+   "asr_class": "EncDecRNNTBPEModelWithPrompt",
+   "att_context_size": [
+    56,
+    13
+   ],
+   "att_context_size_all": [
+    [
+     56,
+     3
+    ],
+    [
+     56,
+     0
+    ],
+    [
+     56,
+     6
+    ],
+    [
+     56,
+     13
+    ]
+   ],
+   "chunk_s": 1.12,
+   "codec_samples_per_frame": 1764,
+   "codec_sample_rate": 22050,
+   "asr_sample_rate": 16000,
+   "torch_threads": 4,
+   "weights_source": "huggingface"
+  },
+  "versions": {
+   "torch": "2.13.0+cpu",
+   "nemo": "3.0.0",
+   "transformers": "5.19.0",
+   "numpy": "2.4.6",
+   "librosa": "0.11.0",
+   "soundfile": "0.14.0",
+   "huggingface_hub": "2.2.0",
+   "lightning": "2.4.0",
+   "freeze_sha256": "4c6defb7c5a000c3765137265e87990235e5c578f083b032753968769f7eca21",
+   "freeze_count": 154
+  },
+  "items": [
+   {
+    "id": "18105264127277992595",
+    "set": "fleurs20",
+    "get_s": 0.038,
+    "audio_s": 13.74,
+    "input_bytes": 879418,
+    "input_sample_rate": 16000,
+    "bytes_hct": 3197,
+    "sha256_hct": "dd8cc925d8eb208ae20aa26e970f2a792f0ba227fc3589b247d8e93ab127f0a8",
+    "frames": 175,
+    "windows": [
+     175
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 13.74,
+      "speech": true,
+      "text": "रूमानियत में सांस्कृतिक नीयत इवाद का बड़ा महत्व था जो गोय थे फिचते और स्लेकल जैसे लेखकों से लिया गया।",
+      "rt_text": "रूमानी एटमी सांस्कृतिक नीयत ही वैद का बड़ा महत्व था जो गोई थे फिचते और स्लेकल जैसे लेखकों से लिया गया।",
+      "words": 20,
+      "drift": 0.25
+     }
+    ],
+    "segmentation": {
+     "floor_db": -80.9,
+     "loud_db": -47.3,
+     "threshold_db": -68.9,
+     "silences": 5
+    },
+    "drift_note": 0.25,
+    "codec_gain_db": 30.0,
+    "max_drift_long_segment": 0.25,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 1.26,
+     "segment_s": 0.012,
+     "lang_check_s": 2.64,
+     "asr_s": 2.462,
+     "encode_s": 2.827,
+     "pack_s": 0.001,
+     "decode_s": 3.987,
+     "rt_asr_s": 2.503
+    },
+    "peak_rss_mb": 6197.1,
+    "status": "processed",
+    "rss_before_mb": 6197.1,
+    "wall_s": 28.788
+   },
+   {
+    "id": "13477439939514320448",
+    "set": "fleurs20",
+    "get_s": 0.062,
+    "audio_s": 10.44,
+    "input_bytes": 668218,
+    "input_sample_rate": 16000,
+    "bytes_hct": 2464,
+    "sha256_hct": "c85ac04ff7d079c62ec389d404dc33c07f8e54e4799a406803950a9ccdfe4cd4",
+    "frames": 134,
+    "windows": [
+     134
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 10.44,
+      "speech": true,
+      "text": "यह कहते हुए वे चीन के आर्थिक उत्पादन के आधार पर बनाए जाएंगे।   उन्होंने कटौती के लिए कोई आंकड़ा निर्धारित नहीं किया।",
+      "rt_text": "यह कहते हुए वे चून के आर्थिक उत्पादन के आधार पर बनाए जाएंगे।   उन्होंने कटौती के लिए कोई आंकड़ा निर्धारित नहीं किया।",
+      "words": 22,
+      "drift": 0.0455
+     }
+    ],
+    "segmentation": {
+     "floor_db": -68.1,
+     "loud_db": -20.6,
+     "threshold_db": -56.1,
+     "silences": 2
+    },
+    "drift_note": 0.0455,
+    "codec_gain_db": 5.14,
+    "max_drift_long_segment": 0.0455,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.002,
+     "segment_s": 0.001,
+     "lang_check_s": 2.139,
+     "asr_s": 2.062,
+     "encode_s": 2.135,
+     "pack_s": 0.0,
+     "decode_s": 3.057,
+     "rt_asr_s": 2.144
+    },
+    "peak_rss_mb": 6197.1,
+    "status": "processed",
+    "rss_before_mb": 6197.1,
+    "wall_s": 11.619
+   },
+   {
+    "id": "2084431273077832179",
+    "set": "fleurs20",
+    "get_s": 0.034,
+    "audio_s": 10.62,
+    "input_bytes": 679738,
+    "input_sample_rate": 16000,
+    "bytes_hct": 2499,
+    "sha256_hct": "3a37bd01de44fb943c19f4f0b0a0da2f5f5ececbd165ac3e22d05304c5c40454",
+    "frames": 136,
+    "windows": [
+     136
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 10.62,
+      "speech": true,
+      "text": "लीक के अनुसार दस्तावेज सीमा विवाद को संदर्भित करेगा जो फिलिस्तीन नाइन्टीन सिक्स्टी सेवन के मध्यपूर्व युद्ध से पहले सीमाओं के आधार पर चाहता है",
+      "rt_text": "पल्ल किए न सात दस सावेश सीमा विवाद को संदर्भित करेगा जो फिलिस्तीन नाइन्टीन सिक्स्टी सेवन के मध्य पूर्व युद्ध से पहले सीमाओं के आधार पर चाहता है",
+      "words": 25,
+      "drift": 0.32
+     }
+    ],
+    "segmentation": {
+     "floor_db": -40.4,
+     "loud_db": -23.0,
+     "threshold_db": -43.0,
+     "silences": 0
+    },
+    "drift_note": 0.32,
+    "codec_gain_db": 8.14,
+    "max_drift_long_segment": 0.32,
+    "lang_detected": null,
+    "timings": {
+     "load_s": 0.002,
+     "segment_s": 0.001,
+     "lang_check_s": 2.217,
+     "asr_s": 2.258,
+     "encode_s": 2.03,
+     "pack_s": 0.0,
+     "decode_s": 2.952,
+     "rt_asr_s": 2.255
+    },
+    "peak_rss_mb": 6197.1,
+    "status": "processed",
+    "rss_before_mb": 6197.1,
+    "wall_s": 11.766
+   },
+   {
+    "id": "5676772040210847328",
+    "set": "fleurs20",
+    "get_s": 0.036,
+    "audio_s": 14.4,
+    "input_bytes": 921658,
+    "input_sample_rate": 16000,
+    "bytes_hct": 3340,
+    "sha256_hct": "3b1a340060924b6b53d9083adcee661b19b3871f0eb4432cc456aaf7da7e8f9b",
+    "frames": 183,
+    "windows": [
+     183
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 14.4,
+      "speech": true,
+      "text": "आम शब्दों में जब प्रबंधक अपने पूर्व सहयोगियों का नेतृत्व करना शुरू करते हैं तो दो तरह के बर्ताव सामने आते हैं स्पेक्ट्रम का एक सिरा उन लड़कों में से एक या लड़कियों में से एक बने रहने की कोशिश कर रहा है।",
+      "rt_text": "आम शब्दों में जब प्रबंधक अपने पूर्व सहयोगियों का नेतृत्व करना शुरू करते हैं तो दो तरह के बर्ताव सामने आते हैं स्पेक्ट्रम का एक सिरा उन लड़कों में से एक लड़कियों में से एक बने रहने की कोशिश कर रहा है।",
+      "words": 43,
+      "drift": 0.0233
+     }
+    ],
+    "segmentation": {
+     "floor_db": -52.7,
+     "loud_db": -30.4,
+     "threshold_db": -50.4,
+     "silences": 2
+    },
+    "drift_note": 0.0233,
+    "codec_gain_db": 15.18,
+    "max_drift_long_segment": 0.0233,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.003,
+     "segment_s": 0.001,
+     "lang_check_s": 2.862,
+     "asr_s": 2.803,
+     "encode_s": 3.002,
+     "pack_s": 0.0,
+     "decode_s": 4.253,
+     "rt_asr_s": 2.807
+    },
+    "peak_rss_mb": 6197.1,
+    "status": "processed",
+    "rss_before_mb": 6197.1,
+    "wall_s": 15.785
+   },
+   {
+    "id": "8920059957255554825",
+    "set": "fleurs20",
+    "get_s": 0.033,
+    "audio_s": 15.36,
+    "input_bytes": 983098,
+    "input_sample_rate": 16000,
+    "bytes_hct": 3554,
+    "sha256_hct": "cfdc5e033355a634e76217966efa352d76f9d0e30ca0520a1b7bcc2c83bbb7a5",
+    "frames": 195,
+    "windows": [
+     195
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 15.36,
+      "speech": true,
+      "text": "उदाहरण के लिए दुनिया में सबसे ज्यादा इस्तेमाल होने वाला फोटोग्राफी फॉर्मेट पैंतीस एमएम है।   यह एनालॉग फिल्म दौर के आखिर में काफी प्रचलित था",
+      "rt_text": "उदाहरण के लिए दुनिया में सबसे ज्यादा इस्तेमाल होने वाला फोटोग्राफी फॉर्मेट पैंतीस एम है।   यह एनालॉग फिल्म दौर के आखिर में काफी प्रचलित था",
+      "words": 25,
+      "drift": 0.04
+     }
+    ],
+    "segmentation": {
+     "floor_db": -78.1,
+     "loud_db": -46.0,
+     "threshold_db": -66.1,
+     "silences": 7
+    },
+    "drift_note": 0.04,
+    "codec_gain_db": 30.0,
+    "max_drift_long_segment": 0.04,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.003,
+     "segment_s": 0.001,
+     "lang_check_s": 2.882,
+     "asr_s": 2.842,
+     "encode_s": 3.025,
+     "pack_s": 0.0,
+     "decode_s": 4.477,
+     "rt_asr_s": 2.805
+    },
+    "peak_rss_mb": 6197.1,
+    "status": "processed",
+    "rss_before_mb": 6197.1,
+    "wall_s": 16.084
+   }
+  ],
+  "first_audio_done": 1792018000.9830656,
+  "determinism": {
+   "encode_twice_equal": true,
+   "hct_roundtrip_equals_fresh_encode": true,
+   "decode_twice_max_abs_diff": 0.0
+  },
+  "peak_rss_mb": 6197.1,
+  "load_options": {
+   "codec_trimmed_restore_s": 1.07,
+   "codec_trimmed_codes_equal": true,
+   "codec_trimmed_decode_max_abs_diff": 0.0,
+   "asr_nemo_unpack_s": 28.21
+  },
+  "status": "done",
+  "finished": 1792018106.8241024,
+  "log": [
+   "   159.8s weights ready in 153.95 s from huggingface",
+   "   268.4s models loaded: {'download_s': 153.95, 'asr_import_s': 13.25, 'asr_restore_s': 46.15, 'codec_import_s': 2.38, 'codec_restore_s': 46.8, 'codec_trimmed': 0.0} {'asr': 'nemo', 'asr_class': 'EncDecRNNTBPEModelWithPrompt', 'att_context_size': [56, 13], 'att_context_size_all': [[56, 3], [56, 0], [56, 6], [56, 13]], 'chunk_s': 1.12, 'codec_samples_per_frame': 1764, 'codec_sample_rate': 22050, 'asr_sample_rate': 16000, 'torch_threads': 4, 'weights_source': 'huggingface'}"
+  ]
+ },
+ "status": {
+  "stage": "done",
+  "t": 1792018106.8389206,
+  "elapsed_s": 390.2,
+  "rss_mb": 6197.1,
+  "log": [
+   "   159.8s weights ready in 153.95 s from huggingface",
+   "   268.4s models loaded: {'download_s': 153.95, 'asr_import_s': 13.25, 'asr_restore_s': 46.15, 'codec_import_s': 2.38, 'codec_restore_s': 46.8, 'codec_trimmed': 0.0} {'asr': 'nemo', 'asr_class': 'EncDecRNNTBPEModelWithPrompt', 'att_context_size': [56, 13], 'att_context_size_all': [[56, 3], [56, 0], [56, 6], [56, 13]], 'chunk_s': 1.12, 'codec_samples_per_frame': 1764, 'codec_sample_rate': 22050, 'asr_sample_rate': 16000, 'torch_threads': 4, 'weights_source': 'huggingface'}"
+  ]
+ }
+}
