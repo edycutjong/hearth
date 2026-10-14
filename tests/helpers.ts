@@ -26,6 +26,8 @@ export class FakeBackend implements JobsBackend {
   /** Live jobs belonging to other apps sharing the region. */
   foreign = 0;
   slots = 2;
+  /** Jobs the listing still shows as live after they ended: Nebius's list lags the instance release. */
+  stale: Array<{ id: string; name: string }> = [];
   private n = 0;
   async create(opts: Parameters<JobsBackend["create"]>[0]): Promise<string> {
     if (this.throttle > 0) {
@@ -43,8 +45,15 @@ export class FakeBackend implements JobsBackend {
     if (!r) throw new Error("404");
     return { state: r.state, code: r.code, finishedAt: r.finishedAt };
   }
+  /** What the quota counts: instances that really exist. */
   async liveCount() {
     return this.foreign + [...this.runs.values()].filter((r) => r.state === "RUNNING").length;
+  }
+  /** What the listing shows, lag included. */
+  async liveJobs() {
+    const others = Array.from({ length: this.foreign }, (_, i) => ({ id: `aijob-foreign${i}`, name: `faultline-${i}` }));
+    const running = [...this.runs.values()].filter((r) => r.state === "RUNNING").map((r) => ({ id: r.id, name: r.name }));
+    return [...others, ...running, ...this.stale];
   }
   finish(id: string, state = "COMPLETED") {
     const r = this.runs.get(id);

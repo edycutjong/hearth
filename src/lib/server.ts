@@ -35,8 +35,10 @@ export function nebiusBackend(config: NebiusConfig): JobsBackend {
         finishedAt: job.status.finishedAt,
       };
     },
-    async liveCount() {
-      return (await listJobs(config)).filter((j) => !TERMINAL_STATES.has(j.status.state)).length;
+    async liveJobs() {
+      return (await listJobs(config))
+        .filter((j) => !TERMINAL_STATES.has(j.status.state))
+        .map((j) => ({ id: j.metadata.id, name: j.metadata.name }));
     },
   };
 }

@@ -7,6 +7,7 @@ import {
   dispatch,
   driftPasses,
   enqueue,
+  holdsSlot,
   reconcileJob,
   sweepGrace,
   tickToken,
@@ -61,6 +62,31 @@ describe("dispatch", () => {
     expect(await dispatch(ctx)).toBe("backoff");
     expect(ctx.backend.runs.size).toBe(0);
     expect((await record(ctx, job)).history.at(-1)?.event).toMatch(/region full/);
+  });
+
+  it("does not wait on its own finished job while the Nebius listing still shows it", async () => {
+    const ctx = makeCtx();
+    ctx.backend.foreign = 1; // the D0 harness, or another app on the tenant
+    await seedSpace(ctx.store);
+    await seedNote(ctx.store, "aa000001");
+    await seedNote(ctx.store, "aa000002");
+    const first = await enqueue(ctx, UID, "keep", [{ id: "aa000001", ext: "opus" }]);
+    await enqueue(ctx, UID, "keep", [{ id: "aa000002", ext: "opus" }]);
+    expect(await dispatch(ctx)).toBe("dispatched");
+    await playWorker(ctx.store, UID, first.job);
+    expect(must(await reconcileJob(ctx, UID, first.job)).state).toBe("done");
+    const run = must([...ctx.backend.runs.values()][0], "first run");
+    ctx.backend.finish(run.id);
+    ctx.backend.stale.push({ id: run.id, name: run.name }); // the listing lags the instance release
+    expect(await dispatch(ctx)).toBe("dispatched");
+    expect([...ctx.backend.runs.values()][1]?.state).toBe("RUNNING");
+  });
+
+  it("counts every job that may hold an instance: in flight, the harness, other apps", () => {
+    expect(holdsSlot({ name: "hearth-2026101400aabbcc" }, new Set(["2026101400aabbcc"]))).toBe(true);
+    expect(holdsSlot({ name: "hearth-2026101400aabbcc" }, new Set())).toBe(false);
+    expect(holdsSlot({ name: "hearth-d0-20261014t231930z-4vcpu-16gb" }, new Set())).toBe(true);
+    expect(holdsSlot({ name: "faultline-9d33fada-r3-i172-bd522cc7c8c9-a1" }, new Set())).toBe(true);
   });
 
   it("treats a 429 on create as a requeue, releasing the reserved spend", async () => {

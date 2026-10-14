@@ -44,7 +44,20 @@ export interface JobsBackend {
   }): Promise<string>;
   get(id: string): Promise<{ state: string; code?: string; message?: string; startedAt?: string; finishedAt?: string }>;
   /** Live (non-terminal) jobs in the project, from every app that shares it. */
-  liveCount(): Promise<number>;
+  liveJobs(): Promise<Array<{ id: string; name: string }>>;
+}
+
+/** Product Jobs are named hearth-<job id>; the D0 and bench harness Jobs (hearth-d0-…) always count. */
+const PRODUCT_JOB = /^hearth-(\d{8}[0-9a-f]{1,8})$/;
+
+/**
+ * Does a live job hold a region slot? A Hearth Job whose report the app has already validated (its active marker is
+ * gone) has finished its work: Nebius still lists it as RUNNING while the container exits, and counting it would hold
+ * the next note back for a whole backoff. Every other job — the harness, other apps on the tenant — counts.
+ */
+export function holdsSlot(job: { name: string }, activeJobs: ReadonlySet<string>): boolean {
+  const m = PRODUCT_JOB.exec(job.name);
+  return !(m && !activeJobs.has(m[1] as string));
 }
 
 /** Model files copied into the in-region bucket by the D0 harness; product Jobs read them instead of Hugging Face. */
@@ -242,7 +255,8 @@ export async function dispatch(ctx: PipelineCtx): Promise<"none" | "busy" | "dis
     try {
       let live = 0;
       try {
-        live = await ctx.backend.liveCount();
+        const activeJobs = new Set(active.map((o) => (o.key.split("/").pop() ?? "").replace(/\.json$/, "")));
+        live = (await ctx.backend.liveJobs()).filter((j) => holdsSlot(j, activeJobs)).length;
       } catch {
         live = 0;
       }
