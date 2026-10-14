@@ -1,0 +1,11 @@
+# Only the app ships. The worker is embedded in src/lib/worker-source.ts; harnesses and evidence stay in git.
+.venv/
+scripts/
+tests/
+worker/
+evidence/
+coverage/
+.pytest_cache/
+*.tsbuildinfo
+test-results/
+e2e/
