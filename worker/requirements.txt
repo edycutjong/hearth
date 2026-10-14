@@ -1,0 +1,19 @@
+# Hearth worker dependencies. torch comes from the PyTorch CPU index (no CUDA wheels on a CPU job).
+# nemo_toolkit[asr] carries both NVIDIA models' runtime; the codec (nemo.collections.tts) needs the
+# pure-Python half of the [tts] extra below. pyopenjtalk and nemo_text_processing are left out on
+# purpose: they serve Japanese G2P and TTS text normalisation, which Hearth never calls, and
+# pyopenjtalk has no wheel (it would compile from source at every cold start).
+torch==2.13.0+cpu
+nemo_toolkit[asr]==3.0.0
+einops
+janome
+jieba
+librosa
+matplotlib
+nltk
+pandas
+pypinyin
+pypinyin-dict
+soundfile
+huggingface_hub
+hf_xet
