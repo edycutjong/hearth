@@ -79,6 +79,8 @@ export function ready(): Ready {
       regionSlots: 2,
       publicUrl: publicUrl(),
       secret: secret(),
+      bucketWeights: process.env.HEARTH_BUCKET_WEIGHTS !== "false",
+      trimmedCodec: process.env.HEARTH_TRIMMED_CODEC !== "false",
     },
   };
 }

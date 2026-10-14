@@ -62,7 +62,9 @@ export function NoteView({
   const [playing, setPlaying] = useState<Which | null>(null);
   const [t, setT] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const audio = { original: useRef<HTMLAudioElement>(null), kept: useRef<HTMLAudioElement>(null) };
+  const originalRef = useRef<HTMLAudioElement>(null);
+  const keptRef = useRef<HTMLAudioElement>(null);
+  const el = useCallback((which: Which) => (which === "original" ? originalRef.current : keptRef.current), []);
   const stopAt = useRef<number | null>(null);
   const seconds = transcript?.duration_s ?? 0;
 
@@ -84,19 +86,19 @@ export function NoteView({
   }, [hctUrl]);
 
   const stopAll = useCallback(() => {
-    for (const k of ["original", "kept"] as const) audio[k].current?.pause();
+    for (const k of ["original", "kept"] as const) el(k)?.pause();
     setPlaying(null);
     stopAt.current = null;
-  }, [audio]);
+  }, [el]);
 
   const play = useCallback(
     (which: Which, from?: number, to?: number) => {
-      const el = audio[which].current;
-      if (!el) return;
-      for (const k of ["original", "kept"] as const) if (k !== which) audio[k].current?.pause();
-      if (from !== undefined) el.currentTime = from;
+      const a = el(which);
+      if (!a) return;
+      for (const k of ["original", "kept"] as const) if (k !== which) el(k)?.pause();
+      if (from !== undefined) a.currentTime = from;
       stopAt.current = to ?? null;
-      void el.play().then(
+      void a.play().then(
         () => {
           setPlaying(which);
           stepDone?.(which);
@@ -104,20 +106,23 @@ export function NoteView({
         (e: unknown) => setError(`playback: ${String(e)}`),
       );
     },
-    [audio, stepDone],
+    [el, stepDone],
   );
 
+  // A search jump plays once per request (its nonce), never again on re-render.
+  const lastSeek = useRef<number | null>(null);
   useEffect(() => {
-    if (!seek) return;
+    if (!seek || lastSeek.current === seek.nonce) return;
+    lastSeek.current = seek.nonce;
     play(keptUrl ? "kept" : "original", seek.t0, seek.t1);
   }, [seek, keptUrl, play]);
 
   const onTime = (which: Which) => () => {
-    const el = audio[which].current;
-    if (!el || playing !== which) return;
-    setT(el.currentTime);
-    if (stopAt.current !== null && el.currentTime >= stopAt.current) {
-      el.pause();
+    const a = el(which);
+    if (!a || playing !== which) return;
+    setT(a.currentTime);
+    if (stopAt.current !== null && a.currentTime >= stopAt.current) {
+      a.pause();
       setPlaying(null);
       stopAt.current = null;
     }
@@ -136,7 +141,7 @@ export function NoteView({
     <div className="fold3">
       <section aria-label="The note">
         <h2>{title}</h2>
-        <div className="note-hint">{subtitle}</div>
+        <div className="data-hint">{subtitle}</div>
         <TokenStrip
           codes={codes}
           seconds={seconds}
@@ -164,8 +169,8 @@ export function NoteView({
           </p>
         ) : null}
         {keptNote ? <p className="note-hint" style={{ marginTop: 8 }}>{keptNote}</p> : null}
-        {originalUrl ? <audio ref={audio.original} src={originalUrl} preload="metadata" onTimeUpdate={onTime("original")} onEnded={() => setPlaying(null)} /> : null}
-        {keptUrl ? <audio ref={audio.kept} src={keptUrl} preload="metadata" onTimeUpdate={onTime("kept")} onEnded={() => setPlaying(null)} /> : null}
+        {originalUrl ? <audio ref={originalRef} src={originalUrl} preload="metadata" onTimeUpdate={onTime("original")} onEnded={() => setPlaying(null)} /> : null}
+        {keptUrl ? <audio ref={keptRef} src={keptUrl} preload="metadata" onTimeUpdate={onTime("kept")} onEnded={() => setPlaying(null)} /> : null}
         {facts.length ? (
           <div className="facts">
             {facts.map((f) => (

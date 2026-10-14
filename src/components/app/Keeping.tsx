@@ -37,7 +37,7 @@ export function Keeping({ job, notes, queuePos }: { job: JobRecord; notes: NoteM
         <strong>
           Keeping {job.notes.length} note{job.notes.length === 1 ? "" : "s"}
         </strong>
-        <span className="note-hint">{mmss(elapsed)} elapsed · job {job.job}</span>
+        <span className="data-hint">{mmss(elapsed)} elapsed · job {job.job}</span>
       </div>
       <div style={{ marginTop: 8 }}>
         {rows.map(([label, i]) => (
@@ -53,7 +53,7 @@ export function Keeping({ job, notes, queuePos }: { job: JobRecord; notes: NoteM
           <summary className="note-hint" style={{ cursor: "pointer" }}>What happened ({job.history.length})</summary>
           <ul style={{ paddingLeft: 18, marginTop: 6 }}>
             {job.history.map((h) => (
-              <li key={`${h.at}${h.event}`} className="note-hint">
+              <li key={`${h.at}${h.event}`} className="data-hint">
                 {h.at.slice(11, 19)} UTC · {h.event}
               </li>
             ))}

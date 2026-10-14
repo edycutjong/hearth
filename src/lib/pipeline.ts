@@ -47,6 +47,12 @@ export interface JobsBackend {
   liveCount(): Promise<number>;
 }
 
+/** Model files copied into the in-region bucket by the D0 harness; product Jobs read them instead of Hugging Face. */
+export const MODEL_KEYS = {
+  asr: "models/nemotron-3.5-asr-streaming-0.6b.nemo",
+  codec: "models/nemo-nano-codec-22khz-1.78kbps-12.5fps.nemo",
+} as const;
+
 export interface PipelineCtx {
   store: Store;
   backend: JobsBackend;
@@ -58,6 +64,10 @@ export interface PipelineCtx {
   regionSlots: number;
   publicUrl: string;
   secret: string;
+  /** Read the model files from the bucket (fast, in-region) instead of Hugging Face. */
+  bucketWeights?: boolean;
+  /** Load NanoCodec without its training-only discriminators and speaker encoder (validated bit-exact by D0). */
+  trimmedCodec?: boolean;
   now?: () => Date;
 }
 
@@ -318,6 +328,10 @@ async function createJob(ctx: PipelineCtx, entry: QueueEntry): Promise<string> {
     result_put: tagged(keys.jobResult(entry.uid, entry.job)),
     status_put: tagged(keys.jobStatus(entry.uid, entry.job)),
     tick_url: tick,
+    trimmed_codec: Boolean(ctx.trimmedCodec),
+    weights: ctx.bucketWeights
+      ? { asr: store.presignGet(MODEL_KEYS.asr, URL_TTL_SECONDS), codec: store.presignGet(MODEL_KEYS.codec, URL_TTL_SECONDS) }
+      : null,
     notes: entry.notes.map((n) =>
       entry.kind === "keep"
         ? {

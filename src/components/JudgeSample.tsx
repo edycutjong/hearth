@@ -24,7 +24,9 @@ export function JudgeSample({ sample, bench }: { sample: SampleDoc; bench: Bench
     return (
       <div className="narrow stack">
         <h1>The judge sample is being produced.</h1>
-        <p className="lead">It is made by a real Nebius Job, never by hand. Until it lands, the measured numbers are below and on /proof.</p>
+        <p className="lead">
+          It is made by a real Nebius Job, never by hand. Until it lands, the measured numbers are below and on <Link href="/proof">/proof</Link>.
+        </p>
         {bench ? <BenchBlock bench={bench} /> : null}
       </div>
     );
