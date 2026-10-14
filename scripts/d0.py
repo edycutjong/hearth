@@ -72,6 +72,8 @@ def main() -> int:
     ap.add_argument("--soft-deadline-min", type=float, default=95)
     ap.add_argument("--prebuilt", action="store_true", help="image already holds the dependencies")
     ap.add_argument("--limit", type=int, default=0, help="smoke run: only the first N clips (a dev Job, not a D0 run)")
+    ap.add_argument("--no-model-copy", action="store_true", help="do not copy the model files into the bucket")
+    ap.add_argument("--only", default="", help="smoke run: only these clip ids (comma-separated; a dev Job, not a D0 run)")
     args = ap.parse_args()
 
     load_env("~/.config/faultline/local.env", "~/.config/hearth/hearth.env")
@@ -81,14 +83,20 @@ def main() -> int:
         print(f"eu-west1 already runs {len(busy)} jobs (quota 2, shared); try later", file=sys.stderr)
         return 3
 
-    run = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + args.preset + ("-smoke" if args.limit else "")
+    smoke = bool(args.limit or args.only)
+    run = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + args.preset + ("-smoke" if smoke else "")
     week = 7 * 24 * 3600
     manifest = {
         "version": 1, "mode": "d0", "job": f"d0-{run}", "lang": "hi-IN",
         "soft_deadline_s": args.soft_deadline_min * 60,
         "result_put": s3.presign("PUT", f"bench/d0/{run}/result.json", week),
         "status_put": s3.presign("PUT", f"bench/d0/{run}/status.json", week),
-        "notes": build_notes(s3, run, args.sets.split(","))[: args.limit or None],
+        "notes": [n for n in build_notes(s3, run, args.sets.split(",")) if not args.only or n["id"] in args.only.split(",")][: args.limit or None],
+        # The harness also copies both model files into the in-region bucket for the product Jobs.
+        "model_puts": {} if smoke or args.no_model_copy else {
+            "asr": s3.presign("PUT", "models/nemotron-3.5-asr-streaming-0.6b.nemo", week),
+            "codec": s3.presign("PUT", "models/nemo-nano-codec-22khz-1.78kbps-12.5fps.nemo", week),
+        },
     }
     s3.put(f"bench/d0/{run}/manifest.json", json.dumps(manifest).encode(), content_type="application/json")
     status_get = s3.presign("GET", f"bench/d0/{run}/status.json", week)

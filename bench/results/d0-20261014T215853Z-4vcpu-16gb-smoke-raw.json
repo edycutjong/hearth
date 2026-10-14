@@ -1,0 +1,175 @@
+{
+ "run": "20261014T215853Z-4vcpu-16gb-smoke",
+ "preset": "4vcpu-16gb",
+ "image": "python:3.11",
+ "nebius_job_id": "aijob-e01fyczjpp8acq1pp2",
+ "created": 1792015133.9719949,
+ "job": {
+  "metadata": {
+   "id": "aijob-e01fyczjpp8acq1pp2",
+   "parent_id": "project-e01phrcvpa003r6v2aep14",
+   "name": "hearth-d0-20261014t215853z-4vcpu-16gb-smoke",
+   "resource_version": "1",
+   "created_at": "2026-10-14T21:58:54.361025Z",
+   "updated_at": "2026-10-14T21:58:54.361025Z"
+  },
+  "spec": {
+   "image": "python:3.11",
+   "environment_variables": [
+    {
+     "name": "MODE",
+     "value": "d0"
+    },
+    {
+     "name": "MANIFEST_URL",
+     "value": "https://storage.eu-west1.nebius.cloud/hearth-data/bench/d0/20261014T215853Z-4vcpu-16gb-smoke/manifest.json?<presigned>"
+    },
+    {
+     "name": "HEARTH_JOB_NAME",
+     "value": "hearth-d0-20261014t215853z-4vcpu-16gb-smoke"
+    }
+   ],
+   "container_command": "bash",
+   "args": "/opt/hearth/run.sh",
+   "platform": "cpu-d3",
+   "preset": "4vcpu-16gb",
+   "disk": {
+    "type": "NETWORK_SSD",
+    "size_bytes": "68719476736"
+   },
+   "subnet_id": "vpcsubnet-e01mdp8yxx4t2hccw5",
+   "timeout": "3600s",
+   "injected_files": [
+    {
+     "container_path": "/opt/hearth/worker.py"
+    },
+    {
+     "container_path": "/opt/hearth/run.sh"
+    },
+    {
+     "container_path": "/opt/hearth/requirements.txt"
+    }
+   ]
+  },
+  "status": {
+   "instances": [
+    {
+     "state": "RUNNING",
+     "compute_instance_id": "computeinstance-e01fa3xrv1nx1amyp8",
+     "compute_instance_state": "RUNNING",
+     "private_ip": "10.48.0.32"
+    }
+   ],
+   "state": "COMPLETED",
+   "started_at": "2026-10-14T22:01:43.190441203Z",
+   "finished_at": "2026-10-14T22:07:03.503489450Z"
+  }
+ },
+ "report": {
+  "version": 1,
+  "context": {
+   "python": "3.11.17",
+   "machine": "x86_64",
+   "cpus": 4,
+   "worker_start": 1792015324.191099,
+   "nebius_job_hint": "hearth-d0-20261014t215853z-4vcpu-16gb-smoke",
+   "t0": 1792015303.4152346,
+   "t_install": 1792015324.1355252,
+   "install_rc": 0,
+   "cpu_model": "AMD EPYC-Genoa Processor",
+   "mem_total_kb": 16376116
+  },
+  "mode": "d0",
+  "job": "d0-20261014T215853Z-4vcpu-16gb-smoke",
+  "load": {
+   "download_s": 154.09,
+   "asr_load_s": 67.37,
+   "codec_load_s": 67.34,
+   "total_s": 293.58
+  },
+  "runtime": {
+   "asr": "nemo",
+   "asr_class": "EncDecRNNTBPEModelWithPrompt",
+   "att_context_size": [
+    56,
+    13
+   ],
+   "att_context_size_all": [
+    [
+     56,
+     3
+    ],
+    [
+     56,
+     0
+    ],
+    [
+     56,
+     6
+    ],
+    [
+     56,
+     13
+    ]
+   ],
+   "chunk_s": 1.12,
+   "codec_samples_per_frame": 1764,
+   "codec_sample_rate": 22050,
+   "asr_sample_rate": 16000,
+   "torch_threads": 4
+  },
+  "versions": {
+   "torch": "2.13.0+cpu",
+   "nemo": "3.0.0",
+   "transformers": "5.19.0",
+   "numpy": "2.4.6",
+   "librosa": "0.11.0",
+   "soundfile": "0.14.0",
+   "huggingface_hub": "2.2.0",
+   "lightning": "2.4.0",
+   "freeze_sha256": "4c6defb7c5a000c3765137265e87990235e5c578f083b032753968769f7eca21",
+   "freeze_count": 154
+  },
+  "items": [
+   {
+    "id": "18105264127277992595",
+    "set": "fleurs20",
+    "get_s": 0.045,
+    "status": "failed",
+    "error": "Unknown prompt key: 'None'. Available: ['en-US', 'en', 'en-GB', 'enGB', 'es-ES', 'esES', 'es-US', 'es', 'zh-CN', 'zh-ZH']...",
+    "trace": "_generator\n    for test_batch in tqdm(dataloader, desc=\"Transcribing\", disable=not verbose):\n  File \"/usr/local/lib/python3.11/site-packages/tqdm/std.py\", line 1175, in __iter__\n    yield from iterable\n  File \"/usr/local/lib/python3.11/site-packages/torch/utils/data/dataloader.py\", line 725, in __next__\n    data = self._next_data()\n           ^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/torch/utils/data/dataloader.py\", line 785, in _next_data\n    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/torch/utils/data/_utils/fetch.py\", line 56, in fetch\n    data = self.dataset[possibly_batched_index]\n           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/nemo/collections/asr/data/audio_to_text_lhotse_prompt_index.py\", line 142, in __getitem__\n    prompt_indices = torch.tensor([self._get_prompt_index_for_cut(c) for c in cuts], dtype=torch.long)\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/nemo/collections/asr/data/audio_to_text_lhotse_prompt_index.py\", line 142, in <listcomp>\n    prompt_indices = torch.tensor([self._get_prompt_index_for_cut(c) for c in cuts], dtype=torch.long)\n                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/nemo/collections/asr/data/audio_to_text_lhotse_prompt_index.py\", line 130, in _get_prompt_index_for_cut\n    return self._get_prompt_index(cut.supervisions[0].language)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/nemo/collections/asr/data/audio_to_text_lhotse_prompt_index.py\", line 96, in _get_prompt_index\n    raise ValueError(\nValueError: Unknown prompt key: 'None'. Available: ['en-US', 'en', 'en-GB', 'enGB', 'es-ES', 'esES', 'es-US', 'es', 'zh-CN', 'zh-ZH']...\n",
+    "wall_s": 1.852
+   },
+   {
+    "id": "13477439939514320448",
+    "set": "fleurs20",
+    "get_s": 0.051,
+    "status": "failed",
+    "error": "Unknown prompt key: 'None'. Available: ['en-US', 'en', 'en-GB', 'enGB', 'es-ES', 'esES', 'es-US', 'es', 'zh-CN', 'zh-ZH']...",
+    "trace": "_generator\n    for test_batch in tqdm(dataloader, desc=\"Transcribing\", disable=not verbose):\n  File \"/usr/local/lib/python3.11/site-packages/tqdm/std.py\", line 1175, in __iter__\n    yield from iterable\n  File \"/usr/local/lib/python3.11/site-packages/torch/utils/data/dataloader.py\", line 725, in __next__\n    data = self._next_data()\n           ^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/torch/utils/data/dataloader.py\", line 785, in _next_data\n    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/torch/utils/data/_utils/fetch.py\", line 56, in fetch\n    data = self.dataset[possibly_batched_index]\n           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/nemo/collections/asr/data/audio_to_text_lhotse_prompt_index.py\", line 142, in __getitem__\n    prompt_indices = torch.tensor([self._get_prompt_index_for_cut(c) for c in cuts], dtype=torch.long)\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/nemo/collections/asr/data/audio_to_text_lhotse_prompt_index.py\", line 142, in <listcomp>\n    prompt_indices = torch.tensor([self._get_prompt_index_for_cut(c) for c in cuts], dtype=torch.long)\n                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/nemo/collections/asr/data/audio_to_text_lhotse_prompt_index.py\", line 130, in _get_prompt_index_for_cut\n    return self._get_prompt_index(cut.supervisions[0].language)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/nemo/collections/asr/data/audio_to_text_lhotse_prompt_index.py\", line 96, in _get_prompt_index\n    raise ValueError(\nValueError: Unknown prompt key: 'None'. Available: ['en-US', 'en', 'en-GB', 'enGB', 'es-ES', 'esES', 'es-US', 'es', 'zh-CN', 'zh-ZH']...\n",
+    "wall_s": 0.409
+   }
+  ],
+  "peak_rss_mb": 6233.6,
+  "status": "done",
+  "finished": 1792015620.3396626,
+  "log": [
+   "   158.9s weights downloaded in 154.09 s",
+   "   293.6s models loaded: {'download_s': 154.09, 'asr_load_s': 67.37, 'codec_load_s': 67.34} {'asr': 'nemo', 'asr_class': 'EncDecRNNTBPEModelWithPrompt', 'att_context_size': [56, 13], 'att_context_size_all': [[56, 3], [56, 0], [56, 6], [56, 13]], 'chunk_s': 1.12, 'codec_samples_per_frame': 1764, 'codec_sample_rate': 22050, 'asr_sample_rate': 16000, 'torch_threads': 4}",
+   "   295.7s item 18105264127277992595 failed: Unknown prompt key: 'None'. Available: ['en-US', 'en', 'en-GB', 'enGB', 'es-ES', 'esES', 'es-US', 'es', 'zh-CN', 'zh-ZH']...",
+   "   296.1s item 13477439939514320448 failed: Unknown prompt key: 'None'. Available: ['en-US', 'en', 'en-GB', 'enGB', 'es-ES', 'esES', 'es-US', 'es', 'zh-CN', 'zh-ZH']..."
+  ]
+ },
+ "status": {
+  "stage": "done",
+  "t": 1792015620.3553238,
+  "elapsed_s": 296.2,
+  "rss_mb": 6233.6,
+  "log": [
+   "   158.9s weights downloaded in 154.09 s",
+   "   293.6s models loaded: {'download_s': 154.09, 'asr_load_s': 67.37, 'codec_load_s': 67.34} {'asr': 'nemo', 'asr_class': 'EncDecRNNTBPEModelWithPrompt', 'att_context_size': [56, 13], 'att_context_size_all': [[56, 3], [56, 0], [56, 6], [56, 13]], 'chunk_s': 1.12, 'codec_samples_per_frame': 1764, 'codec_sample_rate': 22050, 'asr_sample_rate': 16000, 'torch_threads': 4}",
+   "   295.7s item 18105264127277992595 failed: Unknown prompt key: 'None'. Available: ['en-US', 'en', 'en-GB', 'enGB', 'es-ES', 'esES', 'es-US', 'es', 'zh-CN', 'zh-ZH']...",
+   "   296.1s item 13477439939514320448 failed: Unknown prompt key: 'None'. Available: ['en-US', 'en', 'en-GB', 'enGB', 'es-ES', 'esES', 'es-US', 'es', 'zh-CN', 'zh-ZH']..."
+  ]
+ }
+}
