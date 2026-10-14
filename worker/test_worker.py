@@ -146,3 +146,70 @@ def test_codec_gain_lifts_a_quiet_recording_and_respects_the_peak():
 def test_gain_round_trips_through_the_header():
     blob = w.pack_hct(np.zeros((13, 4), dtype=np.int64), 7000, [4], SPF, 2016, gain_db=27.31)
     assert w.unpack_hct(blob)[1]["gain_db"] == 27.31
+
+
+def _weights(tmp_path):
+    """A stand-in .nemo (a tar holding a config and a weights file) and a codec file, served as file:// URLs."""
+    import io
+    import tarfile
+
+    asr = tmp_path / "asr.nemo"
+    with tarfile.open(asr, "w") as tar:
+        for name, data in (("model_config.yaml", b"sample_rate: 16000\n"), ("model_weights.ckpt", bytes(range(256)) * 64)):
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            tar.addfile(info, io.BytesIO(data))
+    codec = tmp_path / "codec.nemo"
+    codec.write_bytes(b"codec" * 1000)
+    return {"asr": asr.as_uri(), "codec": codec.as_uri()}
+
+
+def test_prefetch_streams_the_asr_tar_open_and_reports_where(tmp_path, monkeypatch):
+    import json
+
+    monkeypatch.setattr(w, "PREFETCH_DIR", str(tmp_path / "weights"))
+    monkeypatch.setattr(w, "PREFETCH_DONE", str(tmp_path / "weights" / "prefetch.json"))
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"mode": "keep", "weights": _weights(tmp_path)}))
+    monkeypatch.delenv("MANIFEST_URL", raising=False)
+    monkeypatch.setenv("MANIFEST_PATH", str(manifest))
+    monkeypatch.setenv("MODE", "keep")
+    assert w.prefetch_main() == 0
+    out = json.loads((tmp_path / "weights" / "prefetch.json").read_text())
+    assert out["ok"] and (Path(out["asr"]) / "model_weights.ckpt").stat().st_size == 256 * 64
+    assert Path(out["codec"]).read_bytes() == b"codec" * 1000
+
+
+def test_prefetch_for_a_decode_job_skips_the_asr(tmp_path, monkeypatch):
+    import json
+
+    monkeypatch.setattr(w, "PREFETCH_DIR", str(tmp_path / "weights"))
+    monkeypatch.setattr(w, "PREFETCH_DONE", str(tmp_path / "weights" / "prefetch.json"))
+    weights = _weights(tmp_path)
+    weights["asr"] = (tmp_path / "missing.nemo").as_uri()  # never fetched in decode mode
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"mode": "decode", "weights": weights}))
+    monkeypatch.delenv("MANIFEST_URL", raising=False)
+    monkeypatch.setenv("MANIFEST_PATH", str(manifest))
+    monkeypatch.setenv("MODE", "decode")
+    w.prefetch_main()
+    out = json.loads((tmp_path / "weights" / "prefetch.json").read_text())
+    assert out["ok"] and out["asr"] is None and Path(out["codec"]).exists()
+
+
+def test_prefetch_without_bucket_weights_says_so_and_the_worker_does_not_wait(tmp_path, monkeypatch):
+    import json
+
+    monkeypatch.setattr(w, "PREFETCH_DIR", str(tmp_path / "weights"))
+    monkeypatch.setattr(w, "PREFETCH_DONE", str(tmp_path / "weights" / "prefetch.json"))
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"mode": "keep", "weights": None}))
+    monkeypatch.delenv("MANIFEST_URL", raising=False)
+    monkeypatch.setenv("MANIFEST_PATH", str(manifest))
+    w.prefetch_main()
+    out = json.loads((tmp_path / "weights" / "prefetch.json").read_text())
+    assert not out["ok"] and "no bucket weights" in out["reason"]
+    monkeypatch.setattr(w, "PREFETCH_STARTED", str(tmp_path / "prefetch.started"))
+    assert w.wait_prefetch() is None  # run.sh started no prefetch: nothing to wait for
+    (tmp_path / "prefetch.started").touch()
+    assert w.wait_prefetch(limit_s=1) == out  # one was started: its outcome, read once it exists

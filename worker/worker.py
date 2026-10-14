@@ -374,84 +374,155 @@ def load_codec_trimmed(codec_cls, path: str):
     return codec_cls.restore_from(restore_path=path, override_config_path=cfg, map_location="cpu", strict=False).eval()
 
 
+PREFETCH_DIR = "/tmp/weights"
+PREFETCH_DONE = f"{PREFETCH_DIR}/prefetch.json"
+PREFETCH_STARTED = "/tmp/prefetch.started"  # touched by run.sh just before it starts the prefetch
+
+
+def fetch_bucket_weights(weights: dict, need_asr: bool = True) -> tuple[str | None, str]:
+    """Model files from presigned GETs on the in-region bucket (stdlib only). The ASR .nemo is unpacked WHILE it
+    downloads (a streamed tar), so restoring needs no separate unpack step; the codec .nemo is small, is kept as a
+    file and downloads in parallel."""
+    import tarfile
+    import threading
+
+    asr_dir, codec_path = f"{PREFETCH_DIR}/asr", f"{PREFETCH_DIR}/{CODEC_FILE}"
+    os.makedirs(asr_dir, exist_ok=True)
+    errors: list[Exception] = []
+
+    def codec() -> None:
+        try:
+            with urllib.request.urlopen(weights["codec"], timeout=900) as res, open(codec_path, "wb") as fh:
+                while chunk := res.read(8 << 20):
+                    fh.write(chunk)
+        except Exception as exc:  # reported below; the caller falls back
+            errors.append(exc)
+
+    th = threading.Thread(target=codec)
+    th.start()
+    if need_asr:
+        with urllib.request.urlopen(weights["asr"], timeout=900) as res, tarfile.open(fileobj=res, mode="r|*") as tar:
+            for member in tar:
+                if member.isfile():
+                    tar.extract(member, asr_dir)
+    th.join()
+    if errors:
+        raise errors[0]
+    return (asr_dir if need_asr else None), codec_path
+
+
+def prefetch_main() -> int:
+    """run.sh starts this before the dependency install: the weights stream in while pip works. Stdlib only."""
+    t = time.time()
+    out: dict = {"ok": False, "pid": os.getpid()}
+    try:
+        os.makedirs(PREFETCH_DIR, exist_ok=True)
+        manifest = load_manifest()
+        weights = manifest.get("weights") or {}
+        need_asr = os.environ.get("MODE", manifest.get("mode", "keep")) != "decode"
+        if not weights.get("codec") or (need_asr and not weights.get("asr")):
+            out["reason"] = "no bucket weights in the manifest"
+        else:
+            asr, codec = fetch_bucket_weights(weights, need_asr)
+            out.update({"ok": True, "asr": asr, "codec": codec})
+    except Exception as exc:
+        out["reason"] = f"{exc}"[:300]
+    out["s"] = round(time.time() - t, 2)
+    with open(PREFETCH_DONE + ".tmp", "w") as fh:
+        json.dump(out, fh)
+    os.replace(PREFETCH_DONE + ".tmp", PREFETCH_DONE)
+    return 0
+
+
+def wait_prefetch(limit_s: float = 900) -> dict | None:
+    """The prefetch's outcome, waiting for it if run.sh started one; None when there is none to wait for."""
+    if not os.path.exists(PREFETCH_STARTED):
+        return None
+    t = time.time()
+    while time.time() - t < limit_s:
+        if os.path.exists(PREFETCH_DONE):
+            with open(PREFETCH_DONE) as fh:
+                return json.load(fh)
+        time.sleep(0.25)
+    return {"ok": False, "reason": f"no prefetch result after {limit_s:.0f} s"}
+
+
 class Models:
-    def __init__(self, weights: dict | None = None, trimmed_codec: bool = False) -> None:
+    def __init__(self, weights: dict | None = None, trimmed_codec: bool = False, asr: bool = True) -> None:
         import torch
 
         torch.set_num_threads(os.cpu_count() or 4)
-        from huggingface_hub import hf_hub_download
-
         self.timings: dict[str, float] = {}
-        t = time.time()
-        asr_path, codec_path = self.fetch_weights(weights or {}, hf_hub_download)
-        self.asr_path, self.codec_path = asr_path, codec_path
-        self.timings["download_s"] = round(time.time() - t, 2)
-        log(f"weights ready in {self.timings['download_s']} s from {self.weights_source}")
+        self.asr = None
+        # Imports first: they run while the weights are still streaming in (run.sh started the prefetch).
+        if asr:
+            t = time.time()
+            import nemo.collections.asr as nemo_asr
 
-        t = time.time()
-        import nemo.collections.asr as nemo_asr
-
-        self.timings["asr_import_s"] = round(time.time() - t, 2)
-        t = time.time()
-        if os.path.isdir(asr_path):  # pre-extracted while downloading: tell NeMo not to unpack again
-            from nemo.core.connectors.save_restore_connector import SaveRestoreConnector
-
-            conn = SaveRestoreConnector()
-            conn.model_extracted_dir = asr_path
-            self.asr = nemo_asr.models.ASRModel.restore_from(restore_path=asr_path, map_location="cpu",
-                                                             save_restore_connector=conn).eval()
-        else:
-            self.asr = nemo_asr.models.ASRModel.restore_from(restore_path=asr_path, map_location="cpu").eval()
-        self.asr.encoder.set_default_att_context_size(ATT_CONTEXT)
-        self.timings["asr_restore_s"] = round(time.time() - t, 2)
+            self.timings["asr_import_s"] = round(time.time() - t, 2)
         t = time.time()
         from nemo.collections.tts.models import AudioCodecModel
 
         self.timings["codec_import_s"] = round(time.time() - t, 2)
         t = time.time()
+        asr_path, codec_path = self.fetch_weights(weights or {}, asr)
+        self.asr_path, self.codec_path = asr_path, codec_path
+        self.timings["download_s"] = round(time.time() - t, 2)  # the wait on the critical path, after the imports
+        log(f"weights ready after a {self.timings['download_s']} s wait, from {self.weights_source}")
+        if asr:
+            t = time.time()
+            if os.path.isdir(asr_path):  # pre-extracted while downloading: tell NeMo not to unpack again
+                from nemo.core.connectors.save_restore_connector import SaveRestoreConnector
+
+                conn = SaveRestoreConnector()
+                conn.model_extracted_dir = asr_path
+                self.asr = nemo_asr.models.ASRModel.restore_from(restore_path=asr_path, map_location="cpu",
+                                                                 save_restore_connector=conn).eval()
+            else:
+                self.asr = nemo_asr.models.ASRModel.restore_from(restore_path=asr_path, map_location="cpu").eval()
+            self.asr.encoder.set_default_att_context_size(ATT_CONTEXT)
+            self.timings["asr_restore_s"] = round(time.time() - t, 2)
+        t = time.time()
         self.codec = (load_codec_trimmed(AudioCodecModel, codec_path) if trimmed_codec
                       else AudioCodecModel.restore_from(restore_path=codec_path, map_location="cpu").eval())
         self.timings["codec_restore_s"] = round(time.time() - t, 2)
         self.timings["codec_trimmed"] = 1.0 if trimmed_codec else 0.0
-        self.asr_sr = int(self.asr.cfg.preprocessor.get("sample_rate", ASR_SR))
         self.spf = int(getattr(self.codec, "samples_per_frame", 1764))
         self.cb_size = int(getattr(getattr(self.codec, "vector_quantizer", None), "codebook_size", 2016) or 2016)
-        enc = self.asr.encoder
-        self.runtime = {
-            "asr": "nemo", "asr_class": type(self.asr).__name__, "att_context_size": list(enc.att_context_size),
-            "att_context_size_all": [list(a) for a in getattr(enc, "att_context_size_all", []) or []],
-            "chunk_s": round((ATT_CONTEXT[1] + 1) * 0.08, 2), "codec_samples_per_frame": self.spf,
-            "codec_sample_rate": int(self.codec.sample_rate), "asr_sample_rate": self.asr_sr,
-            "torch_threads": torch.get_num_threads(), "weights_source": self.weights_source,
-        }
+        self.runtime = {"codec_samples_per_frame": self.spf, "codec_sample_rate": int(self.codec.sample_rate),
+                        "torch_threads": torch.get_num_threads(), "weights_source": self.weights_source,
+                        "weights_prefetched": self.prefetched}
+        if self.asr is not None:
+            enc = self.asr.encoder
+            self.asr_sr = int(self.asr.cfg.preprocessor.get("sample_rate", ASR_SR))
+            self.runtime.update({
+                "asr": "nemo", "asr_class": type(self.asr).__name__, "att_context_size": list(enc.att_context_size),
+                "att_context_size_all": [list(a) for a in getattr(enc, "att_context_size_all", []) or []],
+                "chunk_s": round((ATT_CONTEXT[1] + 1) * 0.08, 2), "asr_sample_rate": self.asr_sr,
+            })
         log(f"models loaded: {self.timings} {self.runtime}")
 
-    def fetch_weights(self, weights: dict, hf_hub_download) -> tuple[str, str]:
-        """Model files from presigned GETs on the in-region bucket when the manifest has them, else Hugging Face.
-        From the bucket, the ASR .nemo is unpacked WHILE it downloads (a streamed tar), so restoring needs no
-        separate unpack step; the codec .nemo is small and is kept as a file."""
-        import tarfile
-
-        if weights.get("asr") and weights.get("codec"):
+    def fetch_weights(self, weights: dict, need_asr: bool = True) -> tuple[str | None, str]:
+        """The prefetched bucket copy when run.sh started one, else the bucket directly, else Hugging Face."""
+        self.prefetched = False
+        pre = wait_prefetch()
+        if pre is not None:
+            self.timings["prefetch_s"] = pre.get("s", 0.0)
+            if pre.get("ok"):
+                self.weights_source, self.prefetched = "bucket", True
+                return pre.get("asr"), pre["codec"]
+            log(f"prefetch did not deliver ({pre.get('reason')}); fetching now")
+        if weights.get("codec") and (weights.get("asr") or not need_asr):
             try:
-                return self._bucket_weights(weights, tarfile)
+                asr, codec = fetch_bucket_weights(weights, need_asr)
+                self.weights_source = "bucket"
+                return asr, codec
             except Exception as exc:  # a missing or broken copy costs time, never the note
                 log(f"bucket weights failed ({exc}); falling back to Hugging Face")
-        self.weights_source = "huggingface"
-        return hf_hub_download(ASR_REPO, ASR_FILE), hf_hub_download(CODEC_REPO, CODEC_FILE)
+        from huggingface_hub import hf_hub_download
 
-    def _bucket_weights(self, weights: dict, tarfile) -> tuple[str, str]:
-        asr_dir, codec_path = "/tmp/weights/asr", f"/tmp/weights/{CODEC_FILE}"
-        os.makedirs(asr_dir, exist_ok=True)
-        with urllib.request.urlopen(weights["asr"], timeout=900) as res, tarfile.open(fileobj=res, mode="r|*") as tar:
-            for member in tar:
-                if member.isfile():
-                    tar.extract(member, asr_dir)
-        with urllib.request.urlopen(weights["codec"], timeout=900) as res, open(codec_path, "wb") as fh:
-            while chunk := res.read(8 << 20):
-                fh.write(chunk)
-        self.weights_source = "bucket"
-        return asr_dir, codec_path
+        self.weights_source = "huggingface"
+        return (hf_hub_download(ASR_REPO, ASR_FILE) if need_asr else None), hf_hub_download(CODEC_REPO, CODEC_FILE)
 
     def transcribe(self, clips: list, lang: str) -> list[str]:
         """clips: 16 kHz float32 arrays, passed as arrays (NeMo's file-path route builds Lhotse cuts with no
@@ -856,6 +927,8 @@ def d0_extras(manifest: dict, rep: Reporter, m: Models, report: dict) -> None:
 
 
 def main() -> int:
+    if "--prefetch" in sys.argv:
+        return prefetch_main()
     manifest: dict = {}
     report: dict = {"version": 1, "context": job_context()}
     try:
@@ -871,7 +944,7 @@ def main() -> int:
             raise RuntimeError("dependency install failed (see install_tail)")
         rep.status("loading")
         t = time.time()
-        m = Models(manifest.get("weights"), trimmed_codec=bool(manifest.get("trimmed_codec")))
+        m = Models(manifest.get("weights"), trimmed_codec=bool(manifest.get("trimmed_codec")), asr=mode != "decode")
         report["load"] = {**m.timings, "total_s": round(time.time() - t, 2)}
         report["runtime"] = m.runtime
         report["versions"] = versions()

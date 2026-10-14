@@ -21,6 +21,27 @@ from pathlib import Path
 
 HEAD_FMT = "<4sBBHIHHIIHHHh"
 MODEL = "nvidia/nemo-nano-codec-22khz-1.78kbps-12.5fps"
+MODEL_FILE = "nemo-nano-codec-22khz-1.78kbps-12.5fps.nemo"
+
+
+def load_codec():
+    """The codec for decoding only. Its checkpoint config also builds training-only parts (discriminators, one of
+    which downloads microsoft/wavlm-base-plus, and a speaker encoder); leaving them out changes no decoder weight."""
+    import tarfile
+
+    from huggingface_hub import hf_hub_download
+    from nemo.collections.tts.models import AudioCodecModel
+    from omegaconf import OmegaConf, open_dict
+
+    path = hf_hub_download(MODEL, MODEL_FILE)
+    with tarfile.open(path) as tar:
+        member = next(m for m in tar.getmembers() if m.name.endswith("model_config.yaml"))
+        cfg = OmegaConf.create(tar.extractfile(member).read().decode())
+    with open_dict(cfg):
+        cfg.discriminator = None
+        cfg.use_scl_loss = False
+        cfg.use_slm_loss = False
+    return AudioCodecModel.restore_from(restore_path=path, override_config_path=cfg, map_location="cpu", strict=False).eval()
 
 
 def read_hct(path: Path):
@@ -55,7 +76,7 @@ def decode(model, codes, head):
         out.append(audio[0].numpy()[(f0 - lo) * spf:(f0 + f - lo) * spf])
         f0 += f
     lead = head["lead"] * spf
-    # The worker raised quiet recordings to a standard level before encoding; give the note its own level back.
+    # The worker brought each recording to a standard level before encoding; give the note its own level back.
     return np.concatenate(out)[lead:lead + head["n_samples"]] / (10 ** (head["gain_db"] / 20))
 
 
@@ -64,9 +85,8 @@ def main(paths: list[str]) -> int:
         print(__doc__)
         return 2
     import soundfile as sf
-    from nemo.collections.tts.models import AudioCodecModel
 
-    model = AudioCodecModel.from_pretrained(MODEL).eval()
+    model = load_codec()
     for p in map(Path, paths):
         codes, head = read_hct(p)
         audio = decode(model, codes, head)
