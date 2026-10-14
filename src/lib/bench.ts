@@ -4,6 +4,7 @@
  */
 import type { BenchSummary } from "@/components/JudgeSample";
 import latest from "../../bench/results/latest.json";
+import live from "../../bench/results/live-latest.json";
 
 interface Latest {
   run?: string;
@@ -13,6 +14,22 @@ interface Latest {
   rtf?: { all?: { asr_s?: number; codec?: number } };
   usd_per_audio_hour?: number;
   cold_start?: { create_to_first_audio_s?: number | null };
+}
+
+interface Live {
+  of?: number;
+  kept?: number;
+  time_to_kept_s?: { p50?: number | null; p95?: number | null };
+  source?: string;
+}
+
+/** The measured wait for a new note on the deployed app (bench.py --live), or null when not measured yet. */
+export function liveWait(): { p50: number; p95: number; runs: number; source: string } | null {
+  const l = live as Live;
+  const p50 = l.time_to_kept_s?.p50;
+  const p95 = l.time_to_kept_s?.p95;
+  if (!p50 || !p95 || !l.of) return null;
+  return { p50, p95, runs: l.of, source: l.source ?? "" };
 }
 
 export function benchSummary(): BenchSummary | null {

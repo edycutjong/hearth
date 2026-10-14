@@ -49,7 +49,7 @@ def corpus(args) -> int:
 
     if args.run:
         rc = subprocess.call([sys.executable, str(ROOT / "scripts" / "d0.py"), "--sets", "fleurs20,long,batch,fleurs20b",
-                              "--trimmed", "--no-model-copy"])
+                              "--trimmed", "--bucket-weights", "--no-model-copy"])
         if rc:
             return rc
         args.from_ = str(sorted(RESULTS.glob("d0-*-raw.json"))[-1])
@@ -165,6 +165,8 @@ def live(args) -> int:
            "note": "time to kept = upload complete -> the note reads 'kept' (validation done), cold start and queue wait included"}
     dest = RESULTS / f"live-{stamp()}.json"
     dest.write_text(json.dumps(out, indent=1))
+    if args.base.startswith("https://") and len(ok) == len(runs):
+        (RESULTS / "live-latest.json").write_text(json.dumps({**out, "source": dest.name}, indent=1))
     print(f"kept {len(ok)}/{len(runs)} · time to kept p50 {out['time_to_kept_s']['p50']} s, p95 {out['time_to_kept_s']['p95']} s "
           f"· queue wait p50 {out['queue_wait_s']['p50']} s -> {dest.relative_to(ROOT)}")
     return 0 if len(ok) == len(runs) else 1

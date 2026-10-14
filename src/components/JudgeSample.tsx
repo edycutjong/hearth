@@ -12,7 +12,7 @@ import { kb, mmss, pct } from "./format";
  * The judge path: no account, no Job, no cap. Everything here was produced by a real Nebius Job and is
  * committed with the app, so it opens instantly and stays up through judging.
  */
-export function JudgeSample({ sample, bench }: { sample: SampleDoc; bench: BenchSummary | null }) {
+export function JudgeSample({ sample, bench, wait }: { sample: SampleDoc; bench: BenchSummary | null; wait: { p50: number; p95: number; runs: number } | null }) {
   const [done, setDone] = useState<Record<string, boolean>>({});
   const [noteId, setNoteId] = useState<string | null>(sample.ab?.note ?? sample.notes[0]?.id ?? null);
   const [seek, setSeek] = useState<{ t0: number; t1: number; nonce: number } | null>(null);
@@ -91,7 +91,8 @@ export function JudgeSample({ sample, bench }: { sample: SampleDoc; bench: Bench
         <strong>Keep your own note</strong>
         <p style={{ fontSize: 15 }}>
           Upload up to 60 seconds in any language the speech model is transcription-ready for (Japanese and Korean excepted); reminders are Hindi-only in v1.
-          It runs a real Nebius Job{bench?.coldStart ? `; expect about ${Math.round(bench.coldStart / 60)} minutes including the VM's cold start (measured)` : ""}.
+          It runs a real Nebius Job
+          {wait ? `: measured on this deployment, ${(wait.p50 / 60).toFixed(1)} min median from upload to kept (${(wait.p95 / 60).toFixed(1)} min at p95, ${wait.runs} runs), cold start and queue included` : ""}.
         </p>
         <Link className="btn primary" href="/?judge=1">Open an empty space</Link>
       </div>
