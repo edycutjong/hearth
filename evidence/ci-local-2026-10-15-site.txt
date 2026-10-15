@@ -1,5 +1,5 @@
 # Local CI run — most of the commands .github/workflows/ci.yml runs (not TruffleHog, the license check, Lighthouse CI or the Node 20/24 legs), because GitHub Actions is blocked on billing for this private repo
-# base commit 0779b58 + this change set (the /about and /pitch pages, QA round 3) · node v22.22.0 · Python 3.11.1 (fresh venv) · 2026-10-15T07:52Z · exit status of all stages: 0
+# base commit 9ae3b5e + this change set (the /about and /pitch pages, QA round 4) · node v22.22.0 · Python 3.11.1 (fresh venv) · 2026-10-15T08:49Z · exit status of all stages: 0
 
 ## Stage 1 · eslint
 
@@ -19,7 +19,7 @@ All checks passed!
 
 ## Stage 1 · Python: pytest worker scripts
 ........................                                                 [100%]
-24 passed in 0.81s
+24 passed in 0.42s
 
 ## Stage 2 · npm audit --omit=dev --audit-level=high
 found 0 vulnerabilities
@@ -28,13 +28,13 @@ found 0 vulnerabilities
 No known vulnerabilities found
 
 ## Stage 2 · gitleaks, full history
-[90m2:51PM[0m [32mINF[0m [1m57 commits scanned.[0m
-[90m2:51PM[0m [32mINF[0m [1mscanned ~3059380 bytes (3.06 MB) in 6.8s[0m
-[90m2:51PM[0m [32mINF[0m [1mno leaks found[0m
+[90m3:48PM[0m [32mINF[0m [1m58 commits scanned.[0m
+[90m3:48PM[0m [32mINF[0m [1mscanned ~3061469 bytes (3.06 MB) in 575ms[0m
+[90m3:48PM[0m [32mINF[0m [1mno leaks found[0m
 
 ## Stage 3 · next build + bundle budget
- ✓ Compiled successfully in 3.4s
+ ✓ Compiled successfully in 1441ms
 static assets: 1724 KB (budget 2000 KB)
 
 ## Stage 4 · Playwright (production build, no credentials)
-  26 passed (5.2s)
+  26 passed (8.4s)

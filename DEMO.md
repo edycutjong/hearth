@@ -52,7 +52,7 @@ Expected (D0 run 2, Nebius job <!--n:d0_job-->aijob-e01y33r8hyfcn7np5v<!--/n-->,
 | WER, original (FLEURS hi_in, <!--n:clips-->20<!--/n--> clips) | <!--n:wer_orig-->8.74<!--/n--> % | ≤ 15 % |
 | WER after the codec round trip | <!--n:wer_rt-->12.83<!--/n--> % (<!--n:wer_delta-->+4.09<!--/n--> pts) | ≤ original + 5 pts |
 | Peak memory | <!--n:peak_rss_gb-->6.9<!--/n--> GB | ≤ 12 GB |
-| Cost per hour of voice | $<!--n:usd_per_audio_hour-->0.1345<!--/n--> (compute at the cpu-d3 list price, start-up excluded) | ≤ $0.60 |
+| Cost per hour of voice | $<!--n:usd_per_audio_hour-->0.1345<!--/n--> (compute only, at the cpu-d3 list price; start-up, install and model load excluded) | ≤ $0.60 |
 
 Stored size: <!--n:bytes_per_hour-->815,423<!--/n--> bytes per hour of voice, <!--n:x_smaller_pcm-->195<!--/n-->× smaller
 than 22.05 kHz 16-bit PCM. On the disjoint `fleurs20b` set, never used for any decision: <!--n:wer_orig_b-->12.42<!--/n--> % →

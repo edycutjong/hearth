@@ -57,7 +57,8 @@ Forward the notes to Hearth. For each one, a Nebius Serverless AI Job transcribe
 and re-transcribes the result. Hearth deletes the raw audio by itself **only if the round trip holds** (after a 24 h grace; you can also delete it by hand at any
 time), and proves the deletion with a `HEAD` that returns 404. A note that drifts past the gate keeps its original. What stays is the token strip and the transcript. Promises (money, dates, appointments) are proposed by
 Nemotron 3 Super, then checked by code: a promise is shown only if its quote is verbatim in the transcript, and amounts and due dates
-are re-derived from that quote by code, never taken from the model. Reminders reach a phone through a standard calendar feed.
+are re-derived from that quote by code, never taken from the model. Reminders are published as a standard calendar feed (RFC 5545, with
+alarms) for a phone's calendar to subscribe to; delivery on a real phone is not yet tested.
 
 ## 🏗️ Architecture & Tech Stack
 
@@ -102,7 +103,7 @@ and judges could not install them). Tavily is not used either: nothing in the fl
 | Browser tests | 13 Playwright tests × 2 projects (desktop 1440 px, phone 375 px), no credentials |
 | ASR real-time factor on 4 vCPU | <!--n:asr_rtf-->0.16<!--/n--> (gate ≤ 0.5) |
 | Peak memory | <!--n:peak_rss_gb-->6.9<!--/n--> GB (gate ≤ 12 GB) |
-| Cost per hour of voice | $<!--n:usd_per_audio_hour-->0.1345<!--/n--> — measured compute time at the cpu-d3 list price, Job start-up excluded (gate ≤ $0.60) |
+| Cost per hour of voice | $<!--n:usd_per_audio_hour-->0.1345<!--/n--> — compute only: the measured real-time factor × the cpu-d3 list price; Job start-up, install and model load excluded (gate ≤ $0.60) |
 | Held-out set `fleurs20b`, never used for a decision | <!--n:wer_orig_b-->12.42<!--/n--> % → <!--n:wer_rt_b-->14.46<!--/n--> % |
 | Live keeps through the deployed app | <!--n:live_kept-->10<!--/n-->/<!--n:live_runs-->10<!--/n--> kept; upload → kept p50 <!--n:ttk_p50_s-->394<!--/n--> s, p95 <!--n:ttk_p95_s-->402<!--/n--> s, cold start included |
 
@@ -153,7 +154,7 @@ npm run test:live     # real Nebius + Token Factory (spends cents)
 |---|---|---|
 | Quality | ESLint, `tsc --noEmit`, vitest with v8 coverage (Node 20/22/24 on `main`), ruff + pytest on the Python worker | `ci.yml` stage 1 |
 | Secrets | TruffleHog (verified) + gitleaks over the full history | `ci.yml` stage 2, `gitleaks.yml` |
-| Dependencies | `npm audit --omit=dev`, `pip-audit`, license check, Dependabot (grouped, no major bumps; the worker's benchmarked pins are never bumped by a bot) | `ci.yml` stage 2, `dependabot.yml` |
+| Dependencies | `npm audit --omit=dev`, `pip-audit`, license check, Dependabot (grouped, no major bumps; `worker/requirements.txt` is left out of version updates because its pins are the benchmarked environment — Dependabot's security PRs against it are open, unmerged) | `ci.yml` stage 2, `dependabot.yml` |
 | Build | `next build` with a bundle-size budget | `ci.yml` stage 3 |
 | E2E | Playwright against the production build with no credentials: `/judge`, `/proof`, `/about`, `/pitch`, 404, 375 px | `ci.yml` stage 4 |
 | Performance | Lighthouse CI on `/judge` and `/proof` (accessibility ≥ 0.9 is a hard gate, the rest advisory) | `ci.yml` stage 5 |
