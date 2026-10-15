@@ -26,9 +26,9 @@ install. The last one spends cents on your own Nebius project.
 ```bash
 git clone https://github.com/edycutjong/hearth && cd hearth
 npm ci
-npm test                                   # vitest: 148 tests
+npm test                                   # vitest: 195 tests
 python3 -m venv .venv && .venv/bin/pip install numpy jiwer pytest
-.venv/bin/python -m pytest -q worker scripts   # 22 tests
+.venv/bin/python -m pytest -q worker scripts   # 24 tests
 ```
 
 What the tests pin down: the quote gate and field gate (amounts from a full 0–99 Hindi number table, weekdays and

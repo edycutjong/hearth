@@ -100,5 +100,5 @@ rate after the round trip 8.3 % → 62.5 % and 38.9 % → 72.2 %, while normal-l
 now brings every input to −20 dBFS of speech-active level before encoding (the gain is stored with the codes and
 removed on decode; chosen on FLEURS dev clips, not the reported ones). In the benchmark of record the first clip
 round-trips unchanged (8.3 % → 8.3 %) and the second improves (→ 55.6 %), and across 20 clips the round trip adds
-4.1 points instead of 5.9 — though one normal-level clip got worse (30.4 % → 47.8 %), so this is a better average,
+4.1 points instead of 5.9 — though one normal-level clip got worse (13.0 % → 47.8 %), so this is a better average,
 not a fix for every recording. **Ask:** a note on the card about the input level the codec expects.
