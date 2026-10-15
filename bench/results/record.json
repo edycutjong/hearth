@@ -1,0 +1,5 @@
+{
+ "raw": "d0-20261014T231930Z-4vcpu-16gb-raw.json",
+ "summary": "d0-20261014T231930Z-4vcpu-16gb.json",
+ "why": "D0 run 2: the product configuration (trimmed codec, weights from the in-region bucket, codec input at -20 dBFS + 3 lead frames, the dev-set ablation pick). Run 1 (d0-20261014T222337Z) failed the round-trip gate before that fix and is kept as measured."
+}

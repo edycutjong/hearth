@@ -55,6 +55,37 @@ def median_clip() -> str:
     return clips[(len(clips) - 1) // 2]["id"]
 
 
+STOP = set("""about above after again against also among another because been before being below between both
+could does doing during each from further have having here into itself just more most much other ours over same should
+some such than that their theirs them themselves then there these they this those through under until very were what
+when where which while whom with would your yours said says also will""".split())
+
+
+def demo_query(notes: list[dict]) -> dict | None:
+    """The word /judge suggests searching for: an English word of 5+ letters from the A/B note's gloss that occurs in
+    exactly one segment of the whole sample (so the jump is unambiguous). Without glosses, a Devanagari word of 3+
+    letters from its transcript, by the same rule. Chosen by this rule, never by hand."""
+    import re
+
+    def words(text: str, latin: bool) -> list[str]:
+        return re.findall(r"[a-z]{5,}", text.lower()) if latin else [w for w in re.findall(r"[\u0900-\u097F]+", text) if len(w) >= 3]
+
+    for latin in (True, False):
+        where: dict[str, set] = {}
+        for n in notes:
+            src = n["glosses"] if latin else {str(seg["i"]): seg["text"] for seg in n["transcript"]["segments"]}
+            for seg, text in src.items():
+                for w in words(text or "", latin):
+                    where.setdefault(w, set()).add((n["id"], int(seg)))
+        ab = notes[0]
+        src = ab["glosses"] if latin else {str(seg["i"]): seg["text"] for seg in ab["transcript"]["segments"]}
+        for seg, text in sorted(src.items(), key=lambda kv: int(kv[0])):
+            for w in words(text or "", latin):
+                if w not in STOP and len(where.get(w, ())) == 1:
+                    return {"q": w, "note": ab["id"], "segment": int(seg), "from": "gloss" if latin else "transcript"}
+    return None
+
+
 def produce(base: str, uploads: list[dict], kind: str) -> dict:
     """uploads: [{key (bucket), name, title, label, attribution}] -> sample.json content."""
     load_env("~/.config/faultline/local.env", "~/.config/hearth/hearth.env")
@@ -120,7 +151,7 @@ def produce(base: str, uploads: list[dict], kind: str) -> dict:
         memory = {**memory, "items": [i for i in memory.get("items", []) if i["note"] in ids]}
     ab_note = out_notes[0]
     sample = {
-        "version": 1, "status": "ready", "kind": kind, "notes": out_notes, "memory": memory,
+        "version": 1, "status": "ready", "kind": kind, "notes": out_notes, "memory": memory, "demoQuery": demo_query(out_notes),
         "ab": {"note": ab_note["id"], "t0": 0, "t1": ab_note["kept"]["audioS"], "bytes": ab_note["kept"]["bytesHct"],
                "drift": ab_note["kept"]["driftNote"], "reason": "the median-drift clip of the benchmark of record" if kind == "fleurs" else "the window holding the ask"},
         "proof": {"base": base, "jobs": [{k: j.get(k) for k in ("job", "nebiusId", "state", "created", "finished", "history")} for j in jobs],
@@ -150,6 +181,13 @@ def check() -> int:
                 problems.append(f"{n['id']}: {side} audio missing")
         if n["raw"].get("rawHead") != 404:
             problems.append(f"{n['id']}: the pipeline's raw copy was not proven deleted")
+    dq = s.get("demoQuery")
+    if s.get("status") == "ready" and s.get("kind") == "fleurs":
+        note = next((n for n in s.get("notes", []) if dq and n["id"] == dq.get("note")), None)
+        text = "" if not note else (note["glosses"].get(str(dq["segment"]), "") if dq.get("from") == "gloss"
+                                    else next((g["text"] for g in note["transcript"]["segments"] if g["i"] == dq["segment"]), ""))
+        if not dq or dq["q"].lower() not in text.lower():
+            problems.append(f"the suggested search word is missing or not in its segment: {dq}")
     if s.get("kind") == "actors":
         items = (s.get("memory") or {}).get("items", [])
         kinds = sorted(i["kind"] for i in items)

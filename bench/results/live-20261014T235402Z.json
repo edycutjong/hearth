@@ -1,0 +1,46 @@
+{
+ "base": "https://hearth-alpha-six.vercel.app",
+ "clip": "bench/fleurs/clip60.opus",
+ "runs": [
+  {
+   "run": 1,
+   "status": "failed",
+   "time_to_kept_s": 46.1,
+   "queue_wait_s": null,
+   "nebius_job": null,
+   "hearth_job": "202610147919eef9",
+   "polls": 4,
+   "audio_s": null,
+   "bytes_hct": null,
+   "drift": null,
+   "error": "could not create the Nebius job: NebiusApiError: POST /ai/v1/jobs failed: 400 Bad Request",
+   "job_timings_s": null,
+   "delete_all_listings": [
+    {
+     "prefix": "raw/01fbb93c\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "cache/01fbb93c\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "u/01fbb93c\u2026/",
+     "count": 0
+    }
+   ]
+  }
+ ],
+ "kept": 0,
+ "of": 1,
+ "time_to_kept_s": {
+  "p50": null,
+  "p95": null,
+  "median": null
+ },
+ "queue_wait_s": {
+  "p50": null,
+  "p95": null
+ },
+ "note": "time to kept = upload complete -> the note reads 'kept' (validation done), cold start and queue wait included"
+}

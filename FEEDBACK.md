@@ -48,11 +48,19 @@ git install and no second virtualenv was needed. A line saying which PyPI releas
 have saved a day of reading. The `[tts]` extra pulls `pyopenjtalk`, which has no wheel and compiles at every cold
 start; Hearth installs the pure-Python half of `[tts]` instead (`worker/requirements.txt`).
 
-## 5. The 64 KiB injected-file limit
+## 5. The 64 KiB injected-file limit is a limit on ALL injected files together
 
-`spec.injectedFiles` caps each file at 64 KiB. Our whole worker (one Python file, ~41 KB, plus a run script and a
-requirements file) fits, so a stock image + injected files + a fast installer is a workable alternative to building
-and pushing a custom image — which matters when the builder has no Docker daemon or CI minutes to spare.
+Both `serverless/jobs/manage.md` (lines 160 and 306) and the endpoints page say each injected file is "limited to
+64 KiB". In practice the Jobs API encrypts all injected files together, and their **base64 total** may not pass
+64 KiB: three files of 44.9 KB, 3.5 KB and 1 KB (65,804 B of base64 together, each far under 64 KiB) were refused
+with `InvalidArgument: plaintext must not exceed 65536 bytes` from `kms-dpl`, while the same files had been accepted
+at 57,584 B (`evidence/injected-files-limit.json`, request `966dd6c8-bd5b-4324-b3a2-1f7bc180448c`). Hearth now
+injects `worker.py` and its pinned `requirements.txt` gzipped (21 KB of base64 in all) and `run.sh` unpacks them;
+the app and the harness both check the total before calling the API (`src/lib/injected.ts`,
+`scripts/nebius_jobs.py`). **Ask:** state the total limit in the docs, and name it in the error.
+
+With that understood, a stock image + injected files + a fast installer is a workable alternative to building and
+pushing a custom image — which matters when the builder has no Docker daemon or CI minutes to spare.
 
 ## 6. Jobs expose no logs or exit code over REST
 
