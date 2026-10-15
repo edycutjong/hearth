@@ -11,7 +11,11 @@ export const dynamic = "force-dynamic";
 /** What actually ran: the sample's Job and, for a visitor, their own last run — ids, timings, bytes, hashes, HEADs. */
 export async function GET() {
   const sample = getSample();
-  const out: Record<string, unknown> = { sample: sample.proof, sampleNotes: sample.notes.map((n) => ({ id: n.id, title: n.title, kept: n.kept, job: n.job, raw: n.raw })) };
+  const out: Record<string, unknown> = {
+    deployed: { commit: process.env.VERCEL_GIT_COMMIT_SHA ?? null },
+    sample: sample.proof,
+    sampleNotes: sample.notes.map((n) => ({ id: n.id, title: n.title, kept: n.kept, job: n.job, raw: n.raw })),
+  };
   const r = ready();
   if (r.ok) {
     const space = await loadSpace(r.store);

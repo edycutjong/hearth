@@ -11,7 +11,7 @@ interface Latest {
   run?: string;
   preset?: string;
   nebius_job_id?: string;
-  versions?: Record<string, string | number | null>;
+  versions?: Record<string, unknown>;
   runtime?: Record<string, unknown>;
   cold_start?: Record<string, unknown>;
   determinism?: Record<string, unknown>;
@@ -26,7 +26,7 @@ interface Latest {
 /** What actually ran — the sample's Job, the measured benchmark, and the visitor's own last run. */
 export default function Proof() {
   const sample = getSample();
-  const b = latest as Latest;
+  const b = latest as unknown as Latest;
   return (
     <>
       <TopBar current="proof" />
@@ -78,6 +78,15 @@ export default function Proof() {
         )}
         <h3>Your last run</h3>
         <VisitorProof />
+        {process.env.VERCEL_GIT_COMMIT_SHA ? (
+          <p className="note-hint">
+            Served by commit{" "}
+            <a className="num" href={`https://github.com/edycutjong/hearth/commit/${process.env.VERCEL_GIT_COMMIT_SHA}`}>
+              {process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 7)}
+            </a>
+            .
+          </p>
+        ) : null}
       </main>
     </>
   );

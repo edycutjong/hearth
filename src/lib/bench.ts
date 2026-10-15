@@ -33,7 +33,7 @@ export function liveWait(): { p50: number; p95: number; runs: number; source: st
 }
 
 export function benchSummary(): BenchSummary | null {
-  const l = latest as Latest;
+  const l = latest as unknown as Latest;
   if (!l.run || !l.bytes?.bytes_per_audio_hour || l.wer?.fleurs20?.wer_orig == null || l.wer.fleurs20.wer_rt == null) return null;
   return {
     bytesPerHour: l.bytes.bytes_per_audio_hour,
