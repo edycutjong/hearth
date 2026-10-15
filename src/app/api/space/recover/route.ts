@@ -1,5 +1,5 @@
 import { keys } from "@/lib/keys";
-import { clientKey, json, notConfigured, ready, secret, setSpaceCookie } from "@/lib/server";
+import { clientKey, json, notConfigured, ready, secret, setSpaceCookie, readBody } from "@/lib/server";
 import { hashesMatch, recoveryHash, recoveryUid } from "@/lib/space";
 import { cookies } from "next/headers";
 
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   if ((tries[who] ?? 0) >= 10) return json({ error: "Too many tries today." }, 429);
   tries[who] = (tries[who] ?? 0) + 1;
   await r.store.putJson(triesKey, tries);
-  const body = (await req.json().catch(() => ({}))) as { key?: string };
+  const body = await readBody<{ key?: string }>(req);
   const key = String(body.key ?? "");
   const uid = recoveryUid(key);
   const stored = uid ? (await r.store.getJson<{ hash: string }>(keys.recovery(uid)))?.value : null;

@@ -90,10 +90,19 @@ export function Forward({ onKept, maxSeconds = MAX_NOTE_S, code }: { onKept: () 
     const ids: string[] = [];
     for (const [i, slot] of slots.data.notes.entries()) {
       setBusy(`Uploading ${i + 1} of ${slots.data.notes.length} straight to Nebius Object Storage…`);
-      const res = await fetch(slot.putUrl, { method: "PUT", headers: slot.headers, body: keepList[i]?.blob });
-      if (!res.ok) {
+      let status = 0;
+      try {
+        status = (await fetch(slot.putUrl, { method: "PUT", headers: slot.headers, body: keepList[i]?.blob })).status;
+      } catch {
+        status = 0;
+      }
+      if (status < 200 || status >= 300) {
         setBusy(null);
-        setError(`Upload of "${keepList[i]?.name}" failed (HTTP ${res.status}).`);
+        setError(
+          status === 0
+            ? `Upload of "${keepList[i]?.name}" stopped: no connection. Nothing was lost; press Keep again.`
+            : `Upload of "${keepList[i]?.name}" failed (HTTP ${status}). Press Keep again.`,
+        );
         return;
       }
       ids.push(slot.id);

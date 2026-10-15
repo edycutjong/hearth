@@ -5,7 +5,7 @@ import { keys } from "@/lib/keys";
 import type { TranscriptDoc } from "@/lib/memory";
 import { memoryAllowsTf, sampleDocs } from "@/lib/sample";
 import { queryTerms, rank, type SearchDoc } from "@/lib/search";
-import { json, loadSpace, ready, tfConfig } from "@/lib/server";
+import { json, loadSpace, ready, tfConfig, readBody } from "@/lib/server";
 import { listNotes, readMemory } from "@/lib/space-ops";
 import { expandQuery } from "@/lib/tf";
 
@@ -18,7 +18,7 @@ export const maxDuration = 30;
  * Super expands it (when Token Factory may see this space's text); code ranks REAL segments with BM25.
  */
 export async function POST(req: Request) {
-  const body = (await req.json().catch(() => ({}))) as { q?: string; scope?: "space" | "sample" };
+  const body = await readBody<{ q?: string; scope?: "space" | "sample" }>(req);
   const q = String(body.q ?? "").trim().slice(0, 120);
   if (!q) return json({ hits: [], terms: [] });
   let docs: SearchDoc[] = [];

@@ -170,7 +170,7 @@ export function HearthApp() {
             {active.map((j) => (
               <Keeping key={j.job} job={j} notes={notes.filter((n) => j.notes.some((x) => x.id === n.id))} queuePos={status?.queue[j.job] ?? null} eta={status?.eta ?? null} />
             ))}
-            <h3>Kept so far</h3>
+            <h2 className="label">Kept so far</h2>
             <NotesList notes={notes.filter((n) => n.status !== "uploading")} onOpen={(id) => openAt(id)} />
             {status ? (
               <p className="note-hint">

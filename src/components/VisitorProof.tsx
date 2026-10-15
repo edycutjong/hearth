@@ -44,7 +44,7 @@ export function VisitorProof() {
           ) : null}
         </tbody>
       </table>
-      <div className="tablewrap">
+      <div className="tablewrap" tabIndex={0} role="region" aria-label="Scrollable table">
       <table className="plain">
         <thead>
           <tr><th>Note</th><th>Audio</th><th>Tokens</th><th>sha256</th><th>Agreement</th><th>Original</th></tr>

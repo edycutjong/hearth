@@ -1,7 +1,7 @@
 import { anchorFromFilename, formatDate, localDate, parseDate } from "@/lib/dates";
 import { MAX_UPLOAD_BYTES, audioExt, keys, spaceTag } from "@/lib/keys";
 import type { NoteMeta } from "@/lib/pipeline";
-import { json, loadSpace, notConfigured, ready } from "@/lib/server";
+import { json, loadSpace, notConfigured, ready, readBody } from "@/lib/server";
 import { newId } from "@/lib/space";
 
 export const runtime = "nodejs";
@@ -28,8 +28,8 @@ export async function POST(req: Request) {
   const space = await loadSpace(r.store);
   if (!space) return json({ error: "Open Hearth first; no space yet." }, 404);
   if (!space.doc.consent) return json({ error: "Tick the consent first." }, 403);
-  const body = (await req.json().catch(() => ({}))) as { files?: FileIn[] };
-  const files = (body.files ?? []).slice(0, MAX_FILES + 1);
+  const body = await readBody<{ files?: FileIn[] }>(req);
+  const files = (Array.isArray(body.files) ? body.files : []).slice(0, MAX_FILES + 1);
   if (!files.length) return json({ error: "No files." }, 400);
   if (files.length > MAX_FILES) return json({ error: `At most ${MAX_FILES} notes at a time.` }, 400);
   const tag = spaceTag(space.doc.kept);
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       name: String(f.name).slice(0, 120),
       ext,
       size: f.size,
-      label: (f.label ?? "").trim().slice(0, 40) || "Family",
+      label: (typeof f.label === "string" ? f.label : "").trim().slice(0, 40) || "Family",
       anchor,
       anchorSource: f.anchor ? (f.anchorSource === "chat" ? "chat" : "filename") : fromName ? "filename" : "upload",
       uploaded: new Date().toISOString(),

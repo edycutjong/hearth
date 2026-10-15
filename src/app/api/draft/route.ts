@@ -1,5 +1,5 @@
 import { takeDaily } from "@/lib/caps";
-import { json, loadSpace, notConfigured, ready, tfConfig } from "@/lib/server";
+import { json, loadSpace, notConfigured, ready, tfConfig, readBody } from "@/lib/server";
 import { memoryAllowsTf } from "@/lib/sample";
 import { readMemory } from "@/lib/space-ops";
 import { draftReply } from "@/lib/tf";
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   const space = await loadSpace(r.store);
   if (!space) return json({ error: "no space" }, 404);
   if (!memoryAllowsTf(space.doc)) return json({ error: "Reminders are paused for this space." }, 403);
-  const body = (await req.json().catch(() => ({}))) as { items?: string[]; recipient?: string };
+  const body = await readBody<{ items?: string[]; recipient?: string }>(req);
   const memory = await readMemory(r.store, space.uid);
   const items = (memory?.items ?? []).filter((i) => (body.items ?? []).includes(i.id) && i.state === "open");
   if (!items.length) return json({ error: "Pick at least one kept item." }, 400);

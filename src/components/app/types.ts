@@ -33,6 +33,6 @@ export async function api<T>(path: string, init?: RequestInit): Promise<{ ok: bo
     const data = (await res.json().catch(() => ({}))) as T;
     return { ok: res.ok, status: res.status, data };
   } catch {
-    return { ok: false, status: 0, data: { error: "No connection — Hearth will try again." } as T };
+    return { ok: false, status: 0, data: { error: "No connection." } as T };
   }
 }

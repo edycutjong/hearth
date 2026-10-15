@@ -21,8 +21,12 @@ export function Find({ scope = "space", onOpen, placeholder = "knee · पैस
     }
     setHint(null);
     setBusy(true);
-    const r = await api<{ hits: Hit[]; terms: string[]; lexicalOnly: boolean }>("/api/search", { method: "POST", body: JSON.stringify({ q, scope }) });
+    const r = await api<{ hits: Hit[]; terms: string[]; lexicalOnly: boolean; error?: string }>("/api/search", { method: "POST", body: JSON.stringify({ q, scope }) });
     setBusy(false);
+    if (!r.ok) {
+      setHint(r.status === 0 ? "Search failed: no connection. Try again in a moment." : `Search failed (${r.data.error ?? `HTTP ${r.status}`}). Try again.`);
+      return; // the results already shown stay
+    }
     setHits(r.data.hits ?? []);
     setTerms(r.data.terms ?? []);
     setLexical(Boolean(r.data.lexicalOnly));

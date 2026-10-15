@@ -82,7 +82,7 @@ function GatesProof() {
         A test transcript written from the judge sample&apos;s script (text, no audio, anchored on Monday 12 Oct) went to {g.model} with a strict
         json_schema — request {g.request_id}, {(g.duration_ms / 1000).toFixed(1)} s. Super proposes; code decides what is shown:
       </p>
-      <div className="tablewrap">
+      <div className="tablewrap" tabIndex={0} role="region" aria-label="Scrollable table">
         <table className="plain">
           <thead>
             <tr><th>Super proposed</th><th>Quote gate</th><th>Amount</th><th>Date</th></tr>
@@ -140,7 +140,7 @@ export default function Proof() {
         )}
         <h2 className="label">The judge sample</h2>
         {sample.notes.length ? (
-          <div className="tablewrap">
+          <div className="tablewrap" tabIndex={0} role="region" aria-label="Scrollable table">
           <table className="plain">
             <thead>
               <tr><th>Note</th><th>Nebius job</th><th>Audio</th><th>Tokens</th><th>sha256</th><th>Agreement</th><th>Pipeline raw copy</th></tr>

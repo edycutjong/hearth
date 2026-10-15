@@ -1,5 +1,5 @@
 import { keys } from "@/lib/keys";
-import { flags, json, loadSpace, notConfigured, ready, saveSpace } from "@/lib/server";
+import { flags, json, loadSpace, notConfigured, ready, saveSpace, readBody } from "@/lib/server";
 import { daysLeft, safeTimeZone } from "@/lib/space";
 
 export const runtime = "nodejs";
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   const r = ready();
   if (!r.ok) return notConfigured(r.missing);
-  const body = (await req.json().catch(() => ({}))) as { timeZone?: string; judge?: boolean };
+  const body = await readBody<{ timeZone?: string; judge?: boolean }>(req);
   const space = await loadSpace(r.store, { create: true, timeZone: safeTimeZone(body.timeZone) });
   if (!space) return json({ error: "could not open a space" }, 500);
   if (body.judge === true && !space.doc.judge && !(await r.store.list(keys.notesPrefix(space.uid))).length) {

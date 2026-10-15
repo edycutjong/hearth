@@ -1,5 +1,5 @@
 import { CONSENT_VERSION } from "@/lib/copy";
-import { json, loadSpace, notConfigured, ready, saveSpace } from "@/lib/server";
+import { json, loadSpace, notConfigured, ready, saveSpace, readBody } from "@/lib/server";
 import { resumePaused } from "@/lib/space-ops";
 
 export const runtime = "nodejs";
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   const r = ready();
   if (!r.ok) return notConfigured(r.missing);
-  const body = (await req.json().catch(() => ({}))) as { optIn?: boolean };
+  const body = await readBody<{ optIn?: boolean }>(req);
   const space = await loadSpace(r.store);
   if (!space) return json({ error: "no space" }, 404);
   space.doc.tfOptIn = body.optIn ? { at: new Date().toISOString(), textVersion: CONSENT_VERSION } : null;

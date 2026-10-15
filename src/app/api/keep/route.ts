@@ -2,7 +2,7 @@ import { after } from "next/server";
 import { giveBackDaily, takeDaily } from "@/lib/caps";
 import { MAX_UPLOAD_BYTES, isId, keys, spaceTag } from "@/lib/keys";
 import { dispatch, enqueue, queuePosition, type NoteMeta } from "@/lib/pipeline";
-import { isJudgeCode, json, loadSpace, notConfigured, ready } from "@/lib/server";
+import { isJudgeCode, json, loadSpace, notConfigured, ready, readBody } from "@/lib/server";
 import { giveBackSpaceKeep, takeSpaceKeep } from "@/lib/space-ops";
 
 export const runtime = "nodejs";
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   const space = await loadSpace(r.store);
   if (!space) return json({ error: "no space" }, 404);
   if (!space.doc.consent) return json({ error: "Tick the consent first." }, 403);
-  const body = (await req.json().catch(() => ({}))) as { notes?: string[]; code?: string };
+  const body = await readBody<{ notes?: string[]; code?: string }>(req);
   const ids = (body.notes ?? []).filter(isId).slice(0, 20);
   if (!ids.length) return json({ error: "No notes to keep." }, 400);
   const tag = spaceTag(space.doc.kept);

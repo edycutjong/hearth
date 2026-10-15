@@ -13,10 +13,14 @@ export function useStatus(enabled: boolean) {
   const refresh = useCallback(async () => {
     const r = await api<Partial<Status> & { error?: string }>("/api/status");
     if (!r.ok) {
-      setError(r.data.error ?? `status: HTTP ${r.status}`);
+      setError(r.status === 0 ? "No connection — Hearth will try again." : (r.data.error ?? `status: HTTP ${r.status}`));
       return null;
     }
-    if (!r.data.space || !r.data.flags) {
+    if (!("space" in r.data) || (r.data.space && !r.data.flags)) {
+      setError("Hearth could not read your space just now; it will try again.");
+      return null;
+    }
+    if (r.data.space === null) {
       // The space was deleted (or expired): there is nothing to show but that.
       setGone(true);
       setStatus(null);

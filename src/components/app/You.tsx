@@ -25,6 +25,7 @@ export function You({
   const [listing, setListing] = useState<Array<{ prefix: string; count: number }> | null>(null);
   const [busy, setBusy] = useState(false);
   const deleteOpener = useRef<HTMLButtonElement>(null);
+  const [deleteMsg, setDeleteMsg] = useState<string | null>(null);
 
   async function exportAll() {
     setExporting("Collecting your files…");
@@ -157,7 +158,6 @@ export function You({
             <button
               className="btn primary"
               disabled={busy}
-              autoFocus
               onClick={async () => {
                 setBusy(true);
                 const r = await api<{ listings?: Array<{ prefix: string; count: number }>; deleted?: number; stillRunning?: string[]; error?: string }>("/api/delete-all", { method: "POST", body: JSON.stringify({ confirm: "delete" }) });
@@ -167,7 +167,7 @@ export function You({
                   setListing(r.data.listings);
                   onDeleted?.(r.data.listings, r.data.stillRunning ?? []);
                 } else {
-                  setMsg(r.data.error ?? "Delete failed.");
+                  setDeleteMsg(r.status === 0 ? "Delete failed: no connection. Nothing was deleted; try again." : (r.data.error ?? "Delete failed."));
                   onChanged();
                 }
               }}
@@ -176,6 +176,7 @@ export function You({
             </button>
             <button
               className="btn"
+              autoFocus
               onClick={() => {
                 setConfirm(false);
                 setTimeout(() => deleteOpener.current?.focus(), 0);
@@ -185,6 +186,7 @@ export function You({
             </button>
           </div>
         )}
+        {deleteMsg ? <p className="error" role="alert">{deleteMsg}</p> : null}
         {listing ? (
           <div className="listing" aria-live="polite">
             {listing.map((l) => (

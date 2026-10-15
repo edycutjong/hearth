@@ -1,5 +1,5 @@
 import { CONSENT_VERSION } from "@/lib/copy";
-import { json, loadSpace, notConfigured, ready, saveSpace } from "@/lib/server";
+import { json, loadSpace, notConfigured, ready, saveSpace, readBody } from "@/lib/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   const r = ready();
   if (!r.ok) return notConfigured(r.missing);
-  const body = (await req.json().catch(() => ({}))) as { agreed?: boolean; deleteOriginals?: boolean; textVersion?: string };
+  const body = await readBody<{ agreed?: boolean; deleteOriginals?: boolean; textVersion?: string }>(req);
   if (body.agreed !== true || body.textVersion !== CONSENT_VERSION) return json({ error: "consent must be ticked on the current text" }, 400);
   const space = await loadSpace(r.store, { create: true });
   if (!space) return json({ error: "no space" }, 500);

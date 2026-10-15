@@ -148,6 +148,12 @@ export async function clientKey(): Promise<string> {
   return createHash("sha256").update(`${new Date().toISOString().slice(0, 10)}:${ip}:${secret()}`).digest("hex").slice(0, 16);
 }
 
+/** The request's JSON body as an object; null, arrays, numbers or broken JSON all read as {} (never a 500). */
+export async function readBody<T extends object>(req: Request): Promise<Partial<T>> {
+  const v: unknown = await req.json().catch(() => null);
+  return v && typeof v === "object" && !Array.isArray(v) ? (v as Partial<T>) : {};
+}
+
 export function json(body: unknown, status = 200, extra: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), {
     status,

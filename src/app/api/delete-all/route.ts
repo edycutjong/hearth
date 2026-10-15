@@ -3,7 +3,7 @@ import { keys } from "@/lib/keys";
 import { cancelJob, getJob, TERMINAL_STATES } from "@/lib/nebius/jobs";
 import { settle } from "@/lib/caps";
 import type { JobRecord } from "@/lib/pipeline";
-import { json, loadSpace, notConfigured, ready } from "@/lib/server";
+import { json, loadSpace, notConfigured, ready, readBody } from "@/lib/server";
 import { COOKIE } from "@/lib/space";
 import { listJobs } from "@/lib/space-ops";
 
@@ -22,7 +22,7 @@ export const maxDuration = 60;
 export async function POST(req: Request) {
   const r = ready();
   if (!r.ok) return notConfigured(r.missing);
-  const body = (await req.json().catch(() => ({}))) as { confirm?: string };
+  const body = await readBody<{ confirm?: string }>(req);
   if (body.confirm !== "delete") return json({ error: "confirm with { confirm: 'delete' }" }, 400);
   const space = await loadSpace(r.store);
   if (!space) return json({ error: "no space" }, 404);

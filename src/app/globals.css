@@ -34,7 +34,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .topnav a, .topnav button { color: var(--muted); text-decoration: none; padding: 6px 0; border-bottom: 2px solid transparent; transition: color 120ms ease, border-color 120ms ease; }
 .topnav a:hover, .topnav button:hover { color: var(--ink); border-color: var(--rule); }
 .topnav a:active, .topnav button:active, .tabs button:active { transform: translateY(1px); }
-.topnav [aria-current="page"] { color: var(--ink); border-color: var(--ink); }
+.topnav [aria-current="page"], .topnav [aria-current="page"]:hover { color: var(--ink); border-color: var(--ink); }
 .chip { font: 500 12.5px/1.2 var(--data); padding: 6px 9px; border: 1px solid var(--rule); border-radius: 3px; background: var(--surface); color: var(--muted); white-space: nowrap; }
 .page { max-width: 1240px; margin: 0 auto; padding: 24px 20px 96px; }
 .narrow { max-width: 720px; margin: 0 auto; }

@@ -109,7 +109,6 @@ export function NoteDetail({
             <span className="note-hint">Delete the original file? This cannot be undone; the tokens stay.</span>
           <button
             className="btn primary"
-            autoFocus
             disabled={!!busy}
             onClick={async () => {
               setConfirmDelete(false);
@@ -124,6 +123,7 @@ export function NoteDetail({
           </button>
             <button
               className="btn"
+              autoFocus
               onClick={() => {
                 setConfirmDelete(false);
                 setTimeout(() => deleteOpener.current?.focus(), 0);

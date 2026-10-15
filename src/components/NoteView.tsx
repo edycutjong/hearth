@@ -206,7 +206,7 @@ export function NoteView({
               key={s.i}
               className={`seg${highlight.includes(s.i) ? " match" : ""}${playing && current >= s.t0 && current < s.t1 ? " playing" : ""}`}
               onClick={() => playSeg(s.t0, s.t1)}
-              aria-label={`Play from ${mmss(s.t0)}`}
+              title={`Play from ${mmss(s.t0)}`}
             >
               <span className="t">{mmss(s.t0)}</span>
               <span>
