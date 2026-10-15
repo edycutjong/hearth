@@ -6,6 +6,6 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
-    coverage: { provider: "v8", include: ["src/**/*.{ts,tsx}"], reporter: ["text-summary", "lcov"] },
+    coverage: { provider: "v8", include: ["src/lib/**/*.ts"], reporter: ["text-summary", "lcov"] },
   },
 });
