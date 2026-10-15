@@ -62,9 +62,9 @@ when where which while whom with would your yours said says also will""".split()
 
 
 def demo_query(notes: list[dict]) -> dict | None:
-    """The word /judge suggests searching for: an English word of 5+ letters from the A/B note's gloss that occurs in
-    exactly one segment of the whole sample (so the jump is unambiguous). Without glosses, a Devanagari word of 3+
-    letters from its transcript, by the same rule. Chosen by this rule, never by hand."""
+    """The word /judge suggests searching for: the longest English word of 5+ letters in the A/B note's gloss that
+    occurs in exactly one segment of the whole sample (so the jump is unambiguous). Without glosses, the longest
+    Devanagari word of 3+ letters in its transcript, by the same rule. Chosen by this rule, never by hand."""
     import re
 
     def words(text: str, latin: bool) -> list[str]:
@@ -79,10 +79,11 @@ def demo_query(notes: list[dict]) -> dict | None:
                     where.setdefault(w, set()).add((n["id"], int(seg)))
         ab = notes[0]
         src = ab["glosses"] if latin else {str(seg["i"]): seg["text"] for seg in ab["transcript"]["segments"]}
-        for seg, text in sorted(src.items(), key=lambda kv: int(kv[0])):
-            for w in words(text or "", latin):
-                if w not in STOP and len(where.get(w, ())) == 1:
-                    return {"q": w, "note": ab["id"], "segment": int(seg), "from": "gloss" if latin else "transcript"}
+        found = [(len(w), -int(seg), -i, w, int(seg)) for seg, text in src.items()
+                 for i, w in enumerate(words(text or "", latin)) if w not in STOP and len(where.get(w, ())) == 1]
+        if found:
+            _, _, _, w, seg = max(found)
+            return {"q": w, "note": ab["id"], "segment": seg, "from": "gloss" if latin else "transcript"}
     return None
 
 
@@ -154,7 +155,7 @@ def produce(base: str, uploads: list[dict], kind: str) -> dict:
         "version": 1, "status": "ready", "kind": kind, "notes": out_notes, "memory": memory, "demoQuery": demo_query(out_notes),
         "ab": {"note": ab_note["id"], "t0": 0, "t1": ab_note["kept"]["audioS"], "bytes": ab_note["kept"]["bytesHct"],
                "drift": ab_note["kept"]["driftNote"], "reason": "the median-drift clip of the benchmark of record" if kind == "fleurs" else "the window holding the ask"},
-        "proof": {"base": base, "jobs": [{k: j.get(k) for k in ("job", "nebiusId", "state", "created", "finished", "history")} for j in jobs],
+        "proof": {"base": base, "jobs": [{k: j.get(k) for k in ("job", "nebiusId", "state", "created", "finished", "timings", "history")} for j in jobs],
                   "memoryCalls": (memory or {}).get("calls", [])},
     }
     (OUT / "sample.json").write_text(json.dumps(sample, ensure_ascii=False, indent=1))

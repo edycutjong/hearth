@@ -33,7 +33,7 @@ export interface SampleNote {
     timings: Record<string, number>;
   };
   job: { nebiusId: string; preset: string; region: string; created: string; finished: string; image: string };
-  raw: { rawHead: number | null; checkedAt: string | null };
+  raw: { rawHead: number | null; originalHead?: number | null; checkedAt: string | null };
   tokenPreview?: number[][];
 }
 
@@ -44,6 +44,8 @@ export interface SampleDoc {
   notes: SampleNote[];
   memory: MemoryDoc | null;
   ab: { note: string; t0: number; t1: number; bytes: number; drift: number; reason: string } | null;
+  /** The word /judge suggests searching for, chosen by scripts/seed.py's rule from the sample's own text. */
+  demoQuery?: { q: string; note: string; segment: number; from: "gloss" | "transcript" } | null;
   proof: Record<string, unknown> | null;
 }
 

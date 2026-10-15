@@ -1,1 +1,344 @@
-{"version":1,"status":"pending","kind":"fleurs","notes":[],"memory":null,"ab":null,"proof":null}
+{
+ "version": 1,
+ "status": "ready",
+ "kind": "fleurs",
+ "notes": [
+  {
+   "id": "595158880a23",
+   "label": "FLEURS reader",
+   "anchor": "2026-10-15",
+   "title": "one FLEURS hi_in test sentence (clip 5676772040210847328, the median round-trip drift of 20)",
+   "source": "bench/fleurs/hi_in/5676772040210847328.wav",
+   "attribution": "Google FLEURS (hi_in test split), CC BY 4.0",
+   "audio": {
+    "original": "/sample/595158880a23.original.flac",
+    "kept": "/sample/595158880a23.kept.flac"
+   },
+   "hct": "/sample/595158880a23.hct",
+   "transcript": {
+    "version": 1,
+    "lang": "hi-IN",
+    "lang_detected": "hi-IN",
+    "duration_s": 14.4,
+    "runtime": {
+     "codec_samples_per_frame": 1764,
+     "codec_sample_rate": 22050,
+     "torch_threads": 4,
+     "weights_source": "bucket",
+     "weights_prefetched": true,
+     "asr": "nemo",
+     "asr_class": "EncDecRNNTBPEModelWithPrompt",
+     "att_context_size": [
+      56,
+      13
+     ],
+     "att_context_size_all": [
+      [
+       56,
+       3
+      ],
+      [
+       56,
+       0
+      ],
+      [
+       56,
+       6
+      ],
+      [
+       56,
+       13
+      ]
+     ],
+     "chunk_s": 1.12,
+     "asr_sample_rate": 16000
+    },
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0,
+      "t1": 14.4,
+      "text": "आम शब्दों में जब प्रबंधक अपने पूर्व सहयोगियों का नेतृत्व करना शुरू करते हैं तो दो तरह के बर्ताव सामने आते हैं स्पेक्ट्रम का एक सिरा उन लड़कों में से एक या लड़कियों में से एक बने रहने की कोशिश कर रहा है।"
+     }
+    ],
+    "note": "595158880a23"
+   },
+   "glosses": {
+    "0": "In simple terms, when managers start leading their former colleagues, two kinds of behavior emerge at opposite ends of the spectrum: some try to remain like one of the boys or girls."
+   },
+   "kept": {
+    "at": "2026-10-15T00:16:58.501Z",
+    "bytesHct": 3340,
+    "sha256": "3b1a340060924b6b53d9083adcee661b19b3871f0eb4432cc456aaf7da7e8f9b",
+    "frames": 183,
+    "audioS": 14.4,
+    "inputBytes": 921658,
+    "driftNote": 0.0233,
+    "maxDriftLongSegment": 0.0233,
+    "driftPass": true,
+    "langDetected": "hi-IN",
+    "timings": {
+     "load_s": 1.273,
+     "segment_s": 0.001,
+     "lang_check_s": 3.895,
+     "asr_s": 2.917,
+     "encode_s": 2.849,
+     "pack_s": 0,
+     "decode_s": 4.154,
+     "rt_asr_s": 2.99
+    }
+   },
+   "job": {
+    "nebiusId": "aijob-e01ncwsnrzpd08qcv3",
+    "hearthJob": "2026101545b97026",
+    "preset": "4vcpu-16gb",
+    "region": "eu-west1",
+    "created": "2026-10-15T00:10:10.319Z",
+    "finished": "2026-10-15T00:16:58.501Z",
+    "image": "python:3.11"
+   },
+   "raw": {
+    "rawHead": 404,
+    "originalHead": 404,
+    "checkedAt": "2026-10-15T00:17:12.985Z"
+   }
+  },
+  {
+   "id": "c565e922ac12",
+   "label": "FLEURS readers",
+   "anchor": "2026-10-15",
+   "title": "a 60-second note of FLEURS hi_in test sentences, as a 16 kbps Opus voice note",
+   "source": "bench/fleurs/clip60.opus",
+   "attribution": "Google FLEURS (hi_in test split), CC BY 4.0",
+   "audio": {
+    "original": "/sample/c565e922ac12.original.opus",
+    "kept": "/sample/c565e922ac12.kept.flac"
+   },
+   "hct": "/sample/c565e922ac12.hct",
+   "transcript": {
+    "version": 1,
+    "lang": "hi-IN",
+    "lang_detected": "hi-IN",
+    "duration_s": 60,
+    "runtime": {
+     "codec_samples_per_frame": 1764,
+     "codec_sample_rate": 22050,
+     "torch_threads": 4,
+     "weights_source": "bucket",
+     "weights_prefetched": true,
+     "asr": "nemo",
+     "asr_class": "EncDecRNNTBPEModelWithPrompt",
+     "att_context_size": [
+      56,
+      13
+     ],
+     "att_context_size_all": [
+      [
+       56,
+       3
+      ],
+      [
+       56,
+       0
+      ],
+      [
+       56,
+       6
+      ],
+      [
+       56,
+       13
+      ]
+     ],
+     "chunk_s": 1.12,
+     "asr_sample_rate": 16000
+    },
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0,
+      "t1": 10.64,
+      "text": "एक पूरी तरह से विकसित एथलीट की तरह बाघ चढ़ाई कर सकता है।   हालांकि अच्छी तरह से नहीं तैर सकता है"
+     },
+     {
+      "i": 1,
+      "t0": 10.64,
+      "t1": 30,
+      "text": "बड़ी दूरी तक छलंग लगा सकता है और एक शक्तिशाली मनुष्य के पांच गुना बल के साथ खींच सकता है।   हून ने इस्तफा दे दिया है मंत्रिमंडल में उनकी जगह सांसद एड डेवी लेंगे"
+     },
+     {
+      "i": 2,
+      "t0": 30,
+      "t1": 47.6,
+      "text": "सांसद नर्मन लैम के व्यापार मंत्री बनने की उम्मीद है यहां पद डेवी के मंत्रिमंडल में जाने की बजाय खाली हुई है।   यह सिद्धांत देखते हैं कि कुछ लोगों के बारे में।"
+     },
+     {
+      "i": 3,
+      "t0": 47.6,
+      "t1": 60,
+      "text": "ऐसी कौन सी बातें हैं जो उन्हें वही चीज करने के लिए कहती है वह वे चाहते हैं और उनके माहौल को"
+     }
+    ],
+    "note": "c565e922ac12"
+   },
+   "glosses": {
+    "0": "A tiger can climb like a fully developed athlete. However, it cannot swim well.",
+    "1": "It can leap over long distances and pull with five times the strength of a powerful human. Hoon has resigned from the cabinet; MP Ed Davis will take their place in the cabinet.",
+    "2": "There is an expectation that MP Norman Lam will become the trade minister; here the position that Davis would have taken in the cabinet is vacant instead. This principle is seen regarding some people.",
+    "3": "What kinds of things tell them to do the same thing they want and their environment?"
+   },
+   "kept": {
+    "at": "2026-10-15T00:16:58.501Z",
+    "bytesHct": 13532,
+    "sha256": "966fb5b814cf9fddcff8e07d0f02356e5f4e1ec9f6132eda9ab5c14a00a73f89",
+    "frames": 753,
+    "audioS": 60,
+    "inputBytes": 118474,
+    "driftNote": 0.1468,
+    "maxDriftLongSegment": 0.2353,
+    "driftPass": false,
+    "langDetected": "hi-IN",
+    "timings": {
+     "load_s": 0.074,
+     "segment_s": 0.003,
+     "lang_check_s": 1.974,
+     "asr_s": 10.331,
+     "encode_s": 14.791,
+     "pack_s": 0,
+     "decode_s": 23.547,
+     "rt_asr_s": 10.498
+    }
+   },
+   "job": {
+    "nebiusId": "aijob-e01ncwsnrzpd08qcv3",
+    "hearthJob": "2026101545b97026",
+    "preset": "4vcpu-16gb",
+    "region": "eu-west1",
+    "created": "2026-10-15T00:10:10.319Z",
+    "finished": "2026-10-15T00:16:58.501Z",
+    "image": "python:3.11"
+   },
+   "raw": {
+    "rawHead": 404,
+    "originalHead": 404,
+    "checkedAt": "2026-10-15T00:17:17.253Z"
+   }
+  }
+ ],
+ "memory": {
+  "version": 1,
+  "items": [],
+  "glosses": {
+   "595158880a23": {
+    "0": "In simple terms, when managers start leading their former colleagues, two kinds of behavior emerge at opposite ends of the spectrum: some try to remain like one of the boys or girls."
+   },
+   "c565e922ac12": {
+    "0": "A tiger can climb like a fully developed athlete. However, it cannot swim well.",
+    "1": "It can leap over long distances and pull with five times the strength of a powerful human. Hoon has resigned from the cabinet; MP Ed Davis will take their place in the cabinet.",
+    "2": "There is an expectation that MP Norman Lam will become the trade minister; here the position that Davis would have taken in the cabinet is vacant instead. This principle is seen regarding some people.",
+    "3": "What kinds of things tell them to do the same thing they want and their environment?"
+   }
+  },
+  "stats": {
+   "proposed": 0,
+   "droppedByQuoteGate": 0,
+   "amountRemoved": 0,
+   "whenRemoved": 0,
+   "kept": 0,
+   "resolved": 0
+  },
+  "dropped": [],
+  "calls": [
+   {
+    "note": "595158880a23",
+    "requestId": "chatcmpl-807d34a81090affe",
+    "model": "nvidia/nemotron-3-super-120b-a12b",
+    "ms": 714,
+    "at": "2026-10-15T00:16:59.006Z"
+   },
+   {
+    "note": "c565e922ac12",
+    "requestId": "chatcmpl-a8b1e40724d5ca39",
+    "model": "nvidia/nemotron-3-super-120b-a12b",
+    "ms": 1249,
+    "at": "2026-10-15T00:16:59.883Z"
+   }
+  ]
+ },
+ "demoQuery": {
+  "q": "colleagues",
+  "note": "595158880a23",
+  "segment": 0,
+  "from": "gloss"
+ },
+ "ab": {
+  "note": "595158880a23",
+  "t0": 0,
+  "t1": 14.4,
+  "bytes": 3340,
+  "drift": 0.0233,
+  "reason": "the median-drift clip of the benchmark of record"
+ },
+ "proof": {
+  "base": "https://hearth-alpha-six.vercel.app",
+  "jobs": [
+   {
+    "job": "2026101545b97026",
+    "nebiusId": "aijob-e01ncwsnrzpd08qcv3",
+    "state": "done",
+    "created": "2026-10-15T00:10:10.319Z",
+    "finished": "2026-10-15T00:16:58.501Z",
+    "history": [
+     {
+      "at": "2026-10-15T00:10:10.319Z",
+      "event": "queued"
+     },
+     {
+      "at": "2026-10-15T00:10:10.353Z",
+      "event": "Nebius job aijob-e01ncwsnrzpd08qcv3 created"
+     },
+     {
+      "at": "2026-10-15T00:10:33.528Z",
+      "event": "Nebius job PROVISIONING"
+     },
+     {
+      "at": "2026-10-15T00:11:22.768Z",
+      "event": "Nebius job STARTING"
+     },
+     {
+      "at": "2026-10-15T00:12:25.288Z",
+      "event": "Nebius job IMAGE_PULLING"
+     },
+     {
+      "at": "2026-10-15T00:13:12.310Z",
+      "event": "Nebius job STARTING"
+     },
+     {
+      "at": "2026-10-15T00:13:28.068Z",
+      "event": "Nebius job RUNNING"
+     },
+     {
+      "at": "2026-10-15T00:16:58.501Z",
+      "event": "report done; 2 note(s) validated"
+     }
+    ]
+   }
+  ],
+  "memoryCalls": [
+   {
+    "note": "595158880a23",
+    "requestId": "chatcmpl-807d34a81090affe",
+    "model": "nvidia/nemotron-3-super-120b-a12b",
+    "ms": 714,
+    "at": "2026-10-15T00:16:59.006Z"
+   },
+   {
+    "note": "c565e922ac12",
+    "requestId": "chatcmpl-a8b1e40724d5ca39",
+    "model": "nvidia/nemotron-3-super-120b-a12b",
+    "ms": 1249,
+    "at": "2026-10-15T00:16:59.883Z"
+   }
+  ]
+ }
+}

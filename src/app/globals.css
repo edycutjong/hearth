@@ -151,6 +151,8 @@ table.plain { width: 100%; border-collapse: collapse; font-size: 15px; }
 table.plain th, table.plain td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--rule); vertical-align: top; }
 table.plain th { font: 600 12px/1.3 var(--data); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 table.plain td.num { font-family: var(--data); font-size: 13.5px; white-space: nowrap; }
+table.plain.kv td.num { white-space: normal; overflow-wrap: anywhere; }
+.tablewrap { overflow-x: auto; max-width: 100%; }
 
 @media (max-width: 1099px) {
   .fold3 { grid-template-columns: 1fr 1px 1fr; }

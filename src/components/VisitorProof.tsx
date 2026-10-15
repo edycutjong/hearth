@@ -31,7 +31,7 @@ export function VisitorProof() {
   if (!v?.job) return <p className="muted">You have not kept a note yet. Your own run will appear here, with its Job ID, timings and hashes.</p>;
   return (
     <div className="stack">
-      <table className="plain">
+      <table className="plain kv">
         <tbody>
           <tr><th>Hearth job</th><td className="num">{v.job.job} · {v.job.state}</td></tr>
           <tr><th>Nebius job</th><td className="num">{v.job.nebiusId ?? "—"} · cpu-d3 · {v.job.preset}</td></tr>
@@ -44,6 +44,7 @@ export function VisitorProof() {
           ) : null}
         </tbody>
       </table>
+      <div className="tablewrap">
       <table className="plain">
         <thead>
           <tr><th>Note</th><th>Audio</th><th>Tokens</th><th>sha256</th><th>Agreement</th><th>Original</th></tr>
@@ -61,6 +62,7 @@ export function VisitorProof() {
           ))}
         </tbody>
       </table>
+      </div>
       {v.memory ? (
         <table className="plain">
           <thead>

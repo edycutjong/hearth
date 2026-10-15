@@ -49,7 +49,9 @@ export function JudgeSample({ sample, bench, wait }: { sample: SampleDoc; bench:
       <ol className="steps" aria-label="Three steps">
         <li className={done.original ? "done" : ""}>▶ Original</li>
         <li className={done.kept ? "done" : ""}>▶ Kept — {KEPT_LABEL.split("—")[1]?.trim()}</li>
-        <li className={done.stamp ? "done" : ""}>{items.length ? "Click the stamp" : "Search “knee” — or any word you hear"}</li>
+        <li className={done.stamp ? "done" : ""}>
+          {items.length ? "Click the stamp" : sample.demoQuery ? `Search “${sample.demoQuery.q}” — or any word you hear` : "Search any word you hear"}
+        </li>
       </ol>
       {sample.notes.length > 1 ? (
         <div className="labels" role="tablist" aria-label="Sample notes">
@@ -84,7 +86,11 @@ export function JudgeSample({ sample, bench, wait }: { sample: SampleDoc; bench:
       />
       <section className="stack" aria-label="Find in the sample">
         <h3>Find a moment</h3>
-        <Find scope="sample" placeholder={fleurs ? "a word you heard, in Hindi or English" : "knee"} onOpen={(id, t0, t1) => { setNoteId(id); setSeek({ t0, t1, nonce: Date.now() }); mark("stamp"); }} />
+        <Find
+          scope="sample"
+          placeholder={sample.demoQuery ? `try “${sample.demoQuery.q}”` : "a word you heard, in Hindi or English"}
+          onOpen={(id, t0, t1) => { setNoteId(id); setSeek({ t0, t1, nonce: Date.now() }); mark("stamp"); }}
+        />
       </section>
       {bench ? <BenchBlock bench={bench} /> : null}
       <div className="card stack">
