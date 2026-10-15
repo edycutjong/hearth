@@ -1,0 +1,7 @@
+# Test + lint dependencies for the Python side (worker/test_worker.py, scripts/test_*.py) — what CI installs.
+# The worker's own runtime pins (torch, NeMo, 150 packages) live in worker/requirements.txt and are only
+# installed inside the Nebius Job; the unit tests import worker.py without them.
+pytest>=8
+numpy>=1.26
+ruff>=0.6
+pip-audit>=2.7

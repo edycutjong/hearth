@@ -1,0 +1,13 @@
+# Python worker + harness scripts. Explicit rule set (pyflakes + pycodestyle errors/syntax) so a new ruff
+# release cannot change what CI enforces; no churn on style.
+target-version = "py311"
+extend-exclude = [".venv", "node_modules", ".next"]
+
+[lint]
+select = ["E4", "E7", "E9", "F"]
+
+[lint.per-file-ignores]
+# worker.py is byte-pinned to the Job that produced the benchmark of record (tests/worker-source.test.ts
+# keeps the injected copy identical); the one unused local import in run_decode stays rather than change
+# a measured artifact for a lint nit.
+"worker/worker.py" = ["F401"]

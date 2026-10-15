@@ -55,3 +55,19 @@ test("both sides of the A/B are served", async ({ page, request }) => {
   expect(srcs.length).toBe(2);
   for (const src of srcs) expect((await request.get(src as string)).status()).toBe(200);
 });
+
+test("/judge answers a bare request: 200, no redirect, honest FLEURS framing, no cookie required", async ({ request }) => {
+  const res = await request.get("/judge", { maxRedirects: 0 });
+  expect(res.status()).toBe(200);
+  const html = await res.text();
+  expect(html).toContain("FLEURS read speech, not a family note");
+  expect(html).toMatch(/Hear .*of voice kept in/);
+});
+
+test("/api/proof is public and carries the sample Job records", async ({ request }) => {
+  const res = await request.get("/api/proof", { maxRedirects: 0 });
+  expect(res.status()).toBe(200);
+  const body = await res.json();
+  expect(body).toHaveProperty("deployed");
+  expect(Array.isArray(body.sample.jobs)).toBe(true);
+});

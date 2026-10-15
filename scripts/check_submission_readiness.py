@@ -9,7 +9,6 @@ anchor) unless the shipped sample's own memory carries them. Exit 1 lists every 
 """
 from __future__ import annotations
 
-import json
 import re
 import sys
 from pathlib import Path

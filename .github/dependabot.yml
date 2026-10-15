@@ -1,0 +1,46 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      # Major bumps are framework migrations, not maintenance. This demo must stay live for judges
+      # through 2026-12-15; an unattended next 15 -> 16 is a way to wake up to a broken app.
+      # Security alerts stay on; they are a separate feature.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    groups:
+      actions:
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # The Python side that CI installs (pytest, numpy, ruff, pip-audit).
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # worker/requirements.txt is deliberately NOT listed here: it is pinned (150 packages) to the
+  # environment the benchmark of record ran in (Job aijob-e01y33r8hyfcn7np5v). Bumping torch or
+  # NeMo changes the measured WER drift and bytes/hour, so it is a re-benchmark decision, never an
+  # unattended pull request.
