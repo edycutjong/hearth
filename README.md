@@ -14,6 +14,7 @@
 
   [![Live Demo](https://img.shields.io/badge/🚀_Live-Demo-06b6d4?style=for-the-badge)](https://hearth-alpha-six.vercel.app/judge)
   [![Proof](https://img.shields.io/badge/🔎_Job-Proof-f59e0b?style=for-the-badge)](https://hearth-alpha-six.vercel.app/proof)
+  [![Pitch Deck](https://img.shields.io/badge/🎞️_Pitch-Deck-2C4A6B?style=for-the-badge)](https://hearth-alpha-six.vercel.app/pitch)
   [![Feedback](https://img.shields.io/badge/📝_Feedback-for_Nebius_&_NVIDIA-ef4444?style=for-the-badge)](FEEDBACK.md)
   [![Built for Nebius x NVIDIA Global AI Hackathon](https://img.shields.io/badge/Devpost-Nebius_×_NVIDIA_Global_AI_Hackathon-8b5cf6?style=for-the-badge)](https://nebiusglobalaihackathon.devpost.com/)
 
@@ -98,7 +99,7 @@ and judges could not install them). Tavily is not used either: nothing in the fl
 | Measure | Result |
 |---|---|
 | Unit and integration tests | **195** vitest (14 files) + **24** pytest, all passing |
-| Browser tests | 10 Playwright tests × 2 projects (desktop 1440 px, phone 375 px), no credentials |
+| Browser tests | 13 Playwright tests × 2 projects (desktop 1440 px, phone 375 px), no credentials |
 | ASR real-time factor on 4 vCPU | <!--n:asr_rtf-->0.16<!--/n--> (gate ≤ 0.5) |
 | Peak memory | <!--n:peak_rss_gb-->6.9<!--/n--> GB (gate ≤ 12 GB) |
 | Cost per hour of voice | $<!--n:usd_per_audio_hour-->0.135<!--/n--> (gate ≤ $0.60) |
@@ -154,15 +155,15 @@ npm run test:live     # real Nebius + Token Factory (spends cents)
 | Secrets | TruffleHog (verified) + gitleaks over the full history | `ci.yml` stage 2, `gitleaks.yml` |
 | Dependencies | `npm audit --omit=dev`, `pip-audit`, license check, Dependabot (grouped, no major bumps; the worker's benchmarked pins are never bumped by a bot) | `ci.yml` stage 2, `dependabot.yml` |
 | Build | `next build` with a bundle-size budget | `ci.yml` stage 3 |
-| E2E | Playwright against the production build with no credentials: `/judge`, `/proof`, 404, 375 px | `ci.yml` stage 4 |
+| E2E | Playwright against the production build with no credentials: `/judge`, `/proof`, `/about`, `/pitch`, 404, 375 px | `ci.yml` stage 4 |
 | Performance | Lighthouse CI on `/judge` and `/proof` (accessibility ≥ 0.9 is a hard gate, the rest advisory) | `ci.yml` stage 5 |
 | SAST | CodeQL (JavaScript/TypeScript + Python); runs once the repo is public, because code scanning needs GitHub Advanced Security on a private repo | `codeql.yml` |
 | Releases | Semantic version tags from Angular-style commit messages | `release.yml` |
 
 **Honest CI status.** GitHub Actions was blocked on the account's billing while this repo was private, so no workflow
-run completed there. The same commands were run locally against HEAD instead, and their output is kept in
-`evidence/ci-local-2026-10-15.txt`. Fixing the billing (or making the repo public, which makes Actions free) is all the
-pipeline needs.
+run completed there. The same commands were run locally instead, and their output is kept in
+`evidence/ci-local-2026-10-15.txt` and, after the story page and deck were added, `evidence/ci-local-2026-10-15-site.txt`.
+Fixing the billing (or making the repo public, which makes Actions free) is all the pipeline needs.
 
 ## 📁 Project Structure
 
@@ -178,6 +179,7 @@ export/                   decode.py: tokens back to audio outside Hearth
 ## 📽️ Demo Materials
 
 [Live app](https://hearth-alpha-six.vercel.app) · [/judge](https://hearth-alpha-six.vercel.app/judge) · [/proof](https://hearth-alpha-six.vercel.app/proof) ·
+[Story page (/about)](https://hearth-alpha-six.vercel.app/about) · [Pitch deck (/pitch)](https://hearth-alpha-six.vercel.app/pitch) ·
 [DEMO.md](DEMO.md) · [FEEDBACK.md](FEEDBACK.md) · [ARCHITECTURE.md](ARCHITECTURE.md)
 
 ## 📄 License
