@@ -1,0 +1,15 @@
+{
+ "sample": {
+  "kind": "fleurs",
+  "stats": {
+   "proposed": 0,
+   "droppedByQuoteGate": 0,
+   "amountRemoved": 0,
+   "whenRemoved": 0,
+   "kept": 0,
+   "resolved": 0
+  }
+ },
+ "live_keeps": [],
+ "note": "Volunteer spaces are private: their gate counts are shown to them on their own Kept tab, never collected here."
+}

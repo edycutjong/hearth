@@ -67,18 +67,29 @@ Modes: `keep` (the pipeline above), `decode` (rebuild an expired playback copy f
   builder's other projects; Nebius creates a third job and ends it with `QuotaExceeded`. So `dispatch()` first counts
   the region's live jobs — all of them, except a Hearth Job whose report the app has already validated, which Nebius
   keeps listing as running while its container exits (`holdsSlot`) — and a `QuotaExceeded` or HTTP 429 is a requeue
-  with backoff (30 s doubling to 4 min), never a spent attempt. Each queue entry is claimed with `If-None-Match: *`, so
-  two concurrent requests cannot both dispatch it.
+  with backoff (30 s doubling to 4 min), never a spent attempt. A global dispatch lock (`If-None-Match: *`, a stale
+  lock taken over with `If-Match`) and a claim per queue entry mean racing requests — a keep, the tick, a status poll —
+  create one Job, not two. A requeue is written once per attempt; a Job with no terminal state 30 min past its timeout
+  is cancelled by a watchdog; a worker past its 40-min soft deadline reports its remaining notes `deferred` and the app
+  queues them again.
 - **Tick.** The worker's `POST /api/tick` is answered as soon as its report is validated, so the Job stops billing at
   once; remembering the notes and starting the next queued Job run after the response (`after()`).
 - **Validation.** A note's result is trusted only when its job id and note id match and the sha256 of the `.hct` the
-  app reads back equals the one the worker reported.
+  app reads back equals the one the worker reported. Exactly one request finalizes a Job (its record moves to
+  `finalizing` with `If-Match`; a stale claim is taken over after 2 min), and a kept note is never undone.
+- **Delete-all and the fence** (`src/lib/fence.ts`). Delete-all writes a tombstone first; from then on no reconcile,
+  dispatch or memory pass writes into the space, a Job created meanwhile is cancelled, and any active marker whose job
+  record is gone is reaped by the next dispatch, so the single slot can never be held by a deleted space. The daily
+  cron sweeps the prefixes once more after every presigned URL has expired. A deleted space's id is never reused.
 - **Drift gate** (a fixed prior): note drift ≤ 5 % and ≤ 30 % for every segment of ≥ 8 words. Passing notes keep their
   original for a 24 h grace (so the user can A/B), then the app DELETEs it and HEADs it: "deleted" means `raw/` **and**
   `u/<uid>/originals/` both return 404, recorded with the check time. Failing or failed notes are copied to
   `originals/` (tag replaced) before `raw/` is cleared.
 - **Spend meter** (`src/lib/caps.ts`). Every create reserves its 1 h worst case (the timeout is set explicitly; the API
-  default is 24 h) and is settled from its real duration. Uid-free, so delete-all cannot reset it.
+  default is 24 h) and is settled from its real duration — per attempt, so a requeued Job is metered again.
+  Uid-free, so delete-all cannot reset it. Daily slices admit a Job while the day's spend is under the slice; the
+  $17.50 ceiling checks the worst case. Token Factory calls from search and drafting have their own daily caps
+  (sample searches apart, and cached per query); past them search runs as typed.
 
 ## Memory (`src/lib/memory.ts`, `gates.ts`, `dates.ts`, `hindi/*`)
 
@@ -91,7 +102,11 @@ Nemotron 3 Super proposes items with `response_format: json_schema` (`src/lib/tf
    imperative verb. Otherwise the field is removed ("amount not stated", "date unclear").
 3. **Resolver** — due dates from the note's own timestamp, never the LLM: "before Sunday" is the day before.
 4. **Write** — `memory.json` with `If-Match`; a 412 re-reads and re-merges. A later «पैसे मिल गए» marks an earlier money
-   ask received only when Super links them and the amounts agree.
+   ask received only when Super links them, the quote itself says the money arrived, and the amounts agree; a link
+   that fails this is dropped and counted, never a new reminder.
+5. **One pass per note** — a request claims the note (`If-Match` on its meta) before calling Token Factory; applying an
+   extraction is idempotent per note; a rate limit or 5xx retries twice with backoff; every write takes the space's tag
+   at write time and nothing is written into a space being deleted.
 
 Privacy gate: transcript text reaches Token Factory only for the sample, with Zero Data Retention on for the
 organisation (`TF_ZDR_ON`), or after the space opts in under the default-retention sentence (`src/lib/copy.ts`).

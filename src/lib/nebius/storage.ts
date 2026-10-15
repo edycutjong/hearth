@@ -191,7 +191,8 @@ export async function getObjectTagging(
   if (!res.ok) throw new StorageError(`GET tagging ${key} failed: ${res.status}`, res.status);
   const xml = await res.text();
   const out: Record<string, string> = {};
-  for (const m of xml.matchAll(/<Tag><Key>([^<]*)<\/Key><Value>([^<]*)<\/Value><\/Tag>/g)) {
+  // Nebius answers pretty-printed XML (newlines and indentation between the elements): match with whitespace allowed.
+  for (const m of xml.matchAll(/<Tag>\s*<Key>([^<]*)<\/Key>\s*<Value>([^<]*)<\/Value>\s*<\/Tag>/g)) {
     out[decodeXmlEntities(m[1] ?? "")] = decodeXmlEntities(m[2] ?? "");
   }
   return out;
