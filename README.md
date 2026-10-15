@@ -161,7 +161,7 @@ npm run test:live     # real Nebius + Token Factory (spends cents)
 | Releases | Semantic version tags from Angular-style commit messages | `release.yml` |
 
 **Honest CI status.** GitHub Actions was blocked on the account's billing while this repo was private, so no workflow
-run completed there. The same commands were run locally instead, and their output is kept in
+job ever started there (each run failed at once on the billing block). The same commands were run locally instead, and their output is kept in
 `evidence/ci-local-2026-10-15.txt` and, after the story page and deck were added, `evidence/ci-local-2026-10-15-site.txt`.
 Fixing the billing (or making the repo public, which makes Actions free) is all the pipeline needs.
 
@@ -169,9 +169,10 @@ Fixing the billing (or making the repo public, which makes Actions free) is all 
 
 ```
 src/app, src/components   Next.js routes: /, /judge, /proof, /api/*
+public/                   the judge sample's files, the story page (/about) and the pitch deck (/pitch)
 src/lib                   pipeline, gates, Hindi date + number resolver, SigV4, Nebius clients, .hct format
 worker/                   the Job: segment → ASR → NanoCodec → pack → decode → re-ASR → drift
-bench/results/            every measurement behind a number on this page
+bench/results/            every benchmark measurement behind a number on this page (test counts: evidence/ci-local-*.txt)
 evidence/                 recorded live keep and storage preflight (delete-all listings are in bench/results/live-*.json)
 export/                   decode.py: tokens back to audio outside Hearth
 ```
