@@ -1,0 +1,28 @@
+{
+ "what": "export/decode.py, run in a fresh virtualenv exactly as its docstring says, decodes the judge sample's stored .hct files without Hearth, and matches the Nebius Job's own decode",
+ "when": "2026-10-15T01:04Z",
+ "machine": "Darwin arm64 (the builder's laptop; the Jobs run linux/x86_64)",
+ "python": "3.12.13 (python3.12 -m venv venv && pip install \"nemo_toolkit[asr]==3.0.0\" soundfile einops)",
+ "torch": "2.14.1",
+ "inputs": [
+  "public/sample/595158880a23.hct",
+  "public/sample/c565e922ac12.hct"
+ ],
+ "compared_with": "public/sample/<id>.kept.flac \u2014 the Job's decode (aijob-e01ncwsnrzpd08qcv3), stored as 16-bit FLAC",
+ "results": {
+  "595158880a23": {
+   "seconds": 14.4,
+   "max_abs_sample_diff": 6e-05,
+   "snr_db": 57.5,
+   "correlation": 1.0
+  },
+  "c565e922ac12": {
+   "seconds": 60.0,
+   "max_abs_sample_diff": 6e-05,
+   "snr_db": 58.4,
+   "correlation": 1.0
+  }
+ },
+ "wall_s_both_notes_including_codec_download_and_load": 68,
+ "found": "On Python 3.11.1 the same steps fail inside NeMo 3.0.0 (tar.extract(..., filter='data') needs Python >= 3.11.4); decode.py now says so."
+}

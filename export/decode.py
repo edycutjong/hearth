@@ -5,7 +5,7 @@ Every note in this export is a .hct file: NVIDIA NanoCodec (nemo-nano-codec-22kh
 13 codebooks x 12.5 frames per second, packed at 11 bits per code, with a header and a sha256 of the codes.
 This script turns them back into .wav files with the same open model, on your own computer.
 
-    python3 -m venv venv && . venv/bin/activate
+    python3 -m venv venv && . venv/bin/activate                 # Python 3.11.4 or newer (3.12 works)
     pip install "nemo_toolkit[asr]==3.0.0" soundfile einops    # CPU is fine
     python3 decode.py notes/*.hct                               # writes a .wav next to each .hct
 

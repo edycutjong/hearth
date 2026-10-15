@@ -62,10 +62,13 @@ normalised) is committed beside it: `bench/results/d0-20261014T222337Z-4vcpu-16g
 **Play a kept note without Hearth** — the stored `.hct` decodes with the open model alone:
 
 ```bash
-python3 -m venv venv && . venv/bin/activate
+python3.12 -m venv venv && . venv/bin/activate      # Python 3.11.4 or newer: NeMo 3.0.0 needs tarfile's filter=
 pip install "nemo_toolkit[asr]==3.0.0" soundfile einops
 python3 export/decode.py public/sample/*.hct        # writes a .wav next to each .hct
 ```
+
+Checked on a laptop (arm64, Python 3.12, a fresh venv): both sample notes decode in about a minute including the codec
+download, and match the Job's own decode to within 6×10⁻⁵ per sample (57–58 dB SNR) — `evidence/export-decode-check.json`.
 
 ## 3. On your own Nebius project (cents)
 
