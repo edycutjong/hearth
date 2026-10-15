@@ -1,0 +1,42 @@
+{
+ "at": "2026-10-15T02:20:32.544988+00:00",
+ "bucket": "hearth-data",
+ "endpoint": "https://storage.eu-west1.nebius.cloud",
+ "checks": {
+  "create_if_none_match": {
+   "status": 200,
+   "pass": true
+  },
+  "second_create_refused": {
+   "status": 412,
+   "pass": true
+  },
+  "if_match_current_accepted": {
+   "status": 200,
+   "pass": true
+  },
+  "if_match_stale_refused": {
+   "status": 412,
+   "pass": true
+  },
+  "content_after": {
+   "body": "{\"v\":3}",
+   "pass": true
+  },
+  "versioning_off": {
+   "status": 200,
+   "pass": true,
+   "response": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VersioningConfiguration xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\"></VersioningConfiguration>"
+  },
+  "delete_then_head_404": {
+   "delete": 204,
+   "head": 404,
+   "pass": true
+  }
+ },
+ "etags": [
+  "\"a191475ae2bf7db9c7e320f7da455bbb\"",
+  "\"36fd6274099591785737698c540f74e6\""
+ ],
+ "all_pass": true
+}

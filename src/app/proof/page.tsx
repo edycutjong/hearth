@@ -3,6 +3,7 @@ import { VisitorProof } from "@/components/VisitorProof";
 import { kb, mmss, pct } from "@/components/format";
 import latest from "../../../bench/results/latest.json";
 import gates from "../../../evidence/tf-extract-smoke.json";
+import preflight from "../../../evidence/storage-preflight.json";
 import { getSample } from "@/lib/sample";
 
 export const metadata = { title: "Hearth — proof" };
@@ -173,6 +174,12 @@ export default function Proof() {
         ) : (
           <p className="muted">Being produced by a real Nebius Job.</p>
         )}
+        <p className="note-hint">
+          What &ldquo;deleted&rdquo; rests on, checked against the bucket on {String((preflight as { at?: string }).at ?? "").slice(0, 10)}:
+          versioning is {(preflight as { checks?: { versioning_off?: { pass?: boolean } } }).checks?.versioning_off?.pass ? "off, so a delete is final" : "NOT confirmed off"};
+          a DELETE is followed by HEAD 404; and a write with a stale ETag is refused (412) — every lock and merge in Hearth relies on it
+          (<span className="num">evidence/storage-preflight.json</span>).
+        </p>
         {sample.memory?.calls.length ? (
           <p className="note-hint">
             Memory for the sample: {sample.memory.calls[0]?.model} on Nebius Token Factory proposed {sample.memory.stats.proposed} item(s), kept{" "}
