@@ -1,5 +1,5 @@
 import { anchorFromFilename } from "@/lib/dates";
-import { audioExt, keys, spaceTag } from "@/lib/keys";
+import { MAX_UPLOAD_BYTES, audioExt, keys, spaceTag } from "@/lib/keys";
 import type { NoteMeta } from "@/lib/pipeline";
 import { json, loadSpace, notConfigured, ready } from "@/lib/server";
 import { newId } from "@/lib/space";
@@ -8,7 +8,6 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_FILES = 20;
-const MAX_BYTES = 25 * 1024 * 1024;
 
 interface FileIn {
   name: string;
@@ -39,7 +38,7 @@ export async function POST(req: Request) {
   for (const f of files) {
     const ext = audioExt(String(f.name ?? ""));
     if (!ext) return json({ error: `"${f.name}" isn't a voice note (opus, ogg, m4a, mp3, wav, aac, amr).` }, 400);
-    if (!(f.size > 0 && f.size <= MAX_BYTES)) return json({ error: `"${f.name}" is larger than 25 MB.` }, 400);
+    if (!(f.size > 0 && f.size <= MAX_UPLOAD_BYTES)) return json({ error: `"${f.name}" is larger than 25 MB.` }, 400);
     const id = newId(6);
     const fromName = anchorFromFilename(f.name);
     const anchor = /^\d{4}-\d{2}-\d{2}$/.test(f.anchor ?? "") ? (f.anchor as string) : fromName ?? today;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PRICE_PER_HOUR, canSpend, emptySpend, phaseOf, reserve, settle, takeDaily, type SpendDoc } from "@/lib/caps";
+import { PRICE_PER_HOUR, canSpend, emptySpend, phaseOf, reserve, settle, settleStale, takeDaily, type SpendDoc } from "@/lib/caps";
 import { keys } from "@/lib/keys";
 import {
   backoffSeconds,
@@ -88,6 +88,49 @@ describe("dispatch", () => {
     expect(holdsSlot({ name: "hearth-2026101400aabbcc" }, new Set())).toBe(false);
     expect(holdsSlot({ name: "hearth-d0-20261014t231930z-4vcpu-16gb" }, new Set())).toBe(true);
     expect(holdsSlot({ name: "faultline-9d33fada-r3-i172-bd522cc7c8c9-a1" }, new Set())).toBe(true);
+  });
+
+  it("keeps a judge note's language detection and 60 s limit through a QuotaExceeded requeue", async () => {
+    const ctx = makeCtx();
+    ctx.backend.foreign = 1;
+    ctx.backend.slots = 1;
+    await seedSpace(ctx.store);
+    await seedNote(ctx.store, "aa000001");
+    const { job } = await enqueue(ctx, UID, "keep", [{ id: "aa000001", ext: "opus" }], { lang: "detect", maxNoteSeconds: 60 });
+    ctx.regionSlots = 3;
+    expect(await dispatch(ctx)).toBe("dispatched");
+    expect(must(await reconcileJob(ctx, UID, job)).state).toBe("queued");
+    ctx.backend.foreign = 0;
+    ctx.backend.slots = 2;
+    const queued = must((await ctx.store.list(keys.queuePrefix()))[0]);
+    const entry = must((await ctx.store.getJson<{ nextTry: string }>(queued.key))?.value);
+    entry.nextTry = new Date(0).toISOString();
+    await ctx.store.putJson(queued.key, entry);
+    expect(await dispatch(ctx)).toBe("dispatched");
+    const manifest = must((await ctx.store.getJson<{ lang: string; max_note_s: number }>(keys.jobManifest(UID, job)))?.value);
+    expect([manifest.lang, manifest.max_note_s]).toEqual(["detect", 60]);
+  });
+
+  it("creates one Job when two requests dispatch at the same moment", async () => {
+    const ctx = makeCtx();
+    await seedSpace(ctx.store);
+    await seedNote(ctx.store, "aa000001");
+    await seedNote(ctx.store, "aa000002");
+    await enqueue(ctx, UID, "keep", [{ id: "aa000001", ext: "opus" }]);
+    await enqueue(ctx, UID, "keep", [{ id: "aa000002", ext: "opus" }]);
+    const outcomes = await Promise.all([dispatch(ctx), dispatch(ctx), dispatch(ctx)]);
+    expect(outcomes.filter((o) => o === "dispatched")).toHaveLength(1);
+    expect(ctx.backend.runs.size).toBe(1);
+  });
+
+  it("waits instead of creating when the region cannot be read", async () => {
+    const ctx = makeCtx();
+    ctx.backend.failList = true;
+    await seedSpace(ctx.store);
+    await seedNote(ctx.store, "aa000001");
+    await enqueue(ctx, UID, "keep", [{ id: "aa000001", ext: "opus" }]);
+    expect(await dispatch(ctx)).toBe("backoff");
+    expect(ctx.backend.runs.size).toBe(0);
   });
 
   it("treats a 429 on create as a requeue, releasing the reserved spend", async () => {
@@ -205,6 +248,72 @@ describe("where a Job's time goes", () => {
   });
 });
 
+describe("finalize under races, deferral and the watchdog", () => {
+  it("finalizes once when a status poll and the tick arrive together", async () => {
+    const ctx = makeCtx();
+    await seedSpace(ctx.store);
+    await seedNote(ctx.store, "aa000001");
+    const { job } = await enqueue(ctx, UID, "keep", [{ id: "aa000001", ext: "opus" }]);
+    await dispatch(ctx);
+    await playWorker(ctx.store, UID, job);
+    await Promise.all([reconcileJob(ctx, UID, job), reconcileJob(ctx, UID, job), reconcileJob(ctx, UID, job)]);
+    const rec = await record(ctx, job);
+    expect(rec.state).toBe("done");
+    expect(rec.history.filter((h) => h.event.startsWith("report done"))).toHaveLength(1);
+  });
+
+  it("never turns a kept note back into a failed one when a Job reports again", async () => {
+    const ctx = makeCtx();
+    await seedSpace(ctx.store);
+    await seedNote(ctx.store, "aa000001");
+    const { job } = await enqueue(ctx, UID, "keep", [{ id: "aa000001", ext: "opus" }]);
+    await dispatch(ctx);
+    await playWorker(ctx.store, UID, job);
+    await reconcileJob(ctx, UID, job);
+    const done = await record(ctx, job);
+    await ctx.store.putJson(keys.job(UID, job), { ...done, state: "running" }); // a stray second finalize
+    await playWorker(ctx.store, UID, job, () => ({ drift: 0.02, status: "failed" }));
+    await reconcileJob(ctx, UID, job);
+    expect((await meta(ctx, "aa000001")).status).toBe("kept");
+  });
+
+  it("requeues notes the worker deferred, keeping what the entry asked for", async () => {
+    const ctx = makeCtx();
+    await seedSpace(ctx.store);
+    await seedNote(ctx.store, "aa000001");
+    await seedNote(ctx.store, "aa000002");
+    const { job } = await enqueue(ctx, UID, "keep", [{ id: "aa000001", ext: "opus" }, { id: "aa000002", ext: "opus" }], { lang: "detect", maxNoteSeconds: 60 });
+    await dispatch(ctx);
+    await playWorker(ctx.store, UID, job, (id) => (id === "aa000002" ? { drift: 0, status: "deferred" } : { drift: 0.02 }));
+    await reconcileJob(ctx, UID, job);
+    expect((await meta(ctx, "aa000001")).status).toBe("kept");
+    expect((await meta(ctx, "aa000002")).status).toBe("queued");
+    const q = await ctx.store.list(keys.queuePrefix());
+    expect(q).toHaveLength(1);
+    const entry = must((await ctx.store.getJson<{ notes: Array<{ id: string }>; lang: string; maxNoteSeconds: number }>(must(q[0]).key))?.value);
+    expect(entry.notes.map((n) => n.id)).toEqual(["aa000002"]);
+    expect([entry.lang, entry.maxNoteSeconds]).toEqual(["detect", 60]);
+  });
+
+  it("cancels a Job that never reached a terminal state after its timeout, and retries it", async () => {
+    const t0 = new Date("2026-12-02T00:00:00Z");
+    let now = t0;
+    const ctx = makeCtx({ now: () => now });
+    await seedSpace(ctx.store);
+    await seedNote(ctx.store, "aa000001");
+    const { job } = await enqueue(ctx, UID, "keep", [{ id: "aa000001", ext: "opus" }]);
+    await dispatch(ctx);
+    ctx.backend.failGet = true; // the job's state can no longer be read
+    now = new Date(t0.getTime() + 20 * 60_000);
+    expect(must(await reconcileJob(ctx, UID, job)).state).toBe("dispatched");
+    now = new Date(t0.getTime() + 100 * 60_000);
+    const rec = must(await reconcileJob(ctx, UID, job));
+    expect(ctx.backend.cancelled).toHaveLength(1);
+    expect(rec.state).toBe("queued");
+    expect(await ctx.store.list(keys.activePrefix())).toHaveLength(0);
+  });
+});
+
 describe("verified deletion", () => {
   it("deletes after the grace and proves it: raw and originals both HEAD 404", async () => {
     const ctx = makeCtx();
@@ -264,9 +373,45 @@ describe("spend meter and caps", () => {
     expect(canSpend(doc, 0.132, "2026-10-21")).toEqual({ ok: false, reason: "budget_total" });
     const judging = emptySpend();
     judging.byDay["2026-12-03"] = 0.45;
+    expect(canSpend(judging, 0.132, "2026-12-03").ok).toBe(true); // under the slice so far: admitted (may overshoot by one Job)
+    judging.byDay["2026-12-03"] = 0.5;
     expect(canSpend(judging, 0.132, "2026-12-03")).toEqual({ ok: false, reason: "budget_day" });
     expect(canSpend(judging, 0.132, "2026-12-04").ok).toBe(true);
     expect(phaseOf("2026-12-16").name).toBe("closed");
+  });
+
+  it("admits a Job on every day from Oct 31 to Dec 15 on an empty meter (a reservation is bigger than November's slice)", () => {
+    for (let t = Date.parse("2026-10-31T12:00:00Z"); t <= Date.parse("2026-12-15T12:00:00Z"); t += 86_400_000) {
+      const day = new Date(t).toISOString().slice(0, 10);
+      expect(canSpend(emptySpend(), 0.132, day).ok, day).toBe(true);
+    }
+  });
+
+  it("meters every attempt of a requeued Job and adds them up", async () => {
+    const ctx = makeCtx();
+    const now = new Date("2026-10-20T00:00:00Z");
+    expect((await reserve(ctx.store, "jobA", "4vcpu-16gb", now)).ok).toBe(true);
+    await settle(ctx.store, "jobA", 0.05); // attempt 1 ended (QuotaExceeded is settled at 0 in the pipeline)
+    expect((await reserve(ctx.store, "jobA", "4vcpu-16gb", now)).ok).toBe(true); // attempt 2 reserves again
+    let doc = must((await ctx.store.getJson<SpendDoc>("sys/caps/spend.json"))?.value);
+    expect(doc.reserved.jobA).toBeDefined();
+    await settle(ctx.store, "jobA", 0.1);
+    await settle(ctx.store, "jobA", 0.1); // a repeated settle is a no-op
+    doc = must((await ctx.store.getJson<SpendDoc>("sys/caps/spend.json"))?.value);
+    expect(doc.settled.jobA?.hours).toBeCloseTo(0.15, 4);
+    expect(doc.byDay["2026-10-20"]).toBeCloseTo(0.15 * PRICE_PER_HOUR["4vcpu-16gb"], 5);
+  });
+
+  it("settles a reservation whose Job is gone at its worst case, after the timeout", async () => {
+    const ctx = makeCtx();
+    await reserve(ctx.store, "orphan", "4vcpu-16gb", new Date("2026-12-02T00:00:00Z"));
+    await reserve(ctx.store, "running", "4vcpu-16gb", new Date("2026-12-02T00:00:00Z"));
+    expect(await settleStale(ctx.store, new Set(["running"]), new Date("2026-12-02T00:20:00Z"))).toBe(0);
+    expect(await settleStale(ctx.store, new Set(["running"]), new Date("2026-12-02T01:40:00Z"))).toBe(1);
+    const doc = must((await ctx.store.getJson<SpendDoc>("sys/caps/spend.json"))?.value);
+    expect(doc.reserved.orphan).toBeUndefined();
+    expect(doc.reserved.running).toBeDefined();
+    expect(doc.settled.orphan?.usd).toBeCloseTo(0.132, 5);
   });
 
   it("caps new uploads per day, uid-free, unless the judge code is used", async () => {

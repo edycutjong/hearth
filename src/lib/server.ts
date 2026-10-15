@@ -5,7 +5,7 @@
 
 import { cookies, headers } from "next/headers";
 import { keys } from "./keys";
-import { getJob, listJobs, createJob, TERMINAL_STATES } from "./nebius/jobs";
+import { cancelJob, getJob, listJobs, createJob, TERMINAL_STATES } from "./nebius/jobs";
 import { loadConfig, loadTokenFactoryConfig, type NebiusConfig } from "./nebius/config";
 import type { JobsBackend, PipelineCtx } from "./pipeline";
 import { COOKIE, ANON_DAYS, newId, newSpace, signSpace, verifySpace, type SpaceDoc } from "./space";
@@ -34,6 +34,9 @@ export function nebiusBackend(config: NebiusConfig): JobsBackend {
         startedAt: job.status.startedAt,
         finishedAt: job.status.finishedAt,
       };
+    },
+    async cancel(id) {
+      await cancelJob(config, id);
     },
     async liveJobs() {
       return (await listJobs(config))

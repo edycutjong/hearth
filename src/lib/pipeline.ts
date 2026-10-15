@@ -18,9 +18,10 @@
  */
 
 import { createHmac } from "node:crypto";
-import { JOB_TIMEOUT_HOURS, release, reserve, settle } from "./caps";
+import { JOB_TIMEOUT_HOURS, giveBackDaily, release, reserve, settle, settleStale } from "./caps";
 import { keys, spaceTag } from "./keys";
 import type { SpaceDoc } from "./space";
+import { giveBackSpaceKeep } from "./space-ops";
 import type { Store } from "./store";
 import { injectedFiles } from "./injected";
 
@@ -32,6 +33,14 @@ export const GRACE_HOURS = 24;
 /** Presigned URLs outlive the provisioning wait (<= 30 min) plus the Job timeout. */
 export const URL_TTL_SECONDS = 3 * 3600;
 export const MAX_ATTEMPTS = 2;
+/** A keep Job stops starting new notes after this long; the rest are reported deferred and requeued. */
+export const KEEP_SOFT_DEADLINE_S = 40 * 60;
+/** Past its 1 h timeout plus this margin, a Job that never reached a terminal state is cancelled. */
+const WATCHDOG_HOURS = JOB_TIMEOUT_HOURS + 0.5;
+/** A finalize that started this long ago and never finished may be taken over. */
+const FINALIZE_STALE_MS = 2 * 60_000;
+const DISPATCH_LOCK = "sys/claims/_dispatch.json";
+const DISPATCH_LOCK_STALE_MS = 90_000;
 
 export interface JobsBackend {
   create(opts: {
@@ -43,6 +52,7 @@ export interface JobsBackend {
     timeoutSeconds: number;
   }): Promise<string>;
   get(id: string): Promise<{ state: string; code?: string; message?: string; startedAt?: string; finishedAt?: string }>;
+  cancel(id: string): Promise<void>;
   /** Live (non-terminal) jobs in the project, from every app that shares it. */
   liveJobs(): Promise<Array<{ id: string; name: string }>>;
 }
@@ -123,6 +133,10 @@ export interface JobRecord {
   backoffs: number;
   preset: string;
   error?: string;
+  /** What the queue entry asked for, so a requeue keeps it (a judge note stays language-detected and <= 60 s). */
+  lang?: string;
+  maxNoteSeconds?: number;
+  finalizingAt?: string;
   /** Where the time went, in seconds, from the Job's own report (see jobTimings). */
   timings?: JobTimings;
   history: Array<{ at: string; event: string }>;
@@ -222,7 +236,7 @@ export async function enqueue(
   };
   const record: JobRecord = {
     version: 1, job, kind, notes, state: "queued", created: iso(now), queueKey, attempts: 0, backoffs: 0,
-    preset: ctx.preset, history: [{ at: iso(now), event: "queued" }],
+    preset: ctx.preset, history: [{ at: iso(now), event: "queued" }], ...opts,
   };
   const space = await ctx.store.getJson<SpaceDoc>(keys.space(uid));
   const tag = spaceTag(space?.value.kept ?? false);
@@ -250,12 +264,33 @@ async function updateRecord(ctx: PipelineCtx, uid: string, job: string, patch: (
 }
 
 function isThrottle(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err);
+  const body = err && typeof err === "object" && "body" in err ? String((err as { body?: unknown }).body ?? "") : "";
+  const msg = `${err instanceof Error ? err.message : String(err)} ${body}`;
   return /\b429\b|quota|ResourceExhausted|Too Many Requests/i.test(msg);
 }
 
-/** Dispatch at most one queued entry. Returns what happened, for the UI and the tests. */
-export async function dispatch(ctx: PipelineCtx): Promise<"none" | "busy" | "dispatched" | "backoff" | "budget" | "failed"> {
+export type DispatchOutcome = "none" | "busy" | "dispatched" | "backoff" | "budget" | "failed";
+
+/**
+ * Dispatch at most one queued entry, under one global lock (a conditional write), so two requests that race
+ * — a keep, a tick, a status poll — can never create two Hearth Jobs at once.
+ */
+export async function dispatch(ctx: PipelineCtx): Promise<DispatchOutcome> {
+  const now = clock(ctx);
+  const got = await ctx.store.putJson(DISPATCH_LOCK, { at: iso(now) }, { condition: { ifNoneMatch: "*" } });
+  if (!got.ok) {
+    const cur = await ctx.store.getJson<{ at: string }>(DISPATCH_LOCK);
+    if (cur && now.getTime() - Date.parse(cur.value.at) > DISPATCH_LOCK_STALE_MS) await ctx.store.delete(DISPATCH_LOCK);
+    return "busy";
+  }
+  try {
+    return await dispatchLocked(ctx);
+  } finally {
+    await ctx.store.delete(DISPATCH_LOCK);
+  }
+}
+
+async function dispatchLocked(ctx: PipelineCtx): Promise<DispatchOutcome> {
   const { store } = ctx;
   const now = clock(ctx);
   const active = await store.list(keys.activePrefix());
@@ -279,7 +314,7 @@ export async function dispatch(ctx: PipelineCtx): Promise<"none" | "busy" | "dis
         const activeJobs = new Set(active.map((o) => (o.key.split("/").pop() ?? "").replace(/\.json$/, "")));
         live = (await ctx.backend.liveJobs()).filter((j) => holdsSlot(j, activeJobs)).length;
       } catch {
-        live = 0;
+        live = ctx.regionSlots; // the region cannot be read: on a shared quota, wait rather than guess it is empty
       }
       if (live >= ctx.regionSlots) {
         entry.backoffs += 1;
@@ -293,6 +328,12 @@ export async function dispatch(ctx: PipelineCtx): Promise<"none" | "busy" | "dis
       }
       const budget = await reserve(store, entry.job, ctx.preset, now);
       if (!budget.ok) {
+        // Nothing ran: the visitor's daily allowance is given back, so a refusal costs them nothing.
+        await giveBackDaily(store, entry.kind === "decode" ? "decodeJobs" : "jobs", now).catch(() => undefined);
+        if (entry.kind === "keep") {
+          const sp = (await store.getJson<SpaceDoc>(keys.space(entry.uid)))?.value;
+          await giveBackSpaceKeep(store, entry.uid, sp?.kept ?? false, now).catch(() => undefined);
+        }
         await updateRecord(ctx, entry.uid, entry.job, (r) => {
           r.state = "failed";
           r.error = `processing budget: ${budget.reason}`;
@@ -360,6 +401,7 @@ async function createJob(ctx: PipelineCtx, entry: QueueEntry): Promise<string> {
     job: entry.job,
     lang: entry.lang ?? "hi-IN",
     max_note_s: entry.maxNoteSeconds ?? 300,
+    soft_deadline_s: KEEP_SOFT_DEADLINE_S,
     result_put: tagged(keys.jobResult(entry.uid, entry.job)),
     status_put: tagged(keys.jobStatus(entry.uid, entry.job)),
     tick_url: tick,
@@ -437,7 +479,7 @@ const TERMINAL = new Set(["COMPLETED", "FAILED", "CANCELLED", "ERROR"]);
 
 interface WorkerNoteResult {
   id: string;
-  status: "processed" | "failed" | "decoded";
+  status: "processed" | "failed" | "decoded" | "deferred";
   job?: string;
   error?: string;
   bytes_hct?: number;
@@ -492,7 +534,9 @@ export async function reconcileJob(ctx: PipelineCtx, uid: string, job: string): 
   const cur = await store.getJson<JobRecord>(keys.job(uid, job));
   if (!cur) return null;
   const rec = cur.value;
-  if (rec.state !== "dispatched" && rec.state !== "running") return rec;
+  const staleFinalize =
+    rec.state === "finalizing" && (!rec.finalizingAt || now.getTime() - Date.parse(rec.finalizingAt) > FINALIZE_STALE_MS);
+  if (rec.state !== "dispatched" && rec.state !== "running" && !staleFinalize) return rec;
   const report = (await store.getJson<WorkerReport>(keys.jobResult(uid, job)))?.value ?? null;
   let nebius: Awaited<ReturnType<JobsBackend["get"]>> | null = null;
   if (rec.nebiusId) {
@@ -502,8 +546,22 @@ export async function reconcileJob(ctx: PipelineCtx, uid: string, job: string): 
       nebius = null;
     }
   }
-  if (report && (report.status === "done" || report.status === "failed") && report.job === job) {
-    return finalize(ctx, uid, rec, report, nebius);
+  const reported = report && (report.status === "done" || report.status === "failed") && report.job === job;
+  if (reported) {
+    // Exactly one request finalizes: a status poll and the tick can arrive together.
+    const space = (await store.getJson<SpaceDoc>(keys.space(uid)))?.value;
+    const claim = await store.putJson(
+      keys.job(uid, job),
+      { ...rec, state: "finalizing", finalizingAt: iso(now) },
+      { tagging: spaceTag(space?.kept ?? false), condition: cur.etag ? { ifMatch: cur.etag } : undefined },
+    );
+    if (!claim.ok) return rec;
+    return finalize(ctx, uid, { ...rec, state: "finalizing", finalizingAt: iso(now) }, report, nebius);
+  }
+  // Watchdog: past its timeout and never terminal (or unreadable), the Job is cancelled and treated as ended.
+  if (rec.nebiusId && hoursBetween(rec.dispatched, iso(now)) > WATCHDOG_HOURS && !(nebius && TERMINAL.has(nebius.state))) {
+    await ctx.backend.cancel(rec.nebiusId).catch(() => undefined);
+    nebius = { state: "CANCELLED", finishedAt: iso(now), message: "watchdog: no terminal state after the timeout" };
   }
   if (nebius && TERMINAL.has(nebius.state)) {
     const quota = /quota/i.test(`${nebius.code ?? ""} ${nebius.message ?? ""}`);
@@ -516,6 +574,8 @@ export async function reconcileJob(ctx: PipelineCtx, uid: string, job: string): 
         version: 1, uid, job, kind: rec.kind, notes: rec.notes, created: rec.created,
         attempts: quota ? rec.attempts - 1 : rec.attempts, backoffs,
         nextTry: iso(new Date(now.getTime() + (quota ? backoffSeconds(backoffs) : 30) * 1000)),
+        ...(rec.lang ? { lang: rec.lang } : {}),
+        ...(rec.maxNoteSeconds ? { maxNoteSeconds: rec.maxNoteSeconds } : {}),
       };
       const stamp = `${now.getTime().toString().padStart(14, "0")}-requeue`;
       await store.putJson(keys.queueEntry(stamp, uid), entry);
@@ -569,11 +629,20 @@ async function finalize(
   const space = (await store.getJson<SpaceDoc>(keys.space(uid)))?.value;
   const tag = spaceTag(space?.kept ?? false);
   const deleteOriginals = space?.consent?.deleteOriginals ?? true;
+  const deferred: NoteRef[] = [];
   for (const n of rec.notes) {
     const res = report.notes?.find((r) => r.id === n.id);
     const meta = (await store.getJson<NoteMeta>(keys.meta(uid, n.id)))?.value;
     if (!meta) continue;
     if (rec.kind === "decode") continue;
+    if (meta.status === "kept") continue; // never undo a kept note (a retried or duplicate Job reporting again)
+    if (res?.status === "deferred" && res.job === rec.job) {
+      // The Job ran out of its time budget before this note: it is queued again, untouched.
+      meta.status = "queued";
+      await store.putJson(keys.meta(uid, n.id), meta, { tagging: tag });
+      deferred.push(n);
+      continue;
+    }
     if (!res || res.status !== "processed" || res.job !== rec.job) {
       meta.status = "failed";
       meta.error = res?.error ?? report.error ?? "the job reported no result for this note";
@@ -606,6 +675,12 @@ async function finalize(
       timings: res.timings ?? {},
     };
     meta.memory = "pending";
+    if (space?.kept) {
+      // The space was kept while this Job ran: its writes carried the anonymous tag, which would expire them.
+      for (const key of [keys.hct(uid, n.id), keys.transcript(uid, n.id), keys.cacheWav(uid, n.id)]) {
+        if ((await store.head(key)).status === 200) await store.setTags(key, { space: "kept" }).catch(() => undefined);
+      }
+    }
     if (pass && deleteOriginals) {
       meta.raw = { state: "grace", deleteAfter: iso(new Date(now.getTime() + GRACE_HOURS * 3_600_000)) };
       await store.putJson(keys.meta(uid, n.id), meta, { tagging: tag });
@@ -620,13 +695,22 @@ async function finalize(
   const finished = nebius?.finishedAt ?? iso(now);
   await settle(store, rec.job, hoursBetween(rec.dispatched, finished));
   await store.delete(keys.active(rec.job));
+  if (deferred.length) {
+    await enqueue(ctx, uid, "keep", deferred, {
+      ...(rec.lang ? { lang: rec.lang } : {}),
+      ...(rec.maxNoteSeconds ? { maxNoteSeconds: rec.maxNoteSeconds } : {}),
+    });
+  }
   return updateRecord(ctx, uid, rec.job, (r) => {
     r.state = report.status === "done" ? "done" : "failed";
     r.finished = finished;
     r.timings = jobTimings(r, report);
     r.nebiusState = nebius?.state ?? r.nebiusState;
     if (report.error) r.error = report.error;
-    r.history.push({ at: iso(now), event: `report ${report.status}; ${rec.notes.length} note(s) validated` });
+    r.history.push({
+      at: iso(now),
+      event: `report ${report.status}; ${rec.notes.length - deferred.length} note(s) validated${deferred.length ? `, ${deferred.length} deferred to a new Job` : ""}`,
+    });
   });
 }
 
@@ -704,6 +788,8 @@ export async function reconcileSpace(ctx: PipelineCtx, uid: string): Promise<voi
 /** Reconcile every active job of every space (the cron and the tick use this). */
 export async function reconcileActive(ctx: PipelineCtx): Promise<number> {
   const active = await ctx.store.list(keys.activePrefix());
+  const live = new Set(active.map((o) => (o.key.split("/").pop() ?? "").replace(/\.json$/, "")));
+  await settleStale(ctx.store, live, clock(ctx)).catch(() => 0);
   for (const obj of active) {
     const job = obj.key.split("/").pop()?.replace(/\.json$/, "") ?? "";
     const marker = (await ctx.store.getJson<{ uid: string }>(obj.key))?.value;

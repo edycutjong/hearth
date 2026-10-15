@@ -753,11 +753,19 @@ def tick(manifest: dict) -> None:
 # ---------------------------------------------------------------- modes
 
 def run_keep(manifest: dict, rep: Reporter, m: Models) -> dict:
+    """Notes in manifest order. Past the soft deadline no new note starts: the rest are reported "deferred" and the
+    app queues them again, so a long batch never runs into the Job's 1 h timeout and loses every note."""
     lang = manifest.get("lang", "hi-IN")
+    soft_deadline = T_WORKER + float(manifest.get("soft_deadline_s", 40 * 60))
     notes_out = []
     for note in manifest["notes"]:
-        rep.status("note", note=note["id"])
         entry = {"id": note["id"]}
+        if time.time() > soft_deadline:
+            entry.update({"status": "deferred", "job": manifest.get("job")})
+            put_json(note["put"].get("result"), entry)
+            notes_out.append(entry)
+            continue
+        rep.status("note", note=note["id"])
         try:
             blob = http("GET", note["get"])
             out = keep_note(m, blob, note.get("ext", ""), lang, max_s=float(manifest.get("max_note_s", MAX_NOTE_S)))

@@ -9,6 +9,9 @@
  *   sys/…             queue entries and the uid-free daily counters and spend meter
  */
 
+/** The largest upload a space accepts. Checked on the client's claim AND on the stored object's real size. */
+export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+
 export const keys = {
   raw: (uid: string, note: string, ext: string) => `raw/${uid}/${note}.${ext}`,
   original: (uid: string, note: string, ext: string) => `u/${uid}/originals/${note}.${ext}`,

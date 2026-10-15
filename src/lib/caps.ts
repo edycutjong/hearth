@@ -9,7 +9,10 @@
  *     anonymous expiry never touch the meter, so it cannot be reset by a user. Failed or hung Jobs count.
  * Phases (UTC dates): build to 2026-10-30 (ceiling $10 in total); 2026-10-31..11-30 a $0.10 daily slice;
  * judging 2026-12-01..12-15 a $0.50 daily slice, so a judge on Dec 14 finds the same allowance as one on Dec 1;
- * after that uploads pause. Whatever the phase, the meter never passes $17.50.
+ * after that uploads pause. A daily slice admits a Job while the day's spend so far (settled + open
+ * reservations) is under it, so it can overshoot by one Job at most — a reservation's worst case ($0.132) is
+ * larger than the November slice itself. Whatever the phase, the worst case never passes $17.50.
+ * Every ATTEMPT is metered: a Job requeued after QuotaExceeded or a silent failure reserves and settles again.
  */
 
 import type { Store } from "./store";
@@ -76,7 +79,7 @@ export function canSpend(doc: SpendDoc, usd: number, day: string): BudgetCheck {
       + Object.values(doc.reserved).filter((r) => phaseOf(r.day).name === "build").reduce((a, r) => a + r.usd, 0);
     return buildSpend + usd > phase.budget.usd ? { ok: false, reason: "budget_total" } : { ok: true };
   }
-  return daySpend(doc, day) + usd > phase.budget.usd ? { ok: false, reason: "budget_day" } : { ok: true };
+  return daySpend(doc, day) >= phase.budget.usd ? { ok: false, reason: "budget_day" } : { ok: true };
 }
 
 async function updateSpend(store: Store, mutate: (doc: SpendDoc) => SpendDoc | null): Promise<SpendDoc | null> {
@@ -96,7 +99,7 @@ export async function reserve(store: Store, job: string, preset: string, now = n
   const day = utcDay(now);
   let verdict: BudgetCheck = { ok: true };
   await updateSpend(store, (doc) => {
-    if (doc.reserved[job] || doc.settled[job]) return null;
+    if (doc.reserved[job]) return null; // this attempt already holds its reservation
     verdict = canSpend(doc, usd, day);
     if (!verdict.ok) return null;
     doc.reserved[job] = { usd, day, preset, created: now.toISOString() };
@@ -105,17 +108,39 @@ export async function reserve(store: Store, job: string, preset: string, now = n
   return verdict;
 }
 
-/** Settle a Job from its real duration (created -> finished, which bounds the billed VM time). */
+/**
+ * Settle the open reservation of a Job's current attempt from its real duration (created -> finished, which bounds
+ * the billed VM time). Attempts accumulate under the same job id; a settle with nothing open is a no-op.
+ */
 export async function settle(store: Store, job: string, hours: number): Promise<void> {
   await updateSpend(store, (doc) => {
     const r = doc.reserved[job];
-    if (!r || doc.settled[job]) return null;
+    if (!r) return null;
     const usd = Math.min(r.usd, Math.max(0, hours) * (PRICE_PER_HOUR[r.preset] ?? 0.132));
     delete doc.reserved[job];
-    doc.settled[job] = { usd: Math.round(usd * 1e5) / 1e5, day: r.day, hours: Math.round(hours * 1e4) / 1e4 };
+    const prev = doc.settled[job];
+    doc.settled[job] = {
+      usd: Math.round(((prev?.usd ?? 0) + usd) * 1e5) / 1e5,
+      day: r.day,
+      hours: Math.round(((prev?.hours ?? 0) + Math.max(0, hours)) * 1e4) / 1e4,
+    };
     doc.byDay[r.day] = Math.round(((doc.byDay[r.day] ?? 0) + usd) * 1e5) / 1e5;
     return doc;
   });
+}
+
+/**
+ * Reservations whose Job no longer has an active marker (cancelled by delete-all, lost to a crash) and that are
+ * older than the Job timeout plus half an hour are settled at their worst case, so they cannot pin a day's slice.
+ */
+export async function settleStale(store: Store, activeJobs: ReadonlySet<string>, now = new Date()): Promise<number> {
+  const cur = (await store.getJson<SpendDoc>(keys.spend()))?.value;
+  const limitMs = (JOB_TIMEOUT_HOURS + 0.5) * 3_600_000;
+  const stale = Object.entries(cur?.reserved ?? {})
+    .filter(([job, r]) => !activeJobs.has(job) && now.getTime() - Date.parse(r.created) > limitMs)
+    .map(([job]) => job);
+  for (const job of stale) await settle(store, job, JOB_TIMEOUT_HOURS);
+  return stale.length;
 }
 
 /** Release a reservation for a Job that was never created (QuotaExceeded on create, budget refusal...). */
@@ -146,6 +171,18 @@ export async function takeDaily(store: Store, kind: keyof DailyCounts, now = new
     if (w.ok) return true;
   }
   return false;
+}
+
+/** Give back one use of a daily counter (a keep that was refused before any Job ran). */
+export async function giveBackDaily(store: Store, kind: keyof DailyCounts, now = new Date()): Promise<void> {
+  const day = utcDay(now);
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const cur = await store.getJson<DailyCounts>(keys.dailyCaps(day));
+    if (!cur || cur.value[kind] <= 0) return;
+    const doc = { ...cur.value, [kind]: cur.value[kind] - 1 };
+    const w = await store.putJson(keys.dailyCaps(day), doc, { condition: cur.etag ? { ifMatch: cur.etag } : { ifNoneMatch: "*" } });
+    if (w.ok) return;
+  }
 }
 
 export async function readDaily(store: Store, now = new Date()): Promise<DailyCounts & { limit: number; decodeLimit: number; day: string }> {

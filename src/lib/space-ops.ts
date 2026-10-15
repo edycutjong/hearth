@@ -46,6 +46,15 @@ export async function takeSpaceKeep(store: Store, uid: string, kept: boolean, by
   return true;
 }
 
+/** Give back one of today's per-space keeps (the keep was refused before any Job ran). */
+export async function giveBackSpaceKeep(store: Store, uid: string, kept: boolean, now = new Date()): Promise<void> {
+  const day = utcDay(now);
+  const cur = (await store.getJson<Record<string, number>>(keys.spaceCaps(uid)))?.value ?? {};
+  const used = cur[day] ?? 0;
+  if (used <= 0) return;
+  await store.putJson(keys.spaceCaps(uid), { [day]: used - 1 }, { tagging: spaceTag(kept) });
+}
+
 /** Remember pending notes until the time budget runs out. Returns how many were processed. */
 export async function pumpMemory(
   store: Store,

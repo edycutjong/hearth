@@ -40,7 +40,10 @@ export class FakeBackend implements JobsBackend {
     this.runs.set(id, { id, name: opts.name, env: opts.env, files: opts.files, state: over ? "ERROR" : "RUNNING", code: over ? "QuotaExceeded" : undefined });
     return id;
   }
+  /** Make every get() fail, as an unreachable API would. */
+  failGet = false;
   async get(id: string) {
+    if (this.failGet) throw new Error("GET /ai/v1/jobs failed: 503");
     const r = this.runs.get(id);
     if (!r) throw new Error("404");
     return { state: r.state, code: r.code, finishedAt: r.finishedAt };
@@ -50,10 +53,17 @@ export class FakeBackend implements JobsBackend {
     return this.foreign + [...this.runs.values()].filter((r) => r.state === "RUNNING").length;
   }
   /** What the listing shows, lag included. */
+  failList = false;
   async liveJobs() {
+    if (this.failList) throw new Error("GET /ai/v1/jobs failed: 503");
     const others = Array.from({ length: this.foreign }, (_, i) => ({ id: `aijob-foreign${i}`, name: `faultline-${i}` }));
     const running = [...this.runs.values()].filter((r) => r.state === "RUNNING").map((r) => ({ id: r.id, name: r.name }));
     return [...others, ...running, ...this.stale];
+  }
+  cancelled: string[] = [];
+  async cancel(id: string) {
+    this.cancelled.push(id);
+    this.finish(id, "CANCELLED");
   }
   finish(id: string, state = "COMPLETED") {
     const r = this.runs.get(id);
@@ -106,7 +116,7 @@ export async function playWorker(
   store: MemoryStore,
   uid: string,
   job: string,
-  outcome: (noteId: string) => { drift: number; status?: "processed" | "failed"; tamper?: boolean } = () => ({ drift: 0.02 }),
+  outcome: (noteId: string) => { drift: number; status?: "processed" | "failed" | "deferred"; tamper?: boolean } = () => ({ drift: 0.02 }),
 ): Promise<void> {
   const manifest = must((await store.getJson<{ notes: Array<{ id: string }> }>(keys.jobManifest(uid, job)))?.value, "manifest");
   const notes = [];

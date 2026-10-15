@@ -213,3 +213,13 @@ def test_prefetch_without_bucket_weights_says_so_and_the_worker_does_not_wait(tm
     assert w.wait_prefetch() is None  # run.sh started no prefetch: nothing to wait for
     (tmp_path / "prefetch.started").touch()
     assert w.wait_prefetch(limit_s=1) == out  # one was started: its outcome, read once it exists
+
+
+def test_keep_defers_notes_past_the_soft_deadline(monkeypatch):
+    calls = []
+    monkeypatch.setattr(w, "put_json", lambda target, value: calls.append(value))
+    monkeypatch.setattr(w, "T_WORKER", w.time.time() - 3600)  # the worker started an hour ago
+    manifest = {"job": "j1", "soft_deadline_s": 60, "notes": [{"id": "n1", "put": {"result": "u1"}}, {"id": "n2", "put": {"result": "u2"}}]}
+    out = w.run_keep(manifest, rep=None, m=None)
+    assert [n["status"] for n in out["notes"]] == ["deferred", "deferred"]
+    assert all(c["job"] == "j1" for c in calls)
