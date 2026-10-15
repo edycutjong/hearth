@@ -142,9 +142,9 @@ h1 .hl{color:var(--voice);padding-bottom:.08em;-webkit-box-decoration-break:clon
 .postmark .ring-t,.postmark .pm-s{font-family:var(--font-data);font-weight:600}
 .postmark .pm-c{font-family:var(--font-display)}
 .js .strike .postmark{animation:strike .5s cubic-bezier(.3,1.55,.45,1) both}
-.js .hero .strike .postmark{animation-delay:1.55s}
+.js .hero .strike .postmark{animation-delay:1.65s}
 @keyframes strike{0%{opacity:0;transform:rotate(-24deg) scale(1.9)}55%{opacity:1}100%{opacity:1;transform:rotate(-8deg) scale(1)}}
-.js .hero .coupon{animation:thud .28s 1.8s ease-out both}
+.js .hero .coupon{animation:thud .28s 1.9s ease-out both}
 @keyframes thud{0%{transform:rotate(-1.4deg) translateY(0)}40%{transform:rotate(-1.4deg) translateY(3px)}100%{transform:rotate(-1.4deg) translateY(0)}}
 .hero .coupon{transform:rotate(-1.4deg);margin-top:16px}
 .hero .c-words [lang=hi]{font-size:28px;line-height:1.45}
@@ -161,11 +161,14 @@ h1 .hl{color:var(--voice);padding-bottom:.08em;-webkit-box-decoration-break:clon
 .sheet:before,.sheet:after{content:"";position:absolute;top:-1px;bottom:-1px;width:18px;pointer-events:none;
   background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--rule) 70%,transparent) 0 1.2px,transparent 1.2px 7px)}
 .sheet:before{left:-19px;border-right:1.5px dashed var(--rule)}.sheet:after{right:-19px;border-left:1.5px dashed var(--rule)}
-.panels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));perspective:2800px}
+.panels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));perspective:2800px;transform-style:preserve-3d}   /* one 3D context: the outer flap sorts above the inner one */
 .panel{position:relative;transform-style:preserve-3d;min-width:0}
+.p1{transform-origin:100% 50%}.p3{transform-origin:0 50%}   /* the two creases are the hinges, folded or not */
 .face{background:var(--surface);padding:22px 24px 22px;height:100%;backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .face.back{position:absolute;inset:0;transform:rotateY(180deg);background:var(--bg);display:flex;flex-direction:column;justify-content:space-between;padding:26px;border:1px solid var(--rule)}
 .back .addr{font:400 26px/1.2 var(--font-display);color:var(--ink)}
+.back .from{font:600 12.5px/1.4 var(--font-body);letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+.back [lang=hi]{font:600 22px/1.4 var(--font-body);color:var(--muted);margin-top:4px}
 .back .lines{display:grid;gap:22px;margin-top:20px}.back .lines i{display:block;border-bottom:1.5px solid var(--rule)}
 .back .stampbox{align-self:flex-end;width:74px;height:86px;border:1.5px dashed var(--before);display:grid;place-items:center}
 .back .stampbox img{width:46px;height:46px}
@@ -173,10 +176,10 @@ h1 .hl{color:var(--voice);padding-bottom:.08em;-webkit-box-decoration-break:clon
 .p1:after,.p3:before{content:"";position:absolute;top:0;bottom:0;width:26px;pointer-events:none}
 .p1:after{right:0;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--ink) 5%,transparent))}
 .p3:before{left:0;z-index:1;background:linear-gradient(270deg,transparent,color-mix(in srgb,var(--ink) 4%,transparent))}
-.js .unfold .p1{transform-origin:100% 50%;animation:unfoldL .95s cubic-bezier(.45,.05,.15,1) .2s both}
-.js .unfold .p3{transform-origin:0 50%;animation:unfoldR .95s cubic-bezier(.45,.05,.15,1) .6s both}
-@keyframes unfoldL{from{transform:translateZ(3px) rotateY(179.5deg)}to{transform:translateZ(0) rotateY(0)}}
-@keyframes unfoldR{from{transform:translateZ(1.5px) rotateY(-179.5deg)}to{transform:translateZ(0) rotateY(0)}}
+.js .unfold .p1{animation:unfoldL .9s cubic-bezier(.45,.05,.15,1) .35s both}
+.js .unfold .p3{animation:unfoldR .9s cubic-bezier(.45,.05,.15,1) .8s both}
+@keyframes unfoldL{from{transform:translateZ(4px) rotateY(180deg)}to{transform:translateZ(0) rotateY(0)}}
+@keyframes unfoldR{from{transform:translateZ(2px) rotateY(-180deg)}to{transform:translateZ(0) rotateY(0)}}
 .pl{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:12px}
 .pl b{font:600 12.5px/1.3 var(--font-body);letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
 .pl .n{font:600 14px var(--font-data);color:var(--ink);white-space:nowrap}
@@ -185,7 +188,7 @@ h1 .hl{color:var(--voice);padding-bottom:.08em;-webkit-box-decoration-break:clon
 .vis .ph{position:absolute;top:4px;bottom:4px;width:2px;background:var(--ink);left:10px;opacity:0;pointer-events:none}
 .vis .trail{position:absolute;top:10px;bottom:10px;left:10px;width:0;background:color-mix(in srgb,var(--voice) 10%,transparent);pointer-events:none}
 .playing .vis .ph{opacity:1}
-.js .unfold .p2 .vis.strip svg .ticks{animation:write .9s 1.1s var(--ease) both}
+.js .unfold .p2 .vis.strip svg .ticks{animation:write .9s 1.25s var(--ease) both}
 @keyframes write{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
 .cap{font-size:14.5px;line-height:1.5;color:var(--muted);margin:10px 0 0}
 .cap b{color:var(--ink);font-weight:600}
@@ -328,24 +331,31 @@ footer a{color:var(--muted);margin-right:18px}
 footer a:hover{color:var(--ink)}
 
 /* armed: a reveal waiting below the fold (JS only) */
-.js .armed .p1{transform:translateZ(3px) rotateY(179.5deg)}.js .armed .p3{transform:translateZ(1.5px) rotateY(-179.5deg)}
+.js .armed .p1{transform:translateZ(4px) rotateY(180deg)}.js .armed .p3{transform:translateZ(2px) rotateY(-180deg)}
 .js .armed .ticks{clip-path:inset(0 100% 0 0)}
+/* folded, the letter is one card: the open sheet's frame and gummed flaps appear only as it flattens */
+.js .armed.sheet{background-color:transparent;border-color:transparent;box-shadow:none}.js .armed.sheet:before,.js .armed.sheet:after{opacity:0}
+.js .unfold.sheet{animation:frame 1.4s .45s both}.js .unfold.sheet:before,.js .unfold.sheet:after{animation:fadein .6s 1.35s both}
+@keyframes frame{0%,35%{background-color:transparent;border-color:transparent;box-shadow:none}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.face.back{box-shadow:0 22px 34px -26px color-mix(in srgb,var(--ink) 70%,transparent)}
 /* 200 → 404: the raw upload, deleted */
 .new{display:inline-block}
 .js .on .new{animation:pop .5s .25s cubic-bezier(.3,1.5,.5,1) both}
 @keyframes pop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
 /* settled / done: once a group has played, drop its animations so captures, print and re-renders see the page */
-.settled .rise,.settled h1 .hl,.settled .hero .coupon,.done .p1,.done .p3,.done .ticks,.done .postmark,.done.on .new,.done .on .new{animation:none!important}
+.settled .rise,.settled h1 .hl,.settled .hero .coupon,.done .p1,.done .p3,.done .ticks,.done .postmark,.done.sheet,.done.sheet:before,.done.sheet:after,.done.on .new,.done .on .new{animation:none!important}
 @media (max-width:1060px){
   .nav nav{display:none}
   .hero-row,.pair,.gates,.plates{grid-template-columns:minmax(0,1fr)}
   .hero .coupon{max-width:560px;margin:46px 0 0 6px}
   .waves{display:none}
-  .panels{grid-template-columns:minmax(0,1fr);perspective:none}
+  .panels{grid-template-columns:minmax(0,1fr);perspective:none;transform-style:flat}
   .p1 .face.front,.p3 .face.front{border:0;border-bottom:1px solid var(--rule)}
   .p3 .face.front{border-bottom:0;border-top:1px solid var(--rule)}
   .p1:after,.p3:before,.face.back{display:none}
-  .js .unfold .p1,.js .unfold .p3{transform-origin:50% 0;animation:fold-in .7s var(--ease) both}
+  .p1,.p3{transform-origin:50% 0}
+  .js .unfold .p1,.js .unfold .p3{animation:fold-in .7s var(--ease) both}
   .js .unfold .p1{animation-delay:.4s}.js .unfold .p3{animation-delay:.75s}
   .js .armed .p1,.js .armed .p3{transform:none;opacity:0}
   @keyframes fold-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
@@ -433,7 +443,7 @@ footer a:hover{color:var(--ink)}
   <p class="cap"><b>The original</b>, as uploaded: 14.4 seconds of read Hindi. ▶ plays a FLAC copy of the FLEURS clip.</p>
   <div class="play"><button class="btn" type="button" data-play="orig" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M7 4.5v15l12.5-7.5z"/></svg>Original <small>921.7 KB</small></button></div>
   <div class="slot" data-reveal="flip" id="slot"><span class="code"><span class="new">404</span></span><p>Hearth's raw copy of this upload, on <code>HEAD</code> after the round trip held and it was deleted · 00:17:12 UTC</p></div>
-</div><div class="face back" aria-hidden="true"><div><div class="addr">Voice note · 0:14</div><div class="lines"><i></i><i></i><i></i></div></div><div class="stampbox"><img src="/icon.svg" alt="" width="46" height="46"></div></div></div>
+</div><div class="face back" aria-hidden="true"><div><div class="from">To you</div><div class="addr">Voice note · 0:14</div><div class="lines"><i></i><i></i><i></i></div></div><div class="stampbox"><img src="/icon.svg" alt="" width="46" height="46"></div></div></div>
 <div class="panel p2"><div class="face front">
   <div class="pl"><b>As kept · 13 codebooks</b><span class="n">3,340 B</span></div>
   <div class="vis strip" data-seek><svg class="strip" viewBox="0 0 600 130" preserveAspectRatio="none" role="img" aria-label="The kept note: 13 codebooks × 183 frames, 3,340 bytes, drawn from its .hct file" xmlns="http://www.w3.org/2000/svg">
@@ -462,7 +472,7 @@ footer a:hover{color:var(--ink)}
   <p lang="hi">आम शब्दों में जब प्रबंधक अपने पूर्व सहयोगियों का नेतृत्व करना शुरू करते हैं तो दो तरह के बर्ताव सामने आते हैं स्पेक्ट्रम का एक सिरा उन लड़कों में से एक या लड़कियों में से एक बने रहने की कोशिश कर रहा है।</p>
   <p class="gl">Machine translation: In simple terms, when managers start leading their former colleagues, two kinds of behavior emerge at opposite ends of the spectrum: some try to remain like one of the boys or girls.</p>
   <p class="none">Asks proposed: <b>0</b> · stamped: <b>0</b> — this sentence asks for nothing, so nothing is stamped. Search finds it by a word in Hindi or English: «colleagues» → 0:00.</p>
-</div><div class="face back" aria-hidden="true"></div></div>
+</div><div class="face back" aria-hidden="true"><div><div class="from">From home</div><p lang="hi">घर से</p><div class="lines"><i></i><i></i></div></div></div></div>
 </div></div>
 <p class="letter-foot">One FLEURS hi_in test sentence (Google, CC BY 4.0) — a middle clip of the 20 by round-trip drift (10th of 20). Read speech,
 not a family note: the consented, actor-voiced family sample replaces it once it is recorded. Press play, or click either picture to
@@ -588,7 +598,7 @@ seek — one playhead runs over both, because they are the same 14.4 seconds.</p
     if (k === "unfold") el.classList.add("unfold");
     if (k === "strike") { el.classList.add("strike"); if (!atLoad) el.querySelectorAll(".postmark").forEach(p => p.style.animationDelay = ".25s"); }
     if (k === "flip") el.classList.add("on");
-    setTimeout(() => el.classList.add("done"), k === "strike" ? (atLoad ? 2300 : 1000) : 2600);
+    setTimeout(() => el.classList.add("done"), k === "strike" ? (atLoad ? 2400 : 1000) : 2700);
   };
   if (!still) {
     $$("[data-reveal]").forEach(el => {
@@ -599,7 +609,7 @@ seek — one playhead runs over both, because they are the same 14.4 seconds.</p
         io.observe(el);
       }
     });
-    setTimeout(() => body.classList.add("settled"), 2600);
+    setTimeout(() => body.classList.add("settled"), 2700);
   } else body.classList.add("settled");
 
   // ---- the A/B player: one clock for the waveform and the strip (both are the same 14.4 s)
