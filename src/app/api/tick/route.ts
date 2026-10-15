@@ -32,6 +32,12 @@ export async function POST(req: Request) {
   const rec = await reconcileJob(r.ctx, uid, job);
   const answered = Date.now();
   after(async () => {
+    // A finalize that lost its claim to a concurrent write (a poll adding history) is retried once, so a closed tab
+    // never leaves a reported Job unfinalized until the daily cron.
+    if (rec && ["dispatched", "running", "finalizing"].includes(rec.state)) {
+      await new Promise((done) => setTimeout(done, 1_500));
+      await reconcileJob(r.ctx, uid, job).catch(() => null);
+    }
     // The queue first (cheap and time-critical), once the finished Job's instance has had time to go; then memory.
     const wait = RELEASE_MS - (Date.now() - answered);
     if (wait > 0) await new Promise((done) => setTimeout(done, wait));

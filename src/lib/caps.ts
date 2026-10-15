@@ -31,17 +31,19 @@ export interface Phase {
   jobsPerDay: number;
   jobsPerSpace: number;
   decodeJobsPerDay: number;
-  /** Token Factory calls from search and drafting (anonymous endpoints); past it search runs as typed. */
+  /** Token Factory calls from search and drafting in a space; past it search runs as typed. */
   tfCallsPerDay: number;
+  /** Token Factory calls from searches of the public sample (cached per query), counted apart from the above. */
+  tfSamplePerDay: number;
   /** Total ceiling for the build phase; daily slice afterwards. */
   budget: { kind: "total"; usd: number } | { kind: "daily"; usd: number } | { kind: "none" };
 }
 
 export function phaseOf(day: string): Phase {
-  if (day <= "2026-10-30") return { name: "build", jobsPerDay: 20, jobsPerSpace: 3, decodeJobsPerDay: 20, tfCallsPerDay: 400, budget: { kind: "total", usd: 10 } };
-  if (day <= "2026-11-30") return { name: "between", jobsPerDay: 10, jobsPerSpace: 3, decodeJobsPerDay: 10, tfCallsPerDay: 200, budget: { kind: "daily", usd: 0.1 } };
-  if (day <= "2026-12-15") return { name: "judging", jobsPerDay: 40, jobsPerSpace: 5, decodeJobsPerDay: 20, tfCallsPerDay: 800, budget: { kind: "daily", usd: 0.5 } };
-  return { name: "closed", jobsPerDay: 0, jobsPerSpace: 0, decodeJobsPerDay: 0, tfCallsPerDay: 100, budget: { kind: "none" } };
+  if (day <= "2026-10-30") return { name: "build", jobsPerDay: 20, jobsPerSpace: 3, decodeJobsPerDay: 20, tfCallsPerDay: 400, tfSamplePerDay: 200, budget: { kind: "total", usd: 10 } };
+  if (day <= "2026-11-30") return { name: "between", jobsPerDay: 10, jobsPerSpace: 3, decodeJobsPerDay: 10, tfCallsPerDay: 200, tfSamplePerDay: 100, budget: { kind: "daily", usd: 0.1 } };
+  if (day <= "2026-12-15") return { name: "judging", jobsPerDay: 40, jobsPerSpace: 5, decodeJobsPerDay: 20, tfCallsPerDay: 800, tfSamplePerDay: 400, budget: { kind: "daily", usd: 0.5 } };
+  return { name: "closed", jobsPerDay: 0, jobsPerSpace: 0, decodeJobsPerDay: 0, tfCallsPerDay: 100, tfSamplePerDay: 50, budget: { kind: "none" } };
 }
 
 export function utcDay(now = new Date()): string {
@@ -158,10 +160,13 @@ export interface DailyCounts {
   jobs: number;
   decodeJobs: number;
   tfCalls: number;
+  tfSample: number;
 }
 
 function limitOf(phase: Phase, kind: keyof DailyCounts): number {
-  return kind === "jobs" ? phase.jobsPerDay : kind === "decodeJobs" ? phase.decodeJobsPerDay : phase.tfCallsPerDay;
+  if (kind === "jobs") return phase.jobsPerDay;
+  if (kind === "decodeJobs") return phase.decodeJobsPerDay;
+  return kind === "tfSample" ? phase.tfSamplePerDay : phase.tfCallsPerDay;
 }
 
 /** Increment a uid-free daily counter if it stays within the phase's limit. Returns false when the cap is reached. */
@@ -171,7 +176,7 @@ export async function takeDaily(store: Store, kind: keyof DailyCounts, now = new
   const limit = limitOf(phase, kind);
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const cur = await store.getJson<DailyCounts>(keys.dailyCaps(day));
-    const doc: DailyCounts = { jobs: 0, decodeJobs: 0, tfCalls: 0, ...(cur?.value ?? {}) };
+    const doc: DailyCounts = { jobs: 0, decodeJobs: 0, tfCalls: 0, tfSample: 0, ...(cur?.value ?? {}) };
     if (!bypass && doc[kind] >= limit) return false;
     doc[kind] += 1;
     const w = await store.putJson(keys.dailyCaps(day), doc, { condition: cur?.etag ? { ifMatch: cur.etag } : { ifNoneMatch: "*" } });
@@ -196,5 +201,5 @@ export async function readDaily(store: Store, now = new Date()): Promise<DailyCo
   const day = utcDay(now);
   const phase = phaseOf(day);
   const cur = await store.getJson<DailyCounts>(keys.dailyCaps(day));
-  return { jobs: 0, decodeJobs: 0, tfCalls: 0, ...(cur?.value ?? {}), limit: phase.jobsPerDay, decodeLimit: phase.decodeJobsPerDay, day };
+  return { jobs: 0, decodeJobs: 0, tfCalls: 0, tfSample: 0, ...(cur?.value ?? {}), limit: phase.jobsPerDay, decodeLimit: phase.decodeJobsPerDay, day };
 }

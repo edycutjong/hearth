@@ -23,7 +23,7 @@ export async function GET(req: Request) {
   for (const uid of spaces) if (uid) swept += await sweepGrace(r.ctx, uid).catch(() => 0);
   // Deleted spaces: once every presigned URL a cancelled Job held has expired, delete their prefixes once more.
   let reaped = 0;
-  for (const t of await r.store.list("sys/reap/")) {
+  for (const t of await r.store.list(keys.reapPrefix())) {
     const uid = t.key.split("/").pop()?.replace(/\.json$/, "") ?? "";
     const at = (await r.store.getJson<{ at: string }>(t.key))?.value.at;
     if (!uid || !at || Date.now() - Date.parse(at) < REAP_AFTER_SECONDS * 1000) continue;

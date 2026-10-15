@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     if (cached) {
       expansion = cached.terms;
       expanded = { requestId: cached.requestId, error: null, cached: true };
-    } else if (await takeDaily(r.store, "tfCalls")) {
+    } else if (await takeDaily(r.store, body.scope === "sample" ? "tfSample" : "tfCalls")) {
       const call = await expandQuery(tf, q);
       expanded = { requestId: call.requestId, error: call.error };
       if (call.value) {

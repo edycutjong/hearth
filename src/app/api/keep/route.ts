@@ -1,5 +1,5 @@
 import { after } from "next/server";
-import { takeDaily } from "@/lib/caps";
+import { giveBackDaily, takeDaily } from "@/lib/caps";
 import { MAX_UPLOAD_BYTES, isId, keys, spaceTag } from "@/lib/keys";
 import { dispatch, enqueue, queuePosition, type NoteMeta } from "@/lib/pipeline";
 import { isJudgeCode, json, loadSpace, notConfigured, ready } from "@/lib/server";
@@ -28,8 +28,12 @@ export async function POST(req: Request) {
     const head = await r.store.head(keys.raw(space.uid, id, meta.ext));
     if (head.status !== 200 || !head.size) return json({ error: `The upload of "${meta.name}" did not arrive.` }, 409);
     if (head.size > MAX_UPLOAD_BYTES) {
-      // The presigned PUT cannot bound the size; the stored object can be checked.
+      // The presigned PUT cannot bound the size; the stored object can be checked. The note is marked failed, so
+      // the rest of its batch can still be kept.
       await r.store.delete(keys.raw(space.uid, id, meta.ext));
+      meta.status = "failed";
+      meta.error = "Larger than 25 MB, so it was removed.";
+      await r.store.putJson(keys.meta(space.uid, id), meta, { tagging: tag });
       return json({ error: `"${meta.name}" is larger than 25 MB, so it was removed.` }, 413);
     }
     found.push({ meta, etag: got?.etag ?? null, ref: { id, ext: meta.ext } });
@@ -51,20 +55,34 @@ export async function POST(req: Request) {
     }
   };
   const bypass = isJudgeCode(body.code);
-  if (!(await takeSpaceKeep(r.store, space.uid, space.doc.kept, bypass))) {
-    await unclaim();
-    return json({ error: "This space has used today's free processing (resets 00:00 UTC). The sample and /proof still work.", capped: true }, 429);
+  // Everything between the claim and the answer either completes or is rolled back: the notes go back to "uploaded"
+  // and any allowance taken is given back, so a storage error never strands a note as "queued".
+  let tookSpace = false;
+  let tookDaily = false;
+  let queued: { job: string; queueKey: string };
+  try {
+    if (!(await takeSpaceKeep(r.store, space.uid, space.doc.kept, bypass))) {
+      await unclaim();
+      return json({ error: "This space has used today's free processing (resets 00:00 UTC). The sample and /proof still work.", capped: true }, 429);
+    }
+    tookSpace = true;
+    if (!(await takeDaily(r.store, "jobs", new Date(), bypass))) {
+      await giveBackSpaceKeep(r.store, space.uid, space.doc.kept);
+      await unclaim();
+      return json({ error: "Today's free processing is used up (resets 00:00 UTC). The sample and /proof still work.", capped: true }, 429);
+    }
+    tookDaily = true;
+    queued = await enqueue(r.ctx, space.uid, "keep", notes.map((n) => n.ref), {
+      maxNoteSeconds: space.doc.judge ? 60 : 300,
+      lang: space.doc.judge ? "detect" : "hi-IN",
+    });
+  } catch {
+    await unclaim().catch(() => undefined);
+    if (tookDaily) await giveBackDaily(r.store, "jobs").catch(() => undefined);
+    if (tookSpace) await giveBackSpaceKeep(r.store, space.uid, space.doc.kept).catch(() => undefined);
+    return json({ error: "Could not queue the notes just now. They are safe; press Keep again." }, 503);
   }
-  if (!(await takeDaily(r.store, "jobs", new Date(), bypass))) {
-    await giveBackSpaceKeep(r.store, space.uid, space.doc.kept);
-    await unclaim();
-    return json({ error: "Today's free processing is used up (resets 00:00 UTC). The sample and /proof still work.", capped: true }, 429);
-  }
-  const { job, queueKey } = await enqueue(r.ctx, space.uid, "keep", notes.map((n) => n.ref), {
-    maxNoteSeconds: space.doc.judge ? 60 : 300,
-    lang: space.doc.judge ? "detect" : "hi-IN",
-  });
   // Creating the Nebius Job takes seconds: answer now (the Keeping card appears at once) and dispatch after.
   after(() => dispatch(r.ctx).catch(() => "none"));
-  return json({ job, dispatch: "scheduled", queuePosition: await queuePosition(r.ctx, queueKey) });
+  return json({ job: queued.job, dispatch: "scheduled", queuePosition: await queuePosition(r.ctx, queued.queueKey).catch(() => null) });
 }

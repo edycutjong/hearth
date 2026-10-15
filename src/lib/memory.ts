@@ -20,6 +20,7 @@ import { createHash } from "node:crypto";
 import { localDate, resolveDue, type DueStatus } from "./dates";
 import { fieldGate, quoteGate, receiptStated, type AmountStatus, type ItemKind, type Segment, type WhenStatus } from "./gates";
 import type { VerifiedWhen } from "./dates";
+import { isDeleting } from "./fence";
 import { keys, spaceTag } from "./keys";
 import type { TokenFactoryConfig } from "./nebius/config";
 import type { NoteMeta } from "./pipeline";
@@ -192,19 +193,24 @@ export async function rememberNote(
 ): Promise<NoteMeta["memory"]> {
   const now = opts.now ?? new Date();
   const space = (await store.getJson<SpaceDoc>(keys.space(uid)))?.value ?? null;
-  const tag = spaceTag(space?.kept ?? false);
+  if (!space || (await isDeleting(store, uid))) return "failed"; // a deleted space is never written to again
+  const tag = spaceTag(space.kept);
+  // The tag at WRITE time: "Keep my space" may have run while Token Factory was answering.
+  const tagNow = async () => spaceTag((await store.getJson<SpaceDoc>(keys.space(uid)))?.value.kept ?? false);
   const metaGot = await store.getJson<NoteMeta>(keys.meta(uid, noteId));
   if (!metaGot) return "failed";
   const meta = metaGot.value;
-  // Every later write re-reads the meta, so a long Token Factory call never overwrites newer state (raw deletion...).
+  // Every later write re-reads the meta, so a long Token Factory call never overwrites newer state (raw deletion...),
+  // and a note deleted meanwhile is never re-created from this stale copy.
   const save = async (state: NoteMeta["memory"], patch: Partial<NoteMeta> = {}, error?: string) => {
-    const fresh = (await store.getJson<NoteMeta>(keys.meta(uid, noteId)))?.value ?? meta;
+    const fresh = (await store.getJson<NoteMeta>(keys.meta(uid, noteId)))?.value;
+    if (!fresh || (await isDeleting(store, uid))) return state;
     Object.assign(fresh, patch);
     fresh.memory = state;
     if (error) fresh.memoryError = error;
     else delete fresh.memoryError;
     if (state !== "running") delete fresh.memoryClaimedAt;
-    await store.putJson(keys.meta(uid, noteId), fresh, { tagging: tag });
+    await store.putJson(keys.meta(uid, noteId), fresh, { tagging: await tagNow() });
     return state;
   };
   if (!tfAllowed(space, opts.isSample ?? false, opts.env)) return save("paused");
@@ -241,12 +247,14 @@ export async function rememberNote(
     // Transient: try again later, without recording a failure.
     return save("pending", { memoryTries: tries, memoryNextTry: new Date(now.getTime() + tries * 60_000).toISOString() }, call.error ?? undefined);
   }
-  const today = localDate(now, space?.timeZone ?? "UTC");
+  const today = localDate(now, space.timeZone ?? "UTC");
   for (let attempt = 0; attempt < 3; attempt += 1) {
+    // Delete-all may have run while Token Factory was answering: then nothing is written (no memory.json re-created).
+    if ((await isDeleting(store, uid)) || (await store.head(keys.space(uid))).status !== 200) return "failed";
     const cur = await store.getJson<MemoryDoc>(keys.memory(uid));
     const merged = applyExtraction(cur?.value ?? emptyMemory(), { id: noteId, anchor: meta.anchor, label: meta.label }, transcript, call, today, now);
     const w = await store.putJson(keys.memory(uid), merged, {
-      tagging: tag,
+      tagging: await tagNow(),
       condition: cur?.etag ? { ifMatch: cur.etag } : { ifNoneMatch: "*" },
     });
     if (w.ok) return save(call.error ? "failed" : "done", { memoryTries: tries }, call.error ?? undefined);

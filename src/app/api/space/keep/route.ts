@@ -19,16 +19,20 @@ export async function POST() {
   if (!space) return json({ error: "no space" }, 404);
   const inflight = (await listJobs(r.store, space.uid)).some((j) => ["queued", "dispatched", "running", "finalizing"].includes(j.state));
   if (inflight) return json({ error: "Wait until the notes in progress are kept, then keep your space." }, 409);
+  // The flag first: every writer that reads the space from now on tags "kept". Then retag what exists — twice, to
+  // catch a writer that read the flag just before it flipped.
+  space.doc.kept = true;
+  await saveSpace(r.store, space.uid, space.doc);
   let retagged = 0;
-  for (const prefix of keys.spacePrefixes(space.uid)) {
-    for (const obj of await r.store.list(prefix)) {
-      await r.store.setTags(obj.key, { space: "kept" });
-      retagged += 1;
+  for (const pass of [1, 2]) {
+    for (const prefix of keys.spacePrefixes(space.uid)) {
+      for (const obj of await r.store.list(prefix)) {
+        await r.store.setTags(obj.key, { space: "kept" });
+        if (pass === 1) retagged += 1;
+      }
     }
   }
   const key = newRecoveryKey(space.uid);
-  space.doc.kept = true;
-  await saveSpace(r.store, space.uid, space.doc);
   await r.store.putJson(keys.recovery(space.uid), { hash: recoveryHash(secret(), key), at: new Date().toISOString() }, { tagging: "space=kept" });
   setSpaceCookie(await cookies(), space.uid, true);
   return json({ kept: true, retagged, recoveryKey: key, note: "Shown once. Write it down to open this space on another device." });

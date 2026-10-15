@@ -34,6 +34,9 @@ export const keys = {
   queuePrefix: () => "sys/queue/",
   claim: (entry: string) => `sys/claims/${entry}.json`,
   active: (job: string) => `sys/active/${job}.json`,
+  /** Delete-all's tombstone: written FIRST, it fences the space off from every reconcile, dispatch and memory write. */
+  reap: (uid: string) => `sys/reap/${uid}.json`,
+  reapPrefix: () => "sys/reap/",
   activePrefix: () => "sys/active/",
   dailyCaps: (day: string) => `sys/caps/${day}.json`,
   spend: () => "sys/caps/spend.json",

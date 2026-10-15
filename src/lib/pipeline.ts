@@ -23,6 +23,7 @@ import { keys, spaceTag } from "./keys";
 import type { SpaceDoc } from "./space";
 import { giveBackSpaceKeep } from "./space-ops";
 import type { Store } from "./store";
+import { isDeleting } from "./fence";
 import { injectedFiles } from "./injected";
 
 /** Fixed prior, set before any data (complexity.md §2): note drift <= 5 %, and <= 30 % for segments of >= 8 words. */
@@ -248,7 +249,12 @@ export async function enqueue(
   const space = await ctx.store.getJson<SpaceDoc>(keys.space(uid));
   const tag = spaceTag(space?.value.kept ?? false);
   await ctx.store.putJson(keys.job(uid, job), record, { tagging: tag });
-  await ctx.store.putJson(queueKey, entry);
+  try {
+    await ctx.store.putJson(queueKey, entry);
+  } catch (err) {
+    await ctx.store.delete(keys.job(uid, job)).catch(() => undefined); // no ghost record without its queue entry
+    throw err;
+  }
   return { job, queueKey };
 }
 
@@ -286,9 +292,12 @@ export async function dispatch(ctx: PipelineCtx): Promise<DispatchOutcome> {
   const now = clock(ctx);
   const got = await ctx.store.putJson(DISPATCH_LOCK, { at: iso(now) }, { condition: { ifNoneMatch: "*" } });
   if (!got.ok) {
+    // A stale lock is taken over by replacing exactly the version we read (If-Match): two late callers cannot both win.
     const cur = await ctx.store.getJson<{ at: string }>(DISPATCH_LOCK);
-    if (cur && now.getTime() - Date.parse(cur.value.at) > DISPATCH_LOCK_STALE_MS) await ctx.store.delete(DISPATCH_LOCK);
-    return "busy";
+    const stale = cur && now.getTime() - Date.parse(cur.value.at) > DISPATCH_LOCK_STALE_MS;
+    if (!stale || !cur?.etag) return "busy";
+    const took = await ctx.store.putJson(DISPATCH_LOCK, { at: iso(now) }, { condition: { ifMatch: cur.etag } });
+    if (!took.ok) return "busy";
   }
   try {
     return await dispatchLocked(ctx);
@@ -300,13 +309,21 @@ export async function dispatch(ctx: PipelineCtx): Promise<DispatchOutcome> {
 async function dispatchLocked(ctx: PipelineCtx): Promise<DispatchOutcome> {
   const { store } = ctx;
   const now = clock(ctx);
-  const active = await store.list(keys.activePrefix());
-  if (active.length >= ctx.maxConcurrent) return "busy";
+  let active = await store.list(keys.activePrefix());
+  if (active.length >= ctx.maxConcurrent) {
+    if (!(await reapOrphanMarkers(ctx, active))) return "busy";
+    active = await store.list(keys.activePrefix());
+    if (active.length >= ctx.maxConcurrent) return "busy";
+  }
   const queue = await store.list(keys.queuePrefix());
   for (const obj of queue) {
     const got = await store.getJson<QueueEntry>(obj.key);
     if (!got) continue;
     const entry = got.value;
+    if ((await isDeleting(store, entry.uid)) || (await store.head(keys.space(entry.uid))).status !== 200) {
+      await store.delete(obj.key); // a requeue that outlived its space
+      continue;
+    }
     if (new Date(entry.nextTry) > now) continue;
     const name = obj.key.split("/").pop() ?? obj.key;
     const claim = await store.putJson(keys.claim(name), { at: iso(now) }, { condition: { ifNoneMatch: "*" } });
@@ -373,6 +390,13 @@ async function dispatchLocked(ctx: PipelineCtx): Promise<DispatchOutcome> {
         entry.nextTry = iso(new Date(now.getTime() + 30_000));
         await store.putJson(obj.key, entry);
         return "backoff";
+      }
+      if (await isDeleting(store, entry.uid)) {
+        // Delete-all began while this Job was being created: it must not run against a deleted space.
+        await ctx.backend.cancel(nebiusId).catch(() => undefined);
+        await settle(store, entry.job, 0).catch(() => undefined);
+        await store.delete(obj.key);
+        return "none";
       }
       await store.putJson(keys.active(entry.job), { uid: entry.uid, nebiusId, dispatched: iso(now) });
       await updateRecord(ctx, entry.uid, entry.job, (r) => {
@@ -541,6 +565,14 @@ export async function reconcileJob(ctx: PipelineCtx, uid: string, job: string): 
   const cur = await store.getJson<JobRecord>(keys.job(uid, job));
   if (!cur) return null;
   const rec = cur.value;
+  if (await isDeleting(store, uid)) {
+    if (rec.nebiusId && (rec.state === "dispatched" || rec.state === "running" || rec.state === "finalizing")) {
+      await ctx.backend.cancel(rec.nebiusId).catch(() => undefined);
+      await settle(store, job, hoursBetween(rec.dispatched, iso(now))).catch(() => undefined);
+    }
+    await store.delete(keys.active(job));
+    return null;
+  }
   const staleFinalize =
     rec.state === "finalizing" && (!rec.finalizingAt || now.getTime() - Date.parse(rec.finalizingAt) > FINALIZE_STALE_MS);
   if (rec.state !== "dispatched" && rec.state !== "running" && !staleFinalize) return rec;
@@ -584,8 +616,10 @@ export async function reconcileJob(ctx: PipelineCtx, uid: string, job: string): 
         ...(rec.lang ? { lang: rec.lang } : {}),
         ...(rec.maxNoteSeconds ? { maxNoteSeconds: rec.maxNoteSeconds } : {}),
       };
-      const stamp = `${now.getTime().toString().padStart(14, "0")}-requeue`;
-      await store.putJson(keys.queueEntry(stamp, uid), entry);
+      // One entry per attempt, whichever request gets here first (the key derives from the attempt's dispatch time).
+      const stamp = `${Date.parse(rec.dispatched ?? rec.created).toString().padStart(14, "0")}-requeue`;
+      const won = await store.putJson(keys.queueEntry(stamp, uid), entry, { condition: { ifNoneMatch: "*" } });
+      if (!won.ok) return (await store.getJson<JobRecord>(keys.job(uid, job)))?.value ?? null;
       return updateRecord(ctx, uid, job, (r) => {
         r.state = "queued";
         r.queueKey = keys.queueEntry(stamp, uid);
@@ -642,7 +676,9 @@ async function finalize(
     const meta = (await store.getJson<NoteMeta>(keys.meta(uid, n.id)))?.value;
     if (!meta) continue;
     if (rec.kind === "decode") continue;
-    if (meta.status === "kept") continue; // never undo a kept note (a retried or duplicate Job reporting again)
+    // Never undo a kept note (a retried or duplicate Job reporting again) — unless its original was never settled
+    // (raw still "uploaded": a finalize died between writing "kept" and moving the original), which is repaired here.
+    if (meta.status === "kept" && meta.raw.state !== "uploaded") continue;
     if (res?.status === "deferred" && res.job === rec.job) {
       // The Job ran out of its time budget before this note: it is queued again, untouched.
       meta.status = "queued";
@@ -794,9 +830,30 @@ export async function reconcileSpace(ctx: PipelineCtx, uid: string): Promise<voi
   await dispatch(ctx);
 }
 
+/**
+ * An active marker whose job record is gone (deleted with its space) or whose space is being deleted would hold the
+ * single slot forever: its Job is cancelled, its spend settled at the worst case, and the marker removed.
+ */
+export async function reapOrphanMarkers(ctx: PipelineCtx, active: Array<{ key: string }>): Promise<number> {
+  let n = 0;
+  for (const obj of active) {
+    const job = obj.key.split("/").pop()?.replace(/\.json$/, "") ?? "";
+    const marker = (await ctx.store.getJson<{ uid: string; nebiusId?: string }>(obj.key))?.value;
+    if (!marker) continue;
+    const gone = (await ctx.store.head(keys.job(marker.uid, job))).status === 404 || (await isDeleting(ctx.store, marker.uid));
+    if (!gone) continue;
+    if (marker.nebiusId) await ctx.backend.cancel(marker.nebiusId).catch(() => undefined);
+    await settle(ctx.store, job, JOB_TIMEOUT_HOURS).catch(() => undefined);
+    await ctx.store.delete(obj.key);
+    n += 1;
+  }
+  return n;
+}
+
 /** Reconcile every active job of every space (the cron and the tick use this). */
 export async function reconcileActive(ctx: PipelineCtx): Promise<number> {
-  const active = await ctx.store.list(keys.activePrefix());
+  let active = await ctx.store.list(keys.activePrefix());
+  if (await reapOrphanMarkers(ctx, active)) active = await ctx.store.list(keys.activePrefix());
   const live = new Set(active.map((o) => (o.key.split("/").pop() ?? "").replace(/\.json$/, "")));
   await settleStale(ctx.store, live, clock(ctx)).catch(() => 0);
   for (const obj of active) {

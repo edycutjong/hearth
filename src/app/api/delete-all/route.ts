@@ -15,9 +15,9 @@ export const maxDuration = 60;
  * Delete everything: cancel the space's Job if one is running (so it cannot write back), remove every key under
  * raw/<uid>/, cache/<uid>/ and u/<uid>/ plus its queue entries, then LIST all three prefixes again and return the
  * listings, which must be empty. The space document goes too, so the calendar feed's key is gone (410), and the
- * space cookie is cleared.
- * Only the uid-free daily counters and the spend meter remain. A Job still running is cancelled and waited for
- * (bounded); a tombstone lets the daily cron delete the prefixes again after every presigned URL has expired.
+ * space cookie is cleared. A tombstone, written first, fences the space off from every other writer (src/lib/fence.ts);
+ * a Job still running is cancelled and waited for (bounded). Afterwards only the uid-free daily counters, the spend
+ * meter and that opaque tombstone remain, and the daily cron removes the tombstone after sweeping the prefixes again.
  */
 export async function POST(req: Request) {
   const r = ready();
@@ -26,6 +26,9 @@ export async function POST(req: Request) {
   if (body.confirm !== "delete") return json({ error: "confirm with { confirm: 'delete' }" }, 400);
   const space = await loadSpace(r.store);
   if (!space) return json({ error: "no space" }, 404);
+  // The fence goes up FIRST: from here on no reconcile, dispatch or memory pass writes into this space, and a Job
+  // created in the meantime is cancelled. The daily cron sweeps the prefixes once more after the presigned URLs expire.
+  await r.store.putJson(keys.reap(space.uid), { at: new Date().toISOString() });
   const cancelled: string[] = [];
   const stillRunning: string[] = [];
   for (const job of await listJobs(r.store, space.uid)) {
@@ -38,8 +41,6 @@ export async function POST(req: Request) {
     }
     await r.store.delete(keys.active(job.job));
   }
-  // A tombstone: the daily cron deletes this space's prefixes again once every presigned URL has expired.
-  await r.store.putJson(`sys/reap/${space.uid}.json`, { at: new Date().toISOString() });
   for (const q of await r.store.list(keys.queuePrefix())) if (q.key.endsWith(`-${space.uid}.json`)) await r.store.delete(q.key);
   let deleted = 0;
   for (const prefix of keys.spacePrefixes(space.uid)) {
