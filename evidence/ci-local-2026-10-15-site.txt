@@ -1,5 +1,5 @@
 # Local CI run — most of the commands .github/workflows/ci.yml runs (not TruffleHog, the license check, Lighthouse CI or the Node 20/24 legs), because GitHub Actions is blocked on billing for this private repo
-# base commit b002bf3 + this change set (the /about and /pitch pages, QA round 3) · node v22.22.0 · Python 3.11.1 (fresh venv) · 2026-10-15T07:47Z · exit status of all stages: 0
+# base commit 0779b58 + this change set (the /about and /pitch pages, QA round 3) · node v22.22.0 · Python 3.11.1 (fresh venv) · 2026-10-15T07:52Z · exit status of all stages: 0
 
 ## Stage 1 · eslint
 
@@ -8,10 +8,10 @@
 ## Stage 1 · vitest with coverage
  Test Files  14 passed (14)
       Tests  195 passed (195)
-Statements   : 67.13% ( 1142/1701 )
+Statements   : 66.97% ( 1142/1705 )
 Branches     : 55.21% ( 704/1275 )
 Functions    : 59.26% ( 227/383 )
-Lines        : 70.49% ( 1001/1420 )
+Lines        : 70.29% ( 1001/1424 )
 
 ## Stage 1 · Python (fresh venv from requirements-dev.txt): ruff
 ruff 0.17.0
@@ -19,7 +19,7 @@ All checks passed!
 
 ## Stage 1 · Python: pytest worker scripts
 ........................                                                 [100%]
-24 passed in 0.39s
+24 passed in 0.81s
 
 ## Stage 2 · npm audit --omit=dev --audit-level=high
 found 0 vulnerabilities
@@ -28,13 +28,13 @@ found 0 vulnerabilities
 No known vulnerabilities found
 
 ## Stage 2 · gitleaks, full history
-[90m2:46PM[0m [32mINF[0m [1m56 commits scanned.[0m
-[90m2:46PM[0m [32mINF[0m [1mscanned ~3050909 bytes (3.05 MB) in 527ms[0m
-[90m2:46PM[0m [32mINF[0m [1mno leaks found[0m
+[90m2:51PM[0m [32mINF[0m [1m57 commits scanned.[0m
+[90m2:51PM[0m [32mINF[0m [1mscanned ~3059380 bytes (3.06 MB) in 6.8s[0m
+[90m2:51PM[0m [32mINF[0m [1mno leaks found[0m
 
 ## Stage 3 · next build + bundle budget
- ✓ Compiled successfully in 1758ms
+ ✓ Compiled successfully in 3.4s
 static assets: 1724 KB (budget 2000 KB)
 
 ## Stage 4 · Playwright (production build, no credentials)
-  26 passed (8.6s)
+  26 passed (5.2s)
