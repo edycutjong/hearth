@@ -1,0 +1,73 @@
+{
+ "at": "2026-10-15T04:15:25.332Z",
+ "clip": "bench/fleurs/clip60.opus",
+ "image": "python:3.11",
+ "runs": [
+  {
+   "run": 1,
+   "job": "202610157951cd01",
+   "nebiusId": "aijob-e01snzxcd2304pm16x",
+   "clip": "bench/fleurs/clip60.opus",
+   "audioS": 60,
+   "bytesHct": 13532,
+   "sha256": "966fb5b814cf9fddcff8e07d0f02356e5f4e1ec9f6132eda9ab5c14a00a73f89",
+   "driftNote": 0.1468,
+   "driftPass": false,
+   "timings": {
+    "load_s": 1.702,
+    "segment_s": 0.003,
+    "lang_check_s": 3.249,
+    "asr_s": 10.488,
+    "encode_s": 18.054,
+    "pack_s": 0.001,
+    "decode_s": 26.653,
+    "rt_asr_s": 10.526
+   },
+   "timeToKeptS": 405,
+   "queueWaitS": 16,
+   "jobHistory": [
+    {
+     "at": "2026-10-15T04:08:28.676Z",
+     "event": "queued"
+    },
+    {
+     "at": "2026-10-15T04:08:29.397Z",
+     "event": "Nebius job aijob-e01snzxcd2304pm16x created"
+    },
+    {
+     "at": "2026-10-15T04:08:44.619Z",
+     "event": "Nebius job PROVISIONING"
+    },
+    {
+     "at": "2026-10-15T04:09:25.892Z",
+     "event": "Nebius job STARTING"
+    },
+    {
+     "at": "2026-10-15T04:10:48.487Z",
+     "event": "Nebius job IMAGE_PULLING"
+    },
+    {
+     "at": "2026-10-15T04:11:29.631Z",
+     "event": "Nebius job RUNNING"
+    },
+    {
+     "at": "2026-10-15T04:15:08.544Z",
+     "event": "report done; 1 note(s) validated"
+    }
+   ],
+   "memory": "done",
+   "memoryEtagChanged": true,
+   "memoryTags": {
+    "space": "anon"
+   },
+   "raw": {
+    "state": "deleted",
+    "rawHead": 404,
+    "originalHead": 404,
+    "checkedAt": "2026-10-15T04:15:21.718Z"
+   }
+  }
+ ],
+ "medianTimeToKeptS": 405,
+ "h1KillOver8min": false
+}
