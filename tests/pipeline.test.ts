@@ -414,6 +414,15 @@ describe("spend meter and caps", () => {
     expect(doc.settled.orphan?.usd).toBeCloseTo(0.132, 5);
   });
 
+  it("caps anonymous Token Factory calls per day, uid-free", async () => {
+    const ctx = makeCtx();
+    const day = new Date("2026-12-03T10:00:00Z");
+    const limit = phaseOf("2026-12-03").tfCallsPerDay;
+    await ctx.store.putJson("sys/caps/2026-12-03.json", { jobs: 0, decodeJobs: 0, tfCalls: limit - 1 });
+    expect(await takeDaily(ctx.store, "tfCalls", day)).toBe(true);
+    expect(await takeDaily(ctx.store, "tfCalls", day)).toBe(false);
+  });
+
   it("caps new uploads per day, uid-free, unless the judge code is used", async () => {
     const ctx = makeCtx();
     const now = new Date("2026-12-02T08:00:00Z");

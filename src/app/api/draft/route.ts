@@ -1,3 +1,4 @@
+import { takeDaily } from "@/lib/caps";
 import { json, loadSpace, notConfigured, ready, tfConfig } from "@/lib/server";
 import { memoryAllowsTf } from "@/lib/sample";
 import { readMemory } from "@/lib/space-ops";
@@ -20,6 +21,7 @@ export async function POST(req: Request) {
   const memory = await readMemory(r.store, space.uid);
   const items = (memory?.items ?? []).filter((i) => (body.items ?? []).includes(i.id) && i.state === "open");
   if (!items.length) return json({ error: "Pick at least one kept item." }, 400);
+  if (!(await takeDaily(r.store, "tfCalls"))) return json({ error: "Drafting is paused for today (resets 00:00 UTC)." }, 429);
   const call = await draftReply(tf, items.map((i) => ({ what_en: i.what_en, quote: i.quote, due_label: i.dueLabel })), String(body.recipient ?? "Maa").slice(0, 30));
   if (!call.value) return json({ error: call.error ?? "no draft" }, 502);
   return json({ draft: call.value, requestId: call.requestId, label: "Machine-drafted. Read it before you send it yourself." });

@@ -1,4 +1,4 @@
-import { anchorFromFilename } from "@/lib/dates";
+import { anchorFromFilename, formatDate, localDate, parseDate } from "@/lib/dates";
 import { MAX_UPLOAD_BYTES, audioExt, keys, spaceTag } from "@/lib/keys";
 import type { NoteMeta } from "@/lib/pipeline";
 import { json, loadSpace, notConfigured, ready } from "@/lib/server";
@@ -33,7 +33,8 @@ export async function POST(req: Request) {
   if (!files.length) return json({ error: "No files." }, 400);
   if (files.length > MAX_FILES) return json({ error: `At most ${MAX_FILES} notes at a time.` }, 400);
   const tag = spaceTag(space.doc.kept);
-  const today = new Date().toISOString().slice(0, 10);
+  // "Today" is the user's own calendar day: a 02:00 upload in India is not yesterday's note.
+  const today = localDate(new Date(), space.doc.timeZone);
   const out = [];
   for (const f of files) {
     const ext = audioExt(String(f.name ?? ""));
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
     if (!(f.size > 0 && f.size <= MAX_UPLOAD_BYTES)) return json({ error: `"${f.name}" is larger than 25 MB.` }, 400);
     const id = newId(6);
     const fromName = anchorFromFilename(f.name);
-    const anchor = /^\d{4}-\d{2}-\d{2}$/.test(f.anchor ?? "") ? (f.anchor as string) : fromName ?? today;
+    const anchor = realDate(f.anchor) ? (f.anchor as string) : fromName ?? today;
     const meta: NoteMeta = {
       version: 1,
       id,
@@ -59,4 +60,14 @@ export async function POST(req: Request) {
     out.push({ id, putUrl: r.store.presignPut(keys.raw(space.uid, id, ext), 3600, tag), headers: { "x-amz-tagging": tag } });
   }
   return json({ notes: out });
+}
+
+/** A client-sent anchor must be a real calendar date within a year of today (the resolver dates reminders from it). */
+function realDate(a: string | null | undefined): boolean {
+  if (!a || !/^\d{4}-\d{2}-\d{2}$/.test(a)) return false;
+  try {
+    return formatDate(parseDate(a)) === a && Math.abs(parseDate(a).getTime() - Date.now()) < 366 * 86_400_000;
+  } catch {
+    return false;
+  }
 }

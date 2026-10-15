@@ -223,3 +223,14 @@ def test_keep_defers_notes_past_the_soft_deadline(monkeypatch):
     out = w.run_keep(manifest, rep=None, m=None)
     assert [n["status"] for n in out["notes"]] == ["deferred", "deferred"]
     assert all(c["job"] == "j1" for c in calls)
+
+
+def test_ffmpeg_falls_back_to_the_pinned_static_binary(monkeypatch):
+    import shutil
+    import types
+
+    monkeypatch.setattr(shutil, "which", lambda name: None)
+    monkeypatch.setitem(sys.modules, "imageio_ffmpeg", types.SimpleNamespace(get_ffmpeg_exe=lambda: "/static/ffmpeg"))
+    assert w.ffmpeg_exe() == "/static/ffmpeg"
+    monkeypatch.setattr(shutil, "which", lambda name: "/usr/bin/ffmpeg")
+    assert w.ffmpeg_exe() == "/usr/bin/ffmpeg"

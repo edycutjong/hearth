@@ -1,6 +1,7 @@
 import { keys } from "@/lib/keys";
 import { json, loadSpace, notConfigured, ready, saveSpace, secret, setSpaceCookie } from "@/lib/server";
 import { newRecoveryKey, recoveryHash } from "@/lib/space";
+import { listJobs } from "@/lib/space-ops";
 import { cookies } from "next/headers";
 
 export const runtime = "nodejs";
@@ -16,6 +17,8 @@ export async function POST() {
   if (!r.ok) return notConfigured(r.missing);
   const space = await loadSpace(r.store);
   if (!space) return json({ error: "no space" }, 404);
+  const inflight = (await listJobs(r.store, space.uid)).some((j) => ["queued", "dispatched", "running", "finalizing"].includes(j.state));
+  if (inflight) return json({ error: "Wait until the notes in progress are kept, then keep your space." }, 409);
   let retagged = 0;
   for (const prefix of keys.spacePrefixes(space.uid)) {
     for (const obj of await r.store.list(prefix)) {

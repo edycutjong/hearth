@@ -35,6 +35,9 @@ export async function GET() {
       };
     }
   }
-  out.apiCalls = recentCalls().slice(-20);
+  // A per-instance log shared by every visitor: kept to method, status and latency, with ids removed.
+  out.apiCalls = recentCalls()
+    .slice(-20)
+    .map((c) => ({ ...c, path: c.path.replace(/parentId=[^&]+/, "parentId=…").replace(/aijob-[a-z0-9]+/g, "aijob-…") }));
   return json(out);
 }

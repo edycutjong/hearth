@@ -23,19 +23,22 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   if (!meta || meta.status !== "kept") return json({ error: "not a kept note" }, 404);
   const last = (await r.store.getJson<{ at: string }>(`u/${space.uid}/decode-last.json`))?.value;
   if (last && Date.now() - new Date(last.at).getTime() < 60_000) return json({ error: "A decode was just requested; wait a minute." }, 429);
-  if (!(await takeDaily(r.store, "decodeJobs"))) return json({ error: "Today's decode budget is used (resets 00:00 UTC)." }, 429);
-  await r.store.putJson(`u/${space.uid}/decode-last.json`, { at: new Date().toISOString() }, { tagging: spaceTag(space.doc.kept) });
+  // The clicked note always counts, whatever its age; other notes ride along only from the last 7 days.
   const weekAgo = Date.now() - 7 * 86_400_000;
   const missing = [];
   let seconds = 0;
   for (const n of [meta, ...(await listNotes(r.store, space.uid)).filter((n) => n.id !== meta.id)]) {
-    if (n.status !== "kept" || new Date(n.uploaded).getTime() < weekAgo) continue;
+    if (n.status !== "kept") continue;
+    if (n.id !== meta.id && new Date(n.uploaded).getTime() < weekAgo) continue;
     if ((await r.store.head(keys.cacheWav(space.uid, n.id))).status === 200) continue;
-    if (seconds + (n.kept?.audioS ?? 0) > 1200) break;
+    if (missing.length && seconds + (n.kept?.audioS ?? 0) > 1200) break;
     seconds += n.kept?.audioS ?? 0;
     missing.push({ id: n.id, ext: n.ext });
   }
   if (!missing.length) return json({ ok: true, note: "the playback copy already exists" });
+  // Only now, with a Job actually needed, is the daily allowance spent.
+  if (!(await takeDaily(r.store, "decodeJobs"))) return json({ error: "Today's decode budget is used (resets 00:00 UTC)." }, 429);
+  await r.store.putJson(`u/${space.uid}/decode-last.json`, { at: new Date().toISOString() }, { tagging: spaceTag(space.doc.kept) });
   const { job, queueKey } = await enqueue(r.ctx, space.uid, "decode", missing);
   const outcome = await dispatch(r.ctx).catch(() => "none");
   return json({ job, dispatch: outcome, queuePosition: await queuePosition(r.ctx, queueKey), notes: missing.length });

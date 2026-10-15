@@ -249,6 +249,19 @@ def decode_windows(decode, codes, frames: list[int], spf: int, ctx: int, n_total
 
 # ---------------------------------------------------------------- audio
 
+def ffmpeg_exe() -> str:
+    """ffmpeg from the image when it has one; else the static binary of imageio-ffmpeg (pinned in requirements), since
+    the stock python image has none and libsndfile cannot read .m4a/.aac/.amr (iPhone voice memos are .m4a)."""
+    import shutil
+
+    found = shutil.which("ffmpeg")
+    if found:
+        return found
+    import imageio_ffmpeg
+
+    return imageio_ffmpeg.get_ffmpeg_exe()
+
+
 def load_audio(blob: bytes, ext: str):
     """Mono float32 at the file's own rate. soundfile (libsndfile: wav, flac, ogg/opus, mp3) first, ffmpeg next."""
     import numpy as np
@@ -263,7 +276,7 @@ def load_audio(blob: bytes, ext: str):
         with tempfile.NamedTemporaryFile(suffix=f".{ext or 'bin'}") as src:
             src.write(blob)
             src.flush()
-            out = subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-i", src.name, "-ac", "1",
+            out = subprocess.run([ffmpeg_exe(), "-nostdin", "-loglevel", "error", "-i", src.name, "-ac", "1",
                                   "-ar", str(CODEC_SR), "-f", "f32le", "-"], capture_output=True, check=True).stdout
         return np.frombuffer(out, dtype=np.float32).copy(), CODEC_SR
 
@@ -689,6 +702,12 @@ def job_context() -> dict:
     try:
         with open("/tmp/install.rc") as fh:
             ctx["install_rc"] = int(fh.read().strip() or "0")
+    except Exception:
+        pass
+    try:
+        import shutil
+
+        ctx["ffmpeg"] = shutil.which("ffmpeg") or "imageio-ffmpeg (static)"
     except Exception:
         pass
     try:

@@ -1,3 +1,6 @@
+import { createHash } from "node:crypto";
+import { takeDaily } from "@/lib/caps";
+import { normalizeHi } from "@/lib/hindi/normalize";
 import { keys } from "@/lib/keys";
 import type { TranscriptDoc } from "@/lib/memory";
 import { memoryAllowsTf, sampleDocs } from "@/lib/sample";
@@ -42,12 +45,25 @@ export async function POST(req: Request) {
     }
   }
   const tf = tfConfig();
+  const r = ready();
   let expansion: string[] = [];
-  let expanded: { requestId: string | null; error: string | null } | null = null;
-  if (tf && allowTf) {
-    const call = await expandQuery(tf, q);
-    expanded = { requestId: call.requestId, error: call.error };
-    if (call.value) expansion = [...call.value.terms_hi, ...call.value.terms_en];
+  let expanded: { requestId: string | null; error: string | null; cached?: boolean } | null = null;
+  if (tf && allowTf && r.ok) {
+    // The sample is public: its expansions are cached, and every Token Factory call counts against a daily cap
+    // (uid-free), past which search runs as typed. A loop on this route cannot burn the shared credit.
+    const cacheKey = body.scope === "sample" ? `sys/cache/exp-${createHash("sha256").update(normalizeHi(q.toLowerCase())).digest("hex").slice(0, 24)}.json` : null;
+    const cached = cacheKey ? (await r.store.getJson<{ terms: string[]; requestId: string | null }>(cacheKey))?.value : null;
+    if (cached) {
+      expansion = cached.terms;
+      expanded = { requestId: cached.requestId, error: null, cached: true };
+    } else if (await takeDaily(r.store, "tfCalls")) {
+      const call = await expandQuery(tf, q);
+      expanded = { requestId: call.requestId, error: call.error };
+      if (call.value) {
+        expansion = [...call.value.terms_hi, ...call.value.terms_en];
+        if (cacheKey) await r.store.putJson(cacheKey, { terms: expansion, requestId: call.requestId }).catch(() => undefined);
+      }
+    }
   }
   const terms = queryTerms(q, expansion);
   return json({ hits: rank(docs, terms, 5), terms: expansion, lexicalOnly: !expansion.length, expanded });

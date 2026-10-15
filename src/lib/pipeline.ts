@@ -32,6 +32,8 @@ export const DRIFT_SEGMENT_MIN_WORDS = 8;
 export const GRACE_HOURS = 24;
 /** Presigned URLs outlive the provisioning wait (<= 30 min) plus the Job timeout. */
 export const URL_TTL_SECONDS = 3 * 3600;
+/** After delete-all, a deleted space's prefixes are swept once more when every presigned URL has expired. */
+export const REAP_AFTER_SECONDS = URL_TTL_SECONDS + 300;
 export const MAX_ATTEMPTS = 2;
 /** A keep Job stops starting new notes after this long; the rest are reported deferred and requeued. */
 export const KEEP_SOFT_DEADLINE_S = 40 * 60;
