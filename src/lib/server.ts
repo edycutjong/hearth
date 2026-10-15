@@ -117,7 +117,9 @@ export async function loadSpace(store: Store, opts: { create?: boolean; timeZone
     if (got) return { uid, doc: got.value };
   }
   if (!opts.create) return null;
-  uid = uid ?? newId(16);
+  // A cookie whose space is gone (deleted, or expired after 7 days) gets a NEW id: the old one may carry a
+  // delete-all tombstone, and the daily sweep would delete whatever a re-created space put under it.
+  uid = newId(16);
   const doc = newSpace(opts.timeZone ?? "UTC");
   await store.putJson(keys.space(uid), doc, { tagging: "space=anon" });
   setSpaceCookie(jar, uid, false);

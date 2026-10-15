@@ -6,7 +6,26 @@
  */
 
 import { normalizeHi, tokens } from "./hindi/normalize";
-import { parseAmounts } from "./hindi/numbers";
+import { isNumberToken, parseAmounts } from "./hindi/numbers";
+
+/*
+ * Words that carry no subject. Super's expansions are often phrases («ज़ेबरा का», «बाघ की दाढ़ी»): without this list
+ * का / की / से matched nearly every segment and search returned noise for anything. Built through normalizeHi, like
+ * every lookup table here.
+ */
+const STOP_HI = new Set(
+  ("का की के को से में पर ने है हैं था थी थे हो हूँ हूं और या कि तो भी ही यह वह ये वो इस उस इन उन एक जो कर करना " +
+    "लिए नहीं ना न मैं हम तुम आप क्या कैसे कैसी अब जब तब तक साथ बहुत कुछ सब फिर अपने अपनी अपना वाले वाली वाला दिया गया गई गए रहा रही रहे")
+    .split(" ")
+    .map(normalizeHi),
+);
+const STOP_EN = new Set(
+  ("the and for with from that this have has had was were are will would can could not but you your they their there what " +
+    "when where which who how about into than then them his her its our out all any one two also been being some such more most " +
+    "very just over only other said says").split(" "),
+);
+/** A hit must reach this share of the best hit's score: a weak tail match is noise, not a result. */
+const MIN_SHARE_OF_TOP = 0.35;
 
 export interface SearchDoc {
   note: string;
@@ -40,9 +59,10 @@ function docTerms(d: SearchDoc): string[] {
 export function queryTerms(query: string, expansion: string[] = []): string[] {
   const set = new Set<string>();
   for (const part of [query, ...expansion]) {
-    for (const t of tokens(part)) if (t.length > 1 || /\d/.test(t)) set.add(t);
+    // Number words count only as the amount they make («पाँच हज़ार» = 5000), never word by word («पाँच गुना»).
+    for (const t of tokens(part)) if ((t.length > 1 || /\d/.test(t)) && !STOP_HI.has(t) && !isNumberToken(t)) set.add(t);
     for (const n of parseAmounts(part)) set.add(String(n));
-    for (const t of part.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/)) if (t.length > 2) set.add(t);
+    for (const t of part.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/)) if (t.length > 2 && !STOP_EN.has(t)) set.add(t);
   }
   return [...set];
 }
@@ -68,7 +88,11 @@ export function rank(docs: SearchDoc[], terms: string[], limit = 5): Hit[] {
     }
     if (score > 0) hits.push({ ...d, score: Math.round(score * 1000) / 1000, matched });
   });
-  return hits.sort((a, b) => b.score - a.score || a.t0 - b.t0).slice(0, limit);
+  const top = Math.max(0, ...hits.map((h) => h.score));
+  return hits
+    .filter((h) => h.score >= top * MIN_SHARE_OF_TOP)
+    .sort((a, b) => b.score - a.score || a.t0 - b.t0)
+    .slice(0, limit);
 }
 
 /** Highlight helper for the UI: which normalised tokens of a segment matched. */

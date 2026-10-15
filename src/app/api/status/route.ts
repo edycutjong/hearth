@@ -3,6 +3,7 @@ import { readDaily, utcDay, phaseOf } from "@/lib/caps";
 import { keys } from "@/lib/keys";
 import { queuePosition, reconcileSpace, sweepGrace } from "@/lib/pipeline";
 import { flags, json, loadSpace, notConfigured, publicUrl, ready, tfConfig } from "@/lib/server";
+import { liveWait } from "@/lib/bench";
 import { daysLeft } from "@/lib/space";
 import { listJobs, listNotes, pumpMemory, readMemory } from "@/lib/space-ops";
 
@@ -50,6 +51,7 @@ export async function GET() {
     memory,
     caps: { ...daily, phase: phaseOf(utcDay()).name },
     flags: { zdrOn: flags.zdrOn(), zdrConfirmed: flags.zdrConfirmed(), tf: Boolean(tfConfig()) },
+    eta: liveWait(),
     errors,
     prefixes: keys.spacePrefixes(space.uid).map((p) => p.replace(space.uid, `${space.uid.slice(0, 8)}…`)),
   });

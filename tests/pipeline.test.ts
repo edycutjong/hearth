@@ -190,7 +190,7 @@ describe("reconcile and finalize", () => {
     const m = await meta(ctx, "aa000001");
     expect(m.kept?.driftPass).toBe(false);
     expect(m.raw.state).toBe("kept_original");
-    expect(m.raw.reason).toMatch(/12\.0 % of words/);
+    expect(m.raw.reason).toMatch(/12\.0 % of the words .* counts as stored audio/);
     expect(await ctx.store.getTags(keys.original(UID, "aa000001", "opus"))).toEqual({ space: "anon" });
   });
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { processorsParagraph } from "@/lib/copy";
+import { CONSENT_VERSION, processorsParagraph } from "@/lib/copy";
+import { Recover } from "./Recover";
 import { api, type SpaceInfo } from "./types";
 
 /** Data under the user's control: keep the space, recover it elsewhere, export everything, delete everything. */
@@ -18,7 +19,6 @@ export function You({
   onDeleted?: (listings: Array<{ prefix: string; count: number }>) => void;
 }) {
   const [key, setKey] = useState<string | null>(null);
-  const [recover, setRecover] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [exporting, setExporting] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
@@ -47,7 +47,9 @@ export function You({
     a.href = URL.createObjectURL(blob);
     a.download = `hearth-export-${new Date().toISOString().slice(0, 10)}.zip`;
     a.click();
-    setExporting(`Ready: ${(blob.size / 1000).toFixed(1)} KB, built in this browser — the files never passed through our server.`);
+    setExporting(
+      `Ready: ${(blob.size / 1000).toFixed(1)} KB, built in this browser. The tokens, transcripts and any kept originals came straight from storage; the small text files (memory, calendar, decode.py) came from Hearth's API.`,
+    );
   }
 
   return (
@@ -83,19 +85,51 @@ export function You({
             <p className="key">{key}</p>
           </div>
         ) : null}
-        <form
-          style={{ display: "flex", gap: 8 }}
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const r = await api<{ ok?: boolean; error?: string }>("/api/space/recover", { method: "POST", body: JSON.stringify({ key: recover }) });
-            setMsg(r.ok ? "Opened. Reloading…" : (r.data.error ?? "That key does not open a space."));
-            if (r.ok) window.location.reload();
-          }}
-        >
-          <input type="text" value={recover} onChange={(e) => setRecover(e.target.value)} placeholder="Recovery key from another device" aria-label="Recovery key" />
-          <button className="btn">Open</button>
-        </form>
+        <Recover />
         {msg ? <p className="note-hint">{msg}</p> : null}
+      </div>
+      <div className="card stack">
+        <strong>Your choices</strong>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={space.consent?.deleteOriginals ?? true}
+            disabled={busy}
+            onChange={async (e) => {
+              setBusy(true);
+              const r = await api<{ error?: string }>("/api/agree", {
+                method: "POST",
+                body: JSON.stringify({ agreed: true, deleteOriginals: e.target.checked, textVersion: CONSENT_VERSION }),
+              });
+              setBusy(false);
+              if (!r.ok) setMsg(r.data.error ?? "Could not save.");
+              onChanged();
+            }}
+          />
+          <span>
+            Delete originals after a verified round trip
+            <span className="muted" style={{ display: "block", fontSize: 15 }}>Applies to notes kept from now on.</span>
+          </span>
+        </label>
+        {space.tfOptIn ? (
+          <p style={{ fontSize: 15 }}>
+            Transcripts of this space are read by Token Factory for reminders.{" "}
+            <button
+              className="linkish"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                await api("/api/optin", { method: "POST", body: JSON.stringify({ optIn: false }) });
+                setBusy(false);
+                onChanged();
+              }}
+            >
+              Stop sending transcripts
+            </button>
+          </p>
+        ) : (
+          <p style={{ fontSize: 15 }} className="muted">Transcripts of this space are not sent to Token Factory (reminders paused). Turn it on in the Kept tab.</p>
+        )}
       </div>
       <div className="card stack">
         <strong>Export everything</strong>

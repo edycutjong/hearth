@@ -85,6 +85,10 @@ export function buildCalendar(
     }
     lines.push("END:VEVENT");
   }
+  if (!lines.some((l) => l === "BEGIN:VEVENT")) {
+    // No reminder yet: RFC 5545 asks for at least one component, so the feed carries a UTC time-zone definition.
+    lines.push("BEGIN:VTIMEZONE", "TZID:UTC", "BEGIN:STANDARD", "DTSTART:19700101T000000", "TZOFFSETFROM:+0000", "TZOFFSETTO:+0000", "TZNAME:UTC", "END:STANDARD", "END:VTIMEZONE");
+  }
   lines.push("END:VCALENDAR");
   return lines.map(fold).join("\r\n") + "\r\n";
 }

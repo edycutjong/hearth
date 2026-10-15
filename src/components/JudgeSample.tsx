@@ -35,7 +35,7 @@ export function JudgeSample({ sample, bench, wait }: { sample: SampleDoc; bench:
   return (
     <div className="stack">
       <div>
-        <h1>Hear one voice kept in {kb(note.kept.bytesHct)}.</h1>
+        <h1>Hear {mmss(note.kept.audioS)} of voice kept in {kb(note.kept.bytesHct)}.</h1>
         <p className="lead">
           {fleurs ? (
             <>
@@ -76,10 +76,11 @@ export function JudgeSample({ sample, bench, wait }: { sample: SampleDoc; bench:
         items={items}
         seek={seek}
         stepDone={(k) => mark(k)}
+        onSeekUsed={() => setSeek(null)}
         keptNote={`${KEPT_LABEL}. Decoded on the Nebius Job from the ${kb(note.kept.bytesHct)} of tokens drawn above.`}
         facts={[
           { label: "Stored", value: `${kb(note.kept.bytesHct)} for ${mmss(note.kept.audioS)} of voice` },
-          { label: "ASR agreement after the round trip", value: `${pct(1 - note.kept.driftNote)}` },
+          { label: "ASR agreement after the round trip", value: `${pct(1 - note.kept.driftNote)} (an original is deleted only at ≥ 95 %)` },
           { label: "Nebius job", value: `${note.job.nebiusId} · cpu-d3 · ${note.job.preset} · ${note.job.region}` },
           { label: "sha256 of the tokens", value: `${note.kept.sha256.slice(0, 16)}…` },
         ]}

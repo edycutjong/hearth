@@ -16,10 +16,25 @@ interface Detail {
 }
 
 /** One kept note: the A/B on its real token strip, its transcript, its coupons, and the proof of its original's fate. */
-export function NoteDetail({ id, memory, seek, onBack, onChanged }: { id: string; memory: MemoryDoc | null; seek: { t0: number; t1: number; nonce: number } | null; onBack: () => void; onChanged: () => void }) {
+export function NoteDetail({
+  id,
+  memory,
+  seek,
+  onBack,
+  onChanged,
+  onSeekUsed,
+}: {
+  id: string;
+  memory: MemoryDoc | null;
+  seek: { t0: number; t1: number; nonce: number } | null;
+  onBack: () => void;
+  onChanged: () => void;
+  onSeekUsed?: () => void;
+}) {
   const [d, setD] = useState<Detail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const load = useCallback(async () => {
     const r = await api<Detail & { error?: string }>(`/api/notes/${id}`);
     if (!r.ok) setError(r.data.error ?? "Could not open the note.");
@@ -60,6 +75,9 @@ export function NoteDetail({ id, memory, seek, onBack, onChanged }: { id: string
         glosses={memory?.glosses[id] ?? {}}
         items={items}
         seek={seek}
+        onSeekUsed={onSeekUsed}
+        memoryState={m.memory}
+        memoryError={m.memoryError}
         calendarHref={(it) => googleTemplateLink(it, base)}
         keptNote="▶ Kept plays NanoCodec's reconstruction of the recording, decoded from the stored tokens on a Nebius Job."
         onDecode={async () => {
@@ -80,11 +98,20 @@ export function NoteDetail({ id, memory, seek, onBack, onChanged }: { id: string
       <div className="card stack">
         <strong>The original upload</strong>
         <p className="note-hint">{rawLine(m)}</p>
-        {m.raw.state !== "deleted" ? (
+        {m.raw.state !== "deleted" && !confirmDelete ? (
+          <button className="btn" disabled={!!busy} onClick={() => setConfirmDelete(true)}>
+            Delete original now…
+          </button>
+        ) : null}
+        {m.raw.state !== "deleted" && confirmDelete ? (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <span className="note-hint">Delete the original file? This cannot be undone; the tokens stay.</span>
           <button
-            className="btn"
+            className="btn primary"
+            autoFocus
             disabled={!!busy}
             onClick={async () => {
+              setConfirmDelete(false);
               setBusy("Deleting, then asking the storage for it again…");
               const r = await api<{ raw?: NoteMeta["raw"]; error?: string }>(`/api/notes/${id}/delete-original`, { method: "POST" });
               setBusy(r.ok ? `Deleted: raw HEAD ${r.data.raw?.rawHead} · originals HEAD ${r.data.raw?.originalHead} at ${r.data.raw?.checkedAt?.slice(11, 19)} UTC` : (r.data.error ?? "Could not delete."));
@@ -92,8 +119,10 @@ export function NoteDetail({ id, memory, seek, onBack, onChanged }: { id: string
               onChanged();
             }}
           >
-            Delete original now
+            Yes, delete it
           </button>
+            <button className="btn" onClick={() => setConfirmDelete(false)}>Cancel</button>
+          </div>
         ) : null}
         {busy ? <p className="note-hint" aria-live="polite">{busy}</p> : null}
       </div>

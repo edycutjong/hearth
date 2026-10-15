@@ -32,7 +32,7 @@ export function NotesList({ notes, onOpen }: { notes: NoteMeta[]; onOpen: (id: s
           ) : (
             <span className="note-hint">{n.name}</span>
           )}
-          <span className="note-hint">{rawLine(n)}{n.memory === "paused" ? " · reminders paused" : n.memory === "pending" ? " · remembering…" : ""}</span>
+          <span className="note-hint">{rawLine(n)}{n.memory === "paused" ? " · reminders paused (opt in on the Kept tab)" : n.memory === "pending" || n.memory === "running" ? " · reading for promises…" : n.memory === "skipped" ? " · not read for promises (Hindi-only)" : ""}</span>
           {n.error ? <span className="note-hint">⚠ {n.error}</span> : null}
         </button>
       ))}

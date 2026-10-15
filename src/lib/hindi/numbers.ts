@@ -63,6 +63,11 @@ const MULT = table(MULTIPLIERS);
 const FRAC = table(FRACTIONS);
 const MOD = table(MODIFIERS);
 
+/** Is this (normalised) token part of how amounts are said: a number word, a multiplier, a fraction word? */
+export function isNumberToken(t: string): boolean {
+  return NUMBER_WORDS.has(t) || MULT.has(t) || FRAC.has(t) || MOD.has(t);
+}
+
 /** The 0–99 table is complete: one entry per value (tested). */
 export const NUMBER_TABLE_VALUES = WORDS.map(([v]) => v);
 

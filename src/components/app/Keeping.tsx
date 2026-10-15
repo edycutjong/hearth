@@ -14,7 +14,17 @@ function stageOf(job: JobRecord): number {
 }
 
 /** A Job's progress: the queue, the Nebius Job and its lifecycle, then validation. Real states, real ids. */
-export function Keeping({ job, notes, queuePos }: { job: JobRecord; notes: NoteMeta[]; queuePos: number | null }) {
+export function Keeping({
+  job,
+  notes,
+  queuePos,
+  eta,
+}: {
+  job: JobRecord;
+  notes: NoteMeta[];
+  queuePos: number | null;
+  eta?: { p50: number; p95: number; runs: number } | null;
+}) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -39,6 +49,12 @@ export function Keeping({ job, notes, queuePos }: { job: JobRecord; notes: NoteM
         </strong>
         <span className="data-hint">{mmss(elapsed)} elapsed · job {job.job}</span>
       </div>
+      {eta ? (
+        <p className="note-hint" style={{ marginTop: 6 }}>
+          Measured on this deployment: about {(eta.p50 / 60).toFixed(1)} min from upload to kept (median of {eta.runs} runs) — most of
+          it is Nebius starting a CPU machine and loading the two models.
+        </p>
+      ) : null}
       <div style={{ marginTop: 8 }} aria-live="polite">
         {rows.map(([label, i]) => (
           <div key={i} className={`stage ${i < s ? "done" : i === s ? "run" : "wait"}`}>

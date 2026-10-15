@@ -126,7 +126,7 @@ export function HearthApp() {
 
   const s = status?.space ?? space;
   if (!s) return <p className="muted">Opening your space…</p>;
-  if (!s.consent) return <Agree zdrConfirmed={status?.flags.zdrConfirmed ?? false} onDone={() => void refresh().then(() => setSpace({ ...s, consent: { at: "", textVersion: "", deleteOriginals: true } }))} />;
+  if (!s.consent) return <Agree zdrConfirmed={status?.flags.zdrConfirmed ?? false} judge={Boolean(s.judge)} onDone={() => void refresh().then(() => setSpace({ ...s, consent: { at: "", textVersion: "", deleteOriginals: true } }))} />;
 
   const notes = status?.notes ?? [];
   const jobs = status?.jobs ?? [];
@@ -145,7 +145,7 @@ export function HearthApp() {
       {error ? <p className="error" style={{ marginBottom: 12 }}>{error}</p> : null}
       {tab === "notes" ? (
         open ? (
-          <NoteDetail id={open} memory={status?.memory ?? null} seek={seek} onBack={() => setOpen(null)} onChanged={() => void refresh()} />
+          <NoteDetail id={open} memory={status?.memory ?? null} seek={seek} onSeekUsed={() => setSeek(null)} onBack={() => setOpen(null)} onChanged={() => void refresh()} />
         ) : (
           <div className="stack">
             <h1>Your notes</h1>
@@ -157,7 +157,7 @@ export function HearthApp() {
             ) : null}
             <Forward onKept={() => void refresh()} maxSeconds={judge ? JUDGE_MAX_S : undefined} code={code} />
             {active.map((j) => (
-              <Keeping key={j.job} job={j} notes={notes.filter((n) => j.notes.some((x) => x.id === n.id))} queuePos={status?.queue[j.job] ?? null} />
+              <Keeping key={j.job} job={j} notes={notes.filter((n) => j.notes.some((x) => x.id === n.id))} queuePos={status?.queue[j.job] ?? null} eta={status?.eta ?? null} />
             ))}
             <h3>Kept so far</h3>
             <NotesList notes={notes.filter((n) => n.status !== "uploading")} onOpen={(id) => openAt(id)} />

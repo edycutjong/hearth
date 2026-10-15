@@ -22,6 +22,26 @@ describe("search: real segments only", () => {
   it("searches as typed when there is no expansion (Token Factory down)", () => {
     expect(rank(DOCS, queryTerms("पैसे"))[0]?.note).toBe("n2");
   });
+  it("ignores the function words of a phrase expansion: no subject, no hit", () => {
+    expect(rank(DOCS, queryTerms("zebra", ["ज़ेबरा का", "ज़ेबरे की", "zebra"]))).toEqual([]);
+  });
+  it("lands on the segment that says the subject, not on every segment with की or से", () => {
+    const docs: SearchDoc[] = [
+      ...DOCS,
+      { note: "n3", segment: 0, t0: 0, t1: 9, text: "बाघ की तरह शिकार करता है", gloss: "It hunts like a tiger." },
+    ];
+    const hits = rank(docs, queryTerms("tiger", ["बाघ", "बाघ की दाढ़ी", "tiger"]));
+    expect(hits.map((h) => h.note)).toEqual(["n3"]);
+  });
+  it("matches an amount as an amount, not its number words one by one", () => {
+    const docs: SearchDoc[] = [
+      ...DOCS,
+      { note: "n4", segment: 0, t0: 0, t1: 6, text: "वह पांच गुना बल से खींच सकता है", gloss: "It can pull with five times the strength." },
+    ];
+    const hits = rank(docs, queryTerms("5000", ["पाँच हज़ार", "five thousand"]));
+    expect(hits[0]?.segment).toBe(2);
+    expect(hits.some((h) => h.note === "n4")).toBe(false);
+  });
   it("returns nothing for nothing", () => {
     expect(rank(DOCS, queryTerms("xyzzy"))).toEqual([]);
     expect(rank([], ["a"])).toEqual([]);

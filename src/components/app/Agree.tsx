@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { ASK_FIRST_HI, CONSENT, CONSENT_VERSION, processorsParagraph } from "@/lib/copy";
+import { Recover } from "./Recover";
 import { api } from "./types";
 
 /** Before any upload: everyone whose voice is in the notes has agreed. Hindi first, English second. */
-export function Agree({ zdrConfirmed, onDone }: { zdrConfirmed: boolean; onDone: () => void }) {
+export function Agree({ zdrConfirmed, judge = false, onDone }: { zdrConfirmed: boolean; judge?: boolean; onDone: () => void }) {
   const [agreed, setAgreed] = useState(false);
   const [deleteOriginals, setDeleteOriginals] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -18,6 +19,12 @@ export function Agree({ zdrConfirmed, onDone }: { zdrConfirmed: boolean; onDone:
         Forward a parent&apos;s Hindi voice notes. Hearth keeps each voice as NVIDIA NanoCodec tokens with a searchable Hindi
         transcript, and every promise or ask in it becomes a reminder quoted word for word.
       </p>
+      {judge ? (
+        <p className="card">
+          <strong>A judge space.</strong> Notes up to 60 seconds, in any language the speech model is transcription-ready for
+          (not Japanese or Korean); reminders are Hindi-only. It runs a real Nebius Job.
+        </p>
+      ) : null}
       <div className="card ink stack">
         <label className="check">
           <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
@@ -72,6 +79,12 @@ export function Agree({ zdrConfirmed, onDone }: { zdrConfirmed: boolean; onDone:
       >
         {busy ? "Saving…" : "Continue"}
       </button>
+      <details className="card">
+        <summary style={{ cursor: "pointer", fontWeight: 600 }}>Kept a space before? Open it with its recovery key</summary>
+        <div style={{ marginTop: 10 }}>
+          <Recover />
+        </div>
+      </details>
     </div>
   );
 }

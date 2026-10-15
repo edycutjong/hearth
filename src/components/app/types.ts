@@ -20,6 +20,8 @@ export interface Status {
   memory: MemoryDoc | null;
   caps: { jobs: number; limit: number; decodeJobs: number; decodeLimit: number; day: string; phase: string };
   flags: { zdrOn: boolean; zdrConfirmed: boolean; tf: boolean };
+  /** Measured on this deployment (bench.py --live --record): upload -> kept, seconds. */
+  eta?: { p50: number; p95: number; runs: number } | null;
   errors: string[];
   prefixes: string[];
 }

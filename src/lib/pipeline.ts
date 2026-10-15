@@ -695,7 +695,9 @@ async function finalize(
       await store.putJson(keys.meta(uid, n.id), meta, { tagging: tag });
       await keepOriginal(
         ctx, uid, n,
-        !pass ? `original kept: the codec round trip changed ${(100 * (res.drift_note ?? 1)).toFixed(1)} % of words` : "original kept: your choice",
+        !pass
+          ? `original kept: the round trip changed ${(100 * (res.drift_note ?? 1)).toFixed(1)} % of the words the speech model heard (more than 5 %), so Hearth keeps your file — it counts as stored audio until you delete it`
+          : "original kept: your choice — it counts as stored audio until you delete it",
       );
     }
   }

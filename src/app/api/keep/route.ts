@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { takeDaily } from "@/lib/caps";
 import { MAX_UPLOAD_BYTES, isId, keys, spaceTag } from "@/lib/keys";
 import { dispatch, enqueue, queuePosition, type NoteMeta } from "@/lib/pipeline";
@@ -63,6 +64,7 @@ export async function POST(req: Request) {
     maxNoteSeconds: space.doc.judge ? 60 : 300,
     lang: space.doc.judge ? "detect" : "hi-IN",
   });
-  const outcome = await dispatch(r.ctx).catch((e: unknown) => `error: ${String(e).slice(0, 120)}`);
-  return json({ job, dispatch: outcome, queuePosition: await queuePosition(r.ctx, queueKey) });
+  // Creating the Nebius Job takes seconds: answer now (the Keeping card appears at once) and dispatch after.
+  after(() => dispatch(r.ctx).catch(() => "none"));
+  return json({ job, dispatch: "scheduled", queuePosition: await queuePosition(r.ctx, queueKey) });
 }

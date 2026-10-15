@@ -37,6 +37,9 @@ export function NoteView({
   keptNote,
   calendarHref,
   stepDone,
+  onSeekUsed,
+  memoryState,
+  memoryError,
 }: {
   title: string;
   subtitle: string;
@@ -56,6 +59,11 @@ export function NoteView({
   keptNote?: string | null;
   calendarHref?: (item: MemoryItem) => string | null;
   stepDone?: (step: "original" | "kept" | "stamp") => void;
+  /** Called once a search jump has played, so a later remount never replays it. */
+  onSeekUsed?: () => void;
+  /** Where this note's memory pass stands (absent for the published sample, which is done). */
+  memoryState?: "pending" | "running" | "done" | "paused" | "skipped" | "failed";
+  memoryError?: string;
 }) {
   const [codes, setCodes] = useState<Uint16Array[] | null>(null);
   const [bytes, setBytes] = useState<number | null>(null);
@@ -115,7 +123,8 @@ export function NoteView({
     if (!seek || lastSeek.current === seek.nonce) return;
     lastSeek.current = seek.nonce;
     play(keptUrl ? "kept" : "original", seek.t0, seek.t1);
-  }, [seek, keptUrl, play]);
+    onSeekUsed?.();
+  }, [seek, keptUrl, play, onSeekUsed]);
 
   const onTime = (which: Which) => () => {
     const a = el(which);
@@ -190,7 +199,7 @@ export function NoteView({
       </section>
       <div className="crease" aria-hidden="true" />
       <section aria-label="What was said">
-        <h3>What was said · Hindi, then machine translation</h3>
+        <h3>{Object.keys(glosses).length ? "What was said · Hindi, then machine translation" : "What was said · as transcribed"}</h3>
         {transcript?.segments.length ? (
           transcript.segments.map((s) => (
             <button
@@ -222,12 +231,21 @@ export function NoteView({
             </div>
           ))
         ) : (
-          <p className="muted">No promise or ask in this note passed the gates.</p>
+          <p className="muted">{emptyKept(memoryState, memoryError)}</p>
         )}
         {gateLine ? <p className="gate">{gateLine}</p> : null}
       </section>
     </div>
   );
+}
+
+/** What the Kept column says when it holds no coupon — never a gate result for gates that did not run. */
+function emptyKept(state: string | undefined, error: string | undefined): string {
+  if (state === "paused") return "Reminders are paused for this space: nothing has been sent to Token Factory. Opt in on the Kept tab and this note is read for promises.";
+  if (state === "skipped") return error ? `Not read for promises: ${error}.` : "Not read for promises: reminders are Hindi-only in v1.";
+  if (state === "pending" || state === "running") return "Reading the transcript for promises…";
+  if (state === "failed") return `Could not read the transcript for promises${error ? `: ${error}` : ""}.`;
+  return "No promise or ask in this note passed the gates.";
 }
 
 /** Underline the quoted spans of kept items inside a segment's text. */
