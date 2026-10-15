@@ -1,9 +1,8 @@
-# Only the app ships. The worker is embedded in src/lib/worker-source.ts; harnesses and evidence stay in git.
+# Only the app ships (plus the JSON evidence /proof renders). The worker is embedded in src/lib/worker-source.ts; harnesses stay in git.
 .venv/
 scripts/
 tests/
 worker/
-evidence/
 coverage/
 .pytest_cache/
 *.tsbuildinfo

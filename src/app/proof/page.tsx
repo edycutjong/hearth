@@ -2,6 +2,7 @@ import { TopBar } from "@/components/Brand";
 import { VisitorProof } from "@/components/VisitorProof";
 import { kb, mmss, pct } from "@/components/format";
 import latest from "../../../bench/results/latest.json";
+import gates from "../../../evidence/tf-extract-smoke.json";
 import { getSample } from "@/lib/sample";
 
 export const metadata = { title: "Hearth — proof" };
@@ -56,6 +57,53 @@ function determinismText(d: Record<string, unknown> | undefined): string {
     `the stored .hct equals a fresh encode: ${yes(d.hct_roundtrip_equals_fresh_encode)}`,
     `decoding twice, largest sample difference: ${String(d.decode_twice_max_abs_diff ?? "—")}`,
   ].join(" · ");
+}
+
+interface GateRun {
+  at: string;
+  model: string;
+  request_id: string;
+  duration_ms: number;
+  judged: Array<{
+    item: { kind: string; quote: string; amount_inr: number | null; when: { weekday: string | null; qualifier: string | null } | null };
+    quote_gate: { ok: boolean };
+    field_gate: { amount: number | null; amountStatus: string; whenStatus: string };
+    due: { label: string } | null;
+  }>;
+}
+
+/** One real Super call on a test transcript, and what the code-side gates did with each proposal. */
+function GatesProof() {
+  const g = gates as unknown as GateRun;
+  return (
+    <div className="stack">
+      <p className="note-hint">
+        A test transcript written from the judge sample&apos;s script (text, no audio, anchored on Monday 12 Oct) went to {g.model} with a strict
+        json_schema — request {g.request_id}, {(g.duration_ms / 1000).toFixed(1)} s. Super proposes; code decides what is shown:
+      </p>
+      <div className="tablewrap">
+        <table className="plain">
+          <thead>
+            <tr><th>Super proposed</th><th>Quote gate</th><th>Amount</th><th>Date</th></tr>
+          </thead>
+          <tbody>
+            {g.judged.map((j) => (
+              <tr key={j.item.quote}>
+                <td>
+                  <span lang="hi">«{j.item.quote}»</span> · {j.item.kind}
+                  {j.item.amount_inr !== null ? ` · ₹${j.item.amount_inr.toLocaleString("en-IN")}` : ""}
+                  {j.item.when?.weekday ? ` · ${j.item.when.qualifier ?? ""} ${j.item.when.weekday}` : ""}
+                </td>
+                <td className="num">{j.quote_gate.ok ? "verbatim in the transcript" : "dropped"}</td>
+                <td className="num">{j.field_gate.amount !== null ? `₹${j.field_gate.amount.toLocaleString("en-IN")}, parsed from the quote` : j.field_gate.amountStatus.replace(/_/g, " ")}</td>
+                <td className="num">{j.field_gate.whenStatus === "verified" ? (j.due?.label ?? "—") : "removed: not in the quote → date unclear"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
 
 /** What actually ran — the sample's Job, the measured benchmark, and the visitor's own last run. */
@@ -132,6 +180,8 @@ export default function Proof() {
             {sample.memory.calls.map((c) => `${c.requestId ?? "—"} (${(c.ms / 1000).toFixed(1)} s${c.error ? `, ${c.error}` : ""})`).join(" · ")}.
           </p>
         ) : null}
+        <h2 className="label">The memory gates on a live Token Factory call</h2>
+        <GatesProof />
         <h2 className="label">Your last run</h2>
         <VisitorProof />
         {process.env.VERCEL_GIT_COMMIT_SHA ? (
