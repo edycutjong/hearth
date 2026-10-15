@@ -20,7 +20,7 @@ flowchart LR
     end
     subgraph Nebius["Nebius AI Cloud · eu-west1"]
       OS[("Object Storage hearth-data<br/>raw/ · cache/ · u/ · sample/ · sys/")]
-      J["Serverless AI Job · cpu-d3 4vcpu-16gb<br/>worker/worker.py (injected, < 64 KiB)<br/>ASR nemotron-3.5-asr-streaming-0.6b<br/>NanoCodec 22 kHz 1.78 kbps"]
+      J["Serverless AI Job · cpu-d3 4vcpu-16gb<br/>worker/worker.py (injected gzipped, src/lib/injected.ts)<br/>ASR nemotron-3.5-asr-streaming-0.6b<br/>NanoCodec 22 kHz 1.78 kbps"]
       TF["Token Factory<br/>nvidia/nemotron-3-super-120b-a12b<br/>json_schema"]
     end
     F -- "presigned PUT raw/uid/note (tag bound into the signature)" --> OS
@@ -37,9 +37,13 @@ flowchart LR
 
 ## Inside the Job (`worker/worker.py`)
 
-The worker is one stdlib-only-at-import Python file, injected into a stock `python:3.11` image together with
-`worker/run.sh` (which installs `worker/requirements.txt` with `uv`) — a failed install is still reported through the
-status URL. It never holds a credential: every read and write is a presigned URL from its manifest.
+The worker is one stdlib-only-at-import Python file, injected into a stock `python:3.11` image with `worker/run.sh`
+and `worker/requirements.txt` (every package pinned to the pip freeze of the benchmark of record). The Jobs API caps
+all injected files together at 64 KiB of base64 (`evidence/injected-files-limit.json`), so the worker and the
+requirements travel gzipped and `run.sh` unpacks them. `run.sh` installs with `uv`, then starts `worker.py --prefetch`
+(standard library only), which streams both model files from the in-region bucket while the worker imports NeMo — the
+ASR `.nemo` is unpacked as it downloads. A failed install is still reported through the status URL. The worker never
+holds a credential: every read and write is a presigned URL from its manifest.
 
 ```mermaid
 flowchart TD
@@ -54,15 +58,19 @@ flowchart TD
     RT --> PUT["PUT .hct · transcript.json · playback wav (24 h) · per-note result → job report → tick"]
 ```
 
-Modes: `keep` (the pipeline above), `decode` (rebuild an expired playback copy from tokens), `d0` (the benchmark
-harness: the same pipeline over FLEURS clips, plus determinism, memory and load-time checks).
+Modes: `keep` (the pipeline above), `decode` (rebuild an expired playback copy from tokens; loads the codec only),
+`d0` (the benchmark harness: the same pipeline over FLEURS clips, plus determinism, memory and load-time checks).
 
 ## On the app side (`src/lib/pipeline.ts`)
 
 - **Queue.** At most one Hearth Job at a time. The tenant quota is 2 instances per region and is shared with the
   builder's other projects; Nebius creates a third job and ends it with `QuotaExceeded`. So `dispatch()` first counts
-  the region's live jobs, and a `QuotaExceeded` or HTTP 429 is a requeue with backoff (30 s doubling to 4 min), never a
-  spent attempt. Each queue entry is claimed with `If-None-Match: *`, so two concurrent requests cannot both dispatch it.
+  the region's live jobs — all of them, except a Hearth Job whose report the app has already validated, which Nebius
+  keeps listing as running while its container exits (`holdsSlot`) — and a `QuotaExceeded` or HTTP 429 is a requeue
+  with backoff (30 s doubling to 4 min), never a spent attempt. Each queue entry is claimed with `If-None-Match: *`, so
+  two concurrent requests cannot both dispatch it.
+- **Tick.** The worker's `POST /api/tick` is answered as soon as its report is validated, so the Job stops billing at
+  once; remembering the notes and starting the next queued Job run after the response (`after()`).
 - **Validation.** A note's result is trusted only when its job id and note id match and the sha256 of the `.hct` the
   app reads back equals the one the worker reported.
 - **Drift gate** (a fixed prior): note drift ≤ 5 % and ≤ 30 % for every segment of ≥ 8 words. Passing notes keep their
@@ -110,7 +118,7 @@ Every PUT carries `x-amz-tagging` (for presigned PUTs the tag is inside the sign
 
 ## Tests
 
-`npm test` (vitest): SigV4 against AWS's published vectors, the Hindi normaliser and number table, 34 resolver cases,
+`npm test` (vitest): SigV4 against AWS's published vectors, the Hindi normaliser and number table, 33 resolver cases from a phrase table (plus the rules around them),
 the gates, memory merging, search and the calendar feed, the `.hct` format across Python and TypeScript, the chat-export
 privacy contract, and the pipeline (queue, QuotaExceeded requeue, retries, sha256 validation, the drift gate, verified
 deletion, the spend meter) against an in-memory S3 and a fake Jobs API. `python3 -m pytest worker scripts`: the
