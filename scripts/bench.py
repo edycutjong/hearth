@@ -3,7 +3,7 @@
 
     python3 scripts/bench.py --corpus fleurs20 [--from RAW]   # WER orig -> round trip, bytes/hour, RTF, $/hour
     python3 scripts/bench.py --calibrate [--from RAW]         # DRIFT_GATE re-checked on the disjoint fleurs20b set
-    python3 scripts/bench.py --live 10 [--base URL]           # p50/p95 time-to-kept through the DEPLOYED app
+    python3 scripts/bench.py --live 10 --record [--base URL]  # p50/p95 time-to-kept through the DEPLOYED app
     python3 scripts/bench.py --memory                         # proposed / quote-dropped / field-removed / kept
     python3 scripts/bench.py --traction                       # counts only, from the volunteers' ratings (kept private)
 
@@ -168,7 +168,8 @@ def live(args) -> int:
            "note": "time to kept = upload complete -> the note reads 'kept' (validation done), cold start and queue wait included"}
     dest = RESULTS / f"live-{stamp()}.json"
     dest.write_text(json.dumps(out, indent=1))
-    if args.base.startswith("https://") and len(ok) == len(runs):
+    if args.record and args.base.startswith("https://") and len(ok) == len(runs):
+        # Only a run of record (--record) replaces what the judge page shows; checks and probes never do.
         (RESULTS / "live-latest.json").write_text(json.dumps({**out, "source": dest.name}, indent=1))
     print(f"kept {len(ok)}/{len(runs)} · time to kept p50 {out['time_to_kept_s']['p50']} s, p95 {out['time_to_kept_s']['p95']} s "
           f"· queue wait p50 {out['queue_wait_s']['p50']} s -> {dest.relative_to(ROOT)}")
@@ -217,6 +218,7 @@ def main() -> int:
     ap.add_argument("--base", default=os.environ.get("HEARTH_PUBLIC_URL", "https://hearth-alpha-six.vercel.app"))
     ap.add_argument("--clip", default="bench/fleurs/clip60.opus")
     ap.add_argument("--max-min", type=float, default=30)
+    ap.add_argument("--record", action="store_true", help="--live: this run becomes bench/results/live-latest.json (what /judge shows)")
     args = ap.parse_args()
     if args.corpus:
         return corpus(args)
