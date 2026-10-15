@@ -176,7 +176,7 @@ public/                   the judge sample's files, the story page (/about) and 
 src/lib                   pipeline, gates, Hindi date + number resolver, SigV4, Nebius clients, .hct format
 worker/                   the Job: segment → ASR → NanoCodec → pack → decode → re-ASR → drift
 bench/results/            every benchmark measurement behind a number on this page (test counts: evidence/ci-local-*.txt)
-evidence/                 recorded checks: CI logs, the live Token Factory call, the export decode check, a live keep, storage preflight, cron sweep, the injected-file limit
+evidence/                 recorded checks: CI logs, the live Token Factory call, the export decode check, a live keep, storage preflight, the bucket's expiry rules, cron sweep, the injected-file limit
 export/                   decode.py: tokens back to audio outside Hearth
 ```
 
@@ -184,7 +184,7 @@ export/                   decode.py: tokens back to audio outside Hearth
 
 [Live app](https://hearth-alpha-six.vercel.app) · [/judge](https://hearth-alpha-six.vercel.app/judge) · [/proof](https://hearth-alpha-six.vercel.app/proof) ·
 [Story page (/about)](https://hearth-alpha-six.vercel.app/about) · [Pitch deck (/pitch)](https://hearth-alpha-six.vercel.app/pitch) ·
-[DEMO.md](DEMO.md) · [FEEDBACK.md](FEEDBACK.md) · [ARCHITECTURE.md](ARCHITECTURE.md)
+[DEMO.md](DEMO.md) · [FEEDBACK.md](FEEDBACK.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · [docs/SOURCES.md](docs/SOURCES.md) (where the outside facts come from)
 
 ## 📄 License
 

@@ -1,0 +1,41 @@
+{
+ "at": "2026-10-15T08:57:27.781832+00:00",
+ "bucket": "hearth-data",
+ "endpoint": "https://storage.eu-west1.nebius.cloud",
+ "lifecycle": {
+  "status": 200,
+  "rules": [
+   {
+    "id": "raw-7d",
+    "status": "Enabled",
+    "prefix": "raw/",
+    "days": "7",
+    "tag": []
+   },
+   {
+    "id": "cache-1d",
+    "status": "Enabled",
+    "prefix": "cache/",
+    "days": "1",
+    "tag": []
+   },
+   {
+    "id": "anon-7d",
+    "status": "Enabled",
+    "prefix": null,
+    "days": "7",
+    "tag": [
+     [
+      "space",
+      "anon"
+     ]
+    ]
+   }
+  ],
+  "response": "<LifecycleConfiguration xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\"><Rule><ID>raw-7d</ID><Status>Enabled</Status><Filter><Prefix>raw/</Prefix></Filter><Expiration><Days>7</Days></Expiration></Rule><Rule><ID>cache-1d</ID><Status>Enabled</Status><Filter><Prefix>cache/</Prefix></Filter><Expiration><Days>1</Days></Expiration></Rule><Rule><ID>anon-7d</ID><Status>Enabled</Status><Filter><Tag><Key>space</Key><Value>anon</Value></Tag></Filter><Expiration><Days>7</Days></Expiration></Rule></LifecycleConfiguration>"
+ },
+ "cors": {
+  "status": 200,
+  "response": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CORSConfiguration>\n <CORSRule>\n  <AllowedHeader>*</AllowedHeader>\n  <AllowedOrigin>http://localhost:3000</AllowedOrigin>\n  <AllowedOrigin>https://hearth.edycu.dev</AllowedOrigin>\n  <AllowedOrigin>https://*.vercel.app</AllowedOrigin>\n  <AllowedMethod>GET</AllowedMethod>\n  <AllowedMethod>PUT</AllowedMethod>\n  <AllowedMethod>HEAD</AllowedMethod>\n  <ExposeHeader>ETag</ExposeHeader>\n  <ExposeHeader>Content-Length</ExposeHeader>\n  <MaxAgeSeconds>3600</MaxAgeSeconds>\n </CORSRule>\n</CORSConfiguration>"
+ }
+}
