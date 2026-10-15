@@ -37,6 +37,8 @@ export async function POST(req: Request) {
   const today = localDate(new Date(), space.doc.timeZone);
   const out = [];
   for (const f of files) {
+    if (!f || typeof f !== "object" || typeof f.name !== "string" || typeof f.size !== "number") return json({ error: "Each file needs a name and a size." }, 400);
+    if (f.size <= 0) return json({ error: `"${f.name}" is empty.` }, 400);
     const ext = audioExt(String(f.name ?? ""));
     if (!ext) return json({ error: `"${f.name}" isn't a voice note (opus, ogg, m4a, mp3, wav, aac, amr).` }, 400);
     if (!(f.size > 0 && f.size <= MAX_UPLOAD_BYTES)) return json({ error: `"${f.name}" is larger than 25 MB.` }, 400);

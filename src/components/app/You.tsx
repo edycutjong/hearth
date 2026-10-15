@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CONSENT_VERSION, processorsParagraph } from "@/lib/copy";
 import { Recover } from "./Recover";
 import { api, type SpaceInfo } from "./types";
@@ -16,7 +16,7 @@ export function You({
   zdrConfirmed: boolean;
   onChanged: () => void;
   /** Called with the listings Hearth read back after deleting; the app then shows the deleted state. */
-  onDeleted?: (listings: Array<{ prefix: string; count: number }>) => void;
+  onDeleted?: (listings: Array<{ prefix: string; count: number }>, stillRunning: string[]) => void;
 }) {
   const [key, setKey] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -24,6 +24,7 @@ export function You({
   const [confirm, setConfirm] = useState(false);
   const [listing, setListing] = useState<Array<{ prefix: string; count: number }> | null>(null);
   const [busy, setBusy] = useState(false);
+  const deleteOpener = useRef<HTMLButtonElement>(null);
 
   async function exportAll() {
     setExporting("Collecting your files…");
@@ -35,11 +36,17 @@ export function You({
     const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
     let n = 0;
+    const missed: string[] = [];
     for (const f of r.data.files) {
       n += 1;
       setExporting(`Fetching ${n} of ${r.data.files.length} straight from storage…`);
-      const res = await fetch(f.url);
-      if (res.ok) zip.file(f.path, await res.arrayBuffer());
+      try {
+        const res = await fetch(f.url);
+        if (res.ok) zip.file(f.path, await res.arrayBuffer());
+        else missed.push(f.path);
+      } catch {
+        missed.push(f.path);
+      }
     }
     for (const f of r.data.inline) zip.file(f.path, f.text);
     const blob = await zip.generateAsync({ type: "blob" });
@@ -48,7 +55,8 @@ export function You({
     a.download = `hearth-export-${new Date().toISOString().slice(0, 10)}.zip`;
     a.click();
     setExporting(
-      `Ready: ${(blob.size / 1000).toFixed(1)} KB, built in this browser. The tokens, transcripts and any kept originals came straight from storage; the small text files (memory, calendar, decode.py) came from Hearth's API.`,
+      `Ready: ${(blob.size / 1000).toFixed(1)} KB, built in this browser. The tokens, transcripts and any kept originals came straight from storage; the small text files (memory, calendar, decode.py) came from Hearth's API.` +
+        (missed.length ? ` ${missed.length} file${missed.length === 1 ? "" : "s"} could not be fetched and ${missed.length === 1 ? "is" : "are"} not in the zip: ${missed.join(", ")}. Try again.` : ""),
     );
   }
 
@@ -134,7 +142,7 @@ export function You({
       <div className="card stack">
         <strong>Export everything</strong>
         <p style={{ fontSize: 15 }}>The tokens, transcripts, memory, a calendar file, any originals you kept, and decode.py — which plays the voices with the open NanoCodec model, without Hearth.</p>
-        <button className="btn" onClick={() => void exportAll()} disabled={!!exporting && exporting.startsWith("Fetching")}>
+        <button className="btn" onClick={() => void exportAll().catch(() => setExporting("Export failed — check the connection and try again."))} disabled={!!exporting && exporting.startsWith("Fetching")}>
           Export (built in your browser)
         </button>
         {exporting ? <p className="note-hint" aria-live="polite">{exporting}</p> : null}
@@ -143,7 +151,7 @@ export function You({
         <strong>Delete everything</strong>
         <p style={{ fontSize: 15 }}>Every key under your three storage prefixes is deleted, then listed again so you can see them empty. Your calendar feed stops working.</p>
         {!confirm ? (
-          <button className="btn" onClick={() => setConfirm(true)}>Delete everything…</button>
+          <button ref={deleteOpener} className="btn" onClick={() => setConfirm(true)}>Delete everything…</button>
         ) : (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button
@@ -152,12 +160,12 @@ export function You({
               autoFocus
               onClick={async () => {
                 setBusy(true);
-                const r = await api<{ listings?: Array<{ prefix: string; count: number }>; deleted?: number; error?: string }>("/api/delete-all", { method: "POST", body: JSON.stringify({ confirm: "delete" }) });
+                const r = await api<{ listings?: Array<{ prefix: string; count: number }>; deleted?: number; stillRunning?: string[]; error?: string }>("/api/delete-all", { method: "POST", body: JSON.stringify({ confirm: "delete" }) });
                 setBusy(false);
                 setConfirm(false);
                 if (r.data.listings) {
                   setListing(r.data.listings);
-                  onDeleted?.(r.data.listings);
+                  onDeleted?.(r.data.listings, r.data.stillRunning ?? []);
                 } else {
                   setMsg(r.data.error ?? "Delete failed.");
                   onChanged();
@@ -166,7 +174,15 @@ export function You({
             >
               {busy ? "Deleting…" : "Yes, delete it all"}
             </button>
-            <button className="btn" onClick={() => setConfirm(false)}>Cancel</button>
+            <button
+              className="btn"
+              onClick={() => {
+                setConfirm(false);
+                setTimeout(() => deleteOpener.current?.focus(), 0);
+              }}
+            >
+              Cancel
+            </button>
           </div>
         )}
         {listing ? (

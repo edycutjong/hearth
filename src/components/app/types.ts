@@ -26,8 +26,13 @@ export interface Status {
   prefixes: string[];
 }
 
+/** A request that fails on the network answers { ok: false, status: 0 } — it never throws, so no caller freezes. */
 export async function api<T>(path: string, init?: RequestInit): Promise<{ ok: boolean; status: number; data: T }> {
-  const res = await fetch(path, { ...init, headers: { "content-type": "application/json", ...(init?.headers ?? {}) }, cache: "no-store" });
-  const data = (await res.json().catch(() => ({}))) as T;
-  return { ok: res.ok, status: res.status, data };
+  try {
+    const res = await fetch(path, { ...init, headers: { "content-type": "application/json", ...(init?.headers ?? {}) }, cache: "no-store" });
+    const data = (await res.json().catch(() => ({}))) as T;
+    return { ok: res.ok, status: res.status, data };
+  } catch {
+    return { ok: false, status: 0, data: { error: "No connection — Hearth will try again." } as T };
+  }
 }

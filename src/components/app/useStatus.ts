@@ -32,13 +32,16 @@ export function useStatus(enabled: boolean) {
     if (!enabled || gone) return;
     let alive = true;
     const loop = async () => {
-      const s = await refresh();
-      if (!alive) return;
-      const busy =
-        !!s &&
-        (s.jobs.some((j) => ["queued", "dispatched", "running", "finalizing"].includes(j.state)) ||
-          s.notes.some((n) => n.status === "processing" || n.status === "queued" || (n.status === "kept" && n.memory === "pending")));
-      timer.current = setTimeout(loop, busy ? 5000 : 30000);
+      let busy = true; // after a failure, try again soon
+      try {
+        const s = await refresh();
+        busy =
+          !s ||
+          s.jobs.some((j) => ["queued", "dispatched", "running", "finalizing"].includes(j.state)) ||
+          s.notes.some((n) => n.status === "processing" || n.status === "queued" || (n.status === "kept" && (n.memory === "pending" || n.memory === "running")));
+      } finally {
+        if (alive) timer.current = setTimeout(loop, busy ? 5000 : 30000);
+      }
     };
     void loop();
     return () => {

@@ -12,7 +12,9 @@ export async function POST(req: Request) {
   if (body.agreed !== true || body.textVersion !== CONSENT_VERSION) return json({ error: "consent must be ticked on the current text" }, 400);
   const space = await loadSpace(r.store, { create: true });
   if (!space) return json({ error: "no space" }, 500);
-  space.doc.consent = { at: new Date().toISOString(), textVersion: CONSENT_VERSION, deleteOriginals: body.deleteOriginals !== false };
+  // A later change of the delete-originals choice keeps the date the text was agreed to.
+  const kept = space.doc.consent?.textVersion === CONSENT_VERSION ? space.doc.consent.at : null;
+  space.doc.consent = { at: kept ?? new Date().toISOString(), textVersion: CONSENT_VERSION, deleteOriginals: body.deleteOriginals !== false };
   await saveSpace(r.store, space.uid, space.doc);
   return json({ consent: space.doc.consent });
 }

@@ -34,6 +34,7 @@ export function HearthApp() {
   const [seek, setSeek] = useState<{ t0: number; t1: number; nonce: number } | null>(null);
   const [code, setCode] = useState<string | undefined>(undefined);
   const [deleted, setDeleted] = useState<Listing | null>(null);
+  const [stillRunning, setStillRunning] = useState<string[]>([]);
   const { status, error, gone, refresh } = useStatus(boot === "ready" && !deleted);
 
   const openSpace = useCallback(async (judge: boolean) => {
@@ -74,6 +75,7 @@ export function HearthApp() {
   const pick = (k: Tab) => {
     setTab(k);
     setOpen(null);
+    setSeek(null);
   };
 
   if (boot === "loading") return <p className="muted">Opening your space…</p>;
@@ -101,7 +103,13 @@ export function HearthApp() {
                 </div>
               ))}
             </div>
-            <p className="note-hint">Your calendar feed now answers 410. Only the anonymous daily counters remain, which carry no id.</p>
+            <p className="note-hint">
+              Your calendar feed now answers 410. What remains: the anonymous daily counters, which carry no id, and a deletion marker
+              that the daily sweep removes after deleting these prefixes once more.
+              {stillRunning.length
+                ? ` A Nebius Job (${stillRunning.join(", ")}) was still stopping; anything it writes before it stops is deleted by that sweep.`
+                : ""}
+            </p>
           </>
         ) : (
           <p className="lead">This space no longer exists: it was deleted, or it expired after 7 days.</p>
@@ -145,7 +153,10 @@ export function HearthApp() {
       {error ? <p className="error" style={{ marginBottom: 12 }}>{error}</p> : null}
       {tab === "notes" ? (
         open ? (
-          <NoteDetail id={open} memory={status?.memory ?? null} seek={seek} onSeekUsed={() => setSeek(null)} onBack={() => setOpen(null)} onChanged={() => void refresh()} />
+          <NoteDetail id={open} memory={status?.memory ?? null} seek={seek} onSeekUsed={() => setSeek(null)} onBack={() => {
+            setOpen(null);
+            setSeek(null);
+          }} onChanged={() => void refresh()} />
         ) : (
           <div className="stack">
             <h1>Your notes</h1>
@@ -179,7 +190,10 @@ export function HearthApp() {
           <Find onOpen={openAt} />
         </div>
       ) : null}
-      {tab === "you" ? <You space={s} zdrConfirmed={status?.flags.zdrConfirmed ?? false} onChanged={() => void refresh()} onDeleted={setDeleted} /> : null}
+      {tab === "you" ? <You space={s} zdrConfirmed={status?.flags.zdrConfirmed ?? false} onChanged={() => void refresh()} onDeleted={(l, running) => {
+            setDeleted(l);
+            setStillRunning(running);
+          }} /> : null}
       <nav className="tabs" aria-label="Sections">
         {TABS.map(([k, label]) => (
           <button key={k} aria-current={tab === k ? "page" : undefined} onClick={() => pick(k)}>

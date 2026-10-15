@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { googleTemplateLink } from "@/lib/ics";
 import type { MemoryDoc, TranscriptDoc } from "@/lib/memory";
 import type { NoteMeta } from "@/lib/pipeline";
@@ -35,6 +35,7 @@ export function NoteDetail({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const deleteOpener = useRef<HTMLButtonElement>(null);
   const load = useCallback(async () => {
     const r = await api<Detail & { error?: string }>(`/api/notes/${id}`);
     if (!r.ok) setError(r.data.error ?? "Could not open the note.");
@@ -99,7 +100,7 @@ export function NoteDetail({
         <strong>The original upload</strong>
         <p className="note-hint">{rawLine(m)}</p>
         {m.raw.state !== "deleted" && !confirmDelete ? (
-          <button className="btn" disabled={!!busy} onClick={() => setConfirmDelete(true)}>
+          <button ref={deleteOpener} className="btn" disabled={!!busy} onClick={() => setConfirmDelete(true)}>
             Delete original now…
           </button>
         ) : null}
@@ -121,7 +122,15 @@ export function NoteDetail({
           >
             Yes, delete it
           </button>
-            <button className="btn" onClick={() => setConfirmDelete(false)}>Cancel</button>
+            <button
+              className="btn"
+              onClick={() => {
+                setConfirmDelete(false);
+                setTimeout(() => deleteOpener.current?.focus(), 0);
+              }}
+            >
+              Cancel
+            </button>
           </div>
         ) : null}
         {busy ? <p className="note-hint" aria-live="polite">{busy}</p> : null}

@@ -10,6 +10,7 @@ export function Agree({ zdrConfirmed, judge = false, onDone }: { zdrConfirmed: b
   const [agreed, setAgreed] = useState(false);
   const [deleteOriginals, setDeleteOriginals] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
@@ -38,11 +39,15 @@ export function Agree({ zdrConfirmed, judge = false, onDone }: { zdrConfirmed: b
           <button
             className="btn small"
             onClick={() => {
-              void navigator.clipboard.writeText(ASK_FIRST_HI).then(() => setCopied(true));
+              void navigator.clipboard.writeText(ASK_FIRST_HI).then(
+                () => setCopied(true),
+                () => setCopyFailed(true),
+              );
             }}
           >
             {copied ? "Copied ✓" : "Copy a message to ask first (Hindi)"}
           </button>
+          {copyFailed ? <p className="note-hint" role="status">Copying is blocked here — select the message below instead.</p> : null}
           <p className="note-hint" style={{ marginTop: 6 }} lang="hi">{ASK_FIRST_HI}</p>
           <p className="note-hint">Hearth never sends anything itself; paste it into your chat.</p>
         </div>
@@ -53,6 +58,7 @@ export function Agree({ zdrConfirmed, judge = false, onDone }: { zdrConfirmed: b
           <strong>Delete originals after a verified round trip</strong>
           <span className="muted" style={{ display: "block", fontSize: 15 }}>
             The original is kept 24 hours so you can compare, then deleted — and Hearth shows you the storage answering 404.
+            If the round trip changes more than 5 % of the words, the original is kept instead (you can delete it yourself).
             Off: originals stay in your space and count as stored audio.
           </span>
         </span>

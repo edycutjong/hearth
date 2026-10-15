@@ -33,12 +33,19 @@ export function Keeping({
   const s = stageOf(job);
   const elapsed = (now - new Date(job.created).getTime()) / 1000;
   const rows: Array<[string, number]> = [
-    [job.state === "queued" && queuePos ? `Queued · position ${queuePos} (one Hearth Job at a time; the region is shared)` : "Queued", 0],
+    [
+      job.state === "queued" && queuePos
+        ? queuePos === 1
+          ? "Queued · first in line — the Nebius Job is being created"
+          : `Queued · position ${queuePos} (one Hearth Job at a time; the region is shared)`
+        : "Queued",
+      0,
+    ],
     [job.nebiusId ? `Nebius Serverless Job ${job.nebiusId} created` : "Nebius Serverless Job", 1],
     ["Provisioning a cpu-d3 VM · 4 vCPU · 16 GB", 2],
     ["Starting the container", 3],
     ["Pulling the image", 4],
-    ["ASR (hi-IN) → NanoCodec → decode → ASR again", 5],
+    [`ASR (${job.lang === "detect" ? "language detected" : "hi-IN"}) → NanoCodec → decode → ASR again`, 5],
     ["Tokens validated (sha256) · kept", 6],
   ];
   return (

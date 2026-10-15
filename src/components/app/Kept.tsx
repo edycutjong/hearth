@@ -29,11 +29,13 @@ export function Kept({ space, memory, notes, zdrConfirmed, zdrOn, onOpen, onChan
   return (
     <div className="stack">
       <h1>Kept promises</h1>
-      {paused && !zdrOn && !space.tfOptIn ? (
+      {!zdrOn && !space.tfOptIn ? (
         <div className="coupon paused stack">
           <strong>{TF_OPTIN.title}</strong>
           <p style={{ fontSize: 15 }}>{TF_OPTIN.body(zdrConfirmed)}</p>
-          <p className="note-hint">{paused} kept note{paused === 1 ? " is" : "s are"} waiting. Until you turn this on, nothing is sent and reminders stay paused.</p>
+          <p className="note-hint">
+            {paused ? `${paused} kept note${paused === 1 ? " is" : "s are"} waiting. ` : ""}Until you turn this on, nothing is sent and reminders stay paused.
+          </p>
           <button
             className="btn primary"
             disabled={busy}
