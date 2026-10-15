@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { TopBar } from "@/components/Brand";
 
+export const metadata = { title: "Hearth — not found" };
+
 export default function NotFound() {
   return (
     <>

@@ -32,14 +32,14 @@ export function Keeping({ job, notes, queuePos }: { job: JobRecord; notes: NoteM
     ["Tokens validated (sha256) · kept", 6],
   ];
   return (
-    <div className="card" aria-live="polite">
+    <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <strong>
           Keeping {job.notes.length} note{job.notes.length === 1 ? "" : "s"}
         </strong>
         <span className="data-hint">{mmss(elapsed)} elapsed · job {job.job}</span>
       </div>
-      <div style={{ marginTop: 8 }}>
+      <div style={{ marginTop: 8 }} aria-live="polite">
         {rows.map(([label, i]) => (
           <div key={i} className={`stage ${i < s ? "done" : i === s ? "run" : "wait"}`}>
             <span className="dot" />

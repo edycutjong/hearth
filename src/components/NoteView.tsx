@@ -128,6 +128,9 @@ export function NoteView({
     }
   };
 
+  // Whatever stops a player — its end, a pause, a new source — the buttons and the playhead follow it.
+  const stopped = (which: Which) => () => setPlaying((p) => (p === which ? null : p));
+
   const quoted = useMemo(() => {
     const m = new Map<number, string[]>();
     for (const it of items) for (const s of it.segments) m.set(s, [...(m.get(s) ?? []), it.quote]);
@@ -169,8 +172,10 @@ export function NoteView({
           </p>
         ) : null}
         {keptNote ? <p className="note-hint" style={{ marginTop: 8 }}>{keptNote}</p> : null}
-        {originalUrl ? <audio ref={originalRef} src={originalUrl} preload="metadata" onTimeUpdate={onTime("original")} onEnded={() => setPlaying(null)} /> : null}
-        {keptUrl ? <audio ref={keptRef} src={keptUrl} preload="metadata" onTimeUpdate={onTime("kept")} onEnded={() => setPlaying(null)} /> : null}
+        {originalUrl ? (
+          <audio ref={originalRef} src={originalUrl} preload="metadata" onTimeUpdate={onTime("original")} onEnded={stopped("original")} onPause={stopped("original")} onEmptied={stopped("original")} />
+        ) : null}
+        {keptUrl ? <audio ref={keptRef} src={keptUrl} preload="metadata" onTimeUpdate={onTime("kept")} onEnded={stopped("kept")} onPause={stopped("kept")} onEmptied={stopped("kept")} /> : null}
         {facts.length ? (
           <div className="facts">
             {facts.map((f) => (

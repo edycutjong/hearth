@@ -28,7 +28,7 @@ export function Kept({ space, memory, notes, zdrConfirmed, zdrOn, onOpen, onChan
   const open = items.filter((i) => i.state === "open" && i.due);
   return (
     <div className="stack">
-      <h2>Kept promises</h2>
+      <h1>Kept promises</h1>
       {paused && !zdrOn && !space.tfOptIn ? (
         <div className="coupon paused stack">
           <strong>{TF_OPTIN.title}</strong>

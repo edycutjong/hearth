@@ -68,7 +68,7 @@ export default function Proof() {
       <main className="page stack">
         <h1>What actually ran.</h1>
         <p className="lead">Job IDs, presets, timings, bytes and hashes — read from the Jobs&apos; own reports and the bucket, never typed in.</p>
-        <h3>Benchmark of record</h3>
+        <h2 className="label">Benchmark of record</h2>
         {b.run ? (
           <div className="stack">
             <table className="plain kv">
@@ -89,7 +89,7 @@ export default function Proof() {
         ) : (
           <p className="muted">The benchmark has not been published yet.</p>
         )}
-        <h3>The judge sample</h3>
+        <h2 className="label">The judge sample</h2>
         {sample.notes.length ? (
           <div className="tablewrap">
           <table className="plain">
@@ -103,10 +103,19 @@ export default function Proof() {
                   <td className="num">{n.job.nebiusId}</td>
                   <td className="num">{mmss(n.kept.audioS)}</td>
                   <td className="num">{kb(n.kept.bytesHct)}</td>
-                  <td className="num">{n.kept.sha256.slice(0, 16)}…</td>
+                  <td className="num">{n.kept.sha256.slice(0, 12)}…</td>
                   <td className="num">{pct(1 - n.kept.driftNote)}</td>
                   <td className="num">
-                    {n.raw.rawHead ? `raw HEAD ${n.raw.rawHead}${n.raw.originalHead ? ` · originals HEAD ${n.raw.originalHead}` : ""} at ${n.raw.checkedAt}` : "—"}
+                    {n.raw.rawHead ? (
+                      <>
+                        raw HEAD {n.raw.rawHead}
+                        {n.raw.originalHead ? ` · originals HEAD ${n.raw.originalHead}` : ""}
+                        <br />
+                        <span className="data-hint">{n.raw.checkedAt}</span>
+                      </>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                 </tr>
               ))}
@@ -123,7 +132,7 @@ export default function Proof() {
             {sample.memory.calls.map((c) => `${c.requestId ?? "—"} (${(c.ms / 1000).toFixed(1)} s${c.error ? `, ${c.error}` : ""})`).join(" · ")}.
           </p>
         ) : null}
-        <h3>Your last run</h3>
+        <h2 className="label">Your last run</h2>
         <VisitorProof />
         {process.env.VERCEL_GIT_COMMIT_SHA ? (
           <p className="note-hint">

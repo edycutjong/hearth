@@ -28,8 +28,20 @@ export function NoteDetail({ id, memory, seek, onBack, onChanged }: { id: string
   useEffect(() => {
     void load();
   }, [load]);
-  if (error) return <p className="error">{error}</p>;
-  if (!d) return <p className="muted">Opening the note…</p>;
+  if (error)
+    return (
+      <div className="stack">
+        <button className="linkish" onClick={onBack}>← All notes</button>
+        <p className="error">{error === "not found" ? "This note is not in your space — it may have been deleted, or the link is from another device." : error}</p>
+      </div>
+    );
+  if (!d)
+    return (
+      <div className="stack">
+        <button className="linkish" onClick={onBack}>← All notes</button>
+        <p className="muted">Opening the note…</p>
+      </div>
+    );
   const m = d.meta;
   const items = (memory?.items ?? []).filter((i) => i.note === id);
   const base = typeof window === "undefined" ? "" : window.location.origin;

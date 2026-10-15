@@ -12,9 +12,14 @@ export function Find({ scope = "space", onOpen, placeholder = "knee · पैस
   const [terms, setTerms] = useState<string[]>([]);
   const [lexical, setLexical] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [hint, setHint] = useState<string | null>(null);
   async function run(e?: React.FormEvent) {
     e?.preventDefault();
-    if (!q.trim()) return;
+    if (!q.trim()) {
+      setHint("Type a word first — in Hindi or English.");
+      return;
+    }
+    setHint(null);
     setBusy(true);
     const r = await api<{ hits: Hit[]; terms: string[]; lexicalOnly: boolean }>("/api/search", { method: "POST", body: JSON.stringify({ q, scope }) });
     setBusy(false);
@@ -26,8 +31,10 @@ export function Find({ scope = "space", onOpen, placeholder = "knee · पैस
     <div className="stack">
       <form onSubmit={run} style={{ display: "flex", gap: 8 }} role="search">
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={placeholder} aria-label="Search the notes" />
-        <button className="btn primary" disabled={busy}>{busy ? "…" : "Find"}</button>
+        <button className="btn primary" disabled={busy}>{busy ? "Finding…" : "Find"}</button>
       </form>
+      {hint ? <p className="note-hint" role="status">{hint}</p> : null}
+      <div aria-live="polite" className="stack">
       {hits ? (
         <>
           <p className="note-hint">
@@ -51,6 +58,7 @@ export function Find({ scope = "space", onOpen, placeholder = "knee · पैस
           )}
         </>
       ) : null}
+      </div>
     </div>
   );
 }

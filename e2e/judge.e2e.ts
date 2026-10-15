@@ -30,3 +30,28 @@ test("a missing page says so", async ({ page }) => {
   expect(res?.status()).toBe(404);
   await expect(page.locator("h1")).toHaveText("Nothing kept here.");
 });
+
+test("on a phone the site nav still reaches the judge sample and the proof", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/proof");
+  const nav = page.getByRole("navigation", { name: "Main" });
+  await expect(nav.getByRole("link", { name: "Judge sample" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Proof" })).toBeVisible();
+});
+
+test("the word the judge page suggests finds its segment in the sample", async ({ page }) => {
+  await page.goto("/judge");
+  const step = page.locator("ol.steps li").nth(2);
+  const word = /“([^”]+)”/.exec((await step.textContent()) ?? "")?.[1];
+  expect(word, "step 3 names a word to search").toBeTruthy();
+  await page.getByRole("searchbox", { name: "Search the notes" }).fill(word as string);
+  await page.getByRole("button", { name: "Find" }).click();
+  await expect(page.locator("button.seg.match").first()).toBeVisible();
+});
+
+test("both sides of the A/B are served", async ({ page, request }) => {
+  await page.goto("/judge");
+  const srcs = await page.locator("audio").evaluateAll((els) => els.map((e) => (e as HTMLAudioElement).getAttribute("src")));
+  expect(srcs.length).toBe(2);
+  for (const src of srcs) expect((await request.get(src as string)).status()).toBe(200);
+});

@@ -54,7 +54,7 @@ export function JudgeSample({ sample, bench, wait }: { sample: SampleDoc; bench:
         </li>
       </ol>
       {sample.notes.length > 1 ? (
-        <div className="labels" role="tablist" aria-label="Sample notes">
+        <div className="labels" role="group" aria-label="Sample notes">
           {sample.notes.map((n) => (
             <button key={n.id} aria-pressed={n.id === noteId} onClick={() => setNoteId(n.id)}>
               {n.label} · {mmss(n.kept.audioS)}
@@ -63,6 +63,7 @@ export function JudgeSample({ sample, bench, wait }: { sample: SampleDoc; bench:
         </div>
       ) : null}
       <NoteView
+        key={note.id}
         title={note.label}
         subtitle={`${note.anchor} · ${mmss(note.kept.audioS)} · ${note.transcript.lang} · real Nebius job ${note.job.nebiusId}`}
         hctUrl={note.hct}

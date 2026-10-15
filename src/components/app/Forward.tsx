@@ -138,6 +138,8 @@ export function Forward({ onKept, maxSeconds = MAX_NOTE_S, code }: { onKept: () 
           multiple
           accept="audio/*,.opus,.ogg,.m4a,.mp3,.wav,.aac,.amr,.zip"
           className="sr"
+          tabIndex={-1}
+          aria-hidden="true"
           onChange={(e) => {
             if (e.target.files) void add(e.target.files);
             e.target.value = "";

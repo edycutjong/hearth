@@ -5,7 +5,18 @@ import { processorsParagraph } from "@/lib/copy";
 import { api, type SpaceInfo } from "./types";
 
 /** Data under the user's control: keep the space, recover it elsewhere, export everything, delete everything. */
-export function You({ space, zdrConfirmed, onChanged }: { space: SpaceInfo; zdrConfirmed: boolean; onChanged: () => void }) {
+export function You({
+  space,
+  zdrConfirmed,
+  onChanged,
+  onDeleted,
+}: {
+  space: SpaceInfo;
+  zdrConfirmed: boolean;
+  onChanged: () => void;
+  /** Called with the listings Hearth read back after deleting; the app then shows the deleted state. */
+  onDeleted?: (listings: Array<{ prefix: string; count: number }>) => void;
+}) {
   const [key, setKey] = useState<string | null>(null);
   const [recover, setRecover] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -41,7 +52,7 @@ export function You({ space, zdrConfirmed, onChanged }: { space: SpaceInfo; zdrC
 
   return (
     <div className="stack">
-      <h2>Your space</h2>
+      <h1>Your space</h1>
       <div className="card stack">
         <p>
           {space.kept ? (
@@ -104,14 +115,19 @@ export function You({ space, zdrConfirmed, onChanged }: { space: SpaceInfo; zdrC
             <button
               className="btn primary"
               disabled={busy}
+              autoFocus
               onClick={async () => {
                 setBusy(true);
                 const r = await api<{ listings?: Array<{ prefix: string; count: number }>; deleted?: number; error?: string }>("/api/delete-all", { method: "POST", body: JSON.stringify({ confirm: "delete" }) });
                 setBusy(false);
                 setConfirm(false);
-                if (r.data.listings) setListing(r.data.listings);
-                else setMsg(r.data.error ?? "Delete failed.");
-                onChanged();
+                if (r.data.listings) {
+                  setListing(r.data.listings);
+                  onDeleted?.(r.data.listings);
+                } else {
+                  setMsg(r.data.error ?? "Delete failed.");
+                  onChanged();
+                }
               }}
             >
               {busy ? "Deleting…" : "Yes, delete it all"}

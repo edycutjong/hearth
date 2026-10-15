@@ -1,7 +1,9 @@
+import { cookies } from "next/headers";
 import { keys } from "@/lib/keys";
 import { cancelJob } from "@/lib/nebius/jobs";
 import type { JobRecord } from "@/lib/pipeline";
 import { json, loadSpace, notConfigured, ready } from "@/lib/server";
+import { COOKIE } from "@/lib/space";
 import { listJobs } from "@/lib/space-ops";
 
 export const runtime = "nodejs";
@@ -11,7 +13,8 @@ export const maxDuration = 60;
 /**
  * Delete everything: cancel the space's Job if one is running (so it cannot write back), remove every key under
  * raw/<uid>/, cache/<uid>/ and u/<uid>/ plus its queue entries, then LIST all three prefixes again and return the
- * listings, which must be empty. The space document goes too, so the calendar feed's key is gone (410).
+ * listings, which must be empty. The space document goes too, so the calendar feed's key is gone (410), and the
+ * space cookie is cleared.
  * Only the uid-free daily counters and the spend meter remain.
  */
 export async function POST(req: Request) {
@@ -39,6 +42,8 @@ export async function POST(req: Request) {
   const listings = await Promise.all(
     keys.spacePrefixes(space.uid).map(async (p) => ({ prefix: p.replace(space.uid, `${space.uid.slice(0, 8)}…`), count: (await r.store.list(p)).length })),
   );
+  // The space document is gone; forget its id too, so starting again opens a new space under a new id.
+  (await cookies()).delete(COOKIE);
   return json({ deleted, cancelledJobs: cancelled, listings, at: new Date().toISOString() });
 }
 

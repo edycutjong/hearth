@@ -22,7 +22,7 @@ export function TopBar({ current, chip }: { current?: "app" | "judge" | "proof";
         <Mark />
         <span className="word">Hearth</span>
       </Link>
-      <nav className="topnav" aria-label="Main">
+      <nav className="topnav sitenav" aria-label="Main">
         <Link href="/" aria-current={current === "app" ? "page" : undefined}>Your notes</Link>
         <Link href="/judge" aria-current={current === "judge" ? "page" : undefined}>Judge sample</Link>
         <Link href="/proof" aria-current={current === "proof" ? "page" : undefined}>Proof</Link>

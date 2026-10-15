@@ -88,7 +88,6 @@ export function TokenStrip({
     return () => ro.disconnect();
   }, [codes]);
 
-  const pct = (t: number) => `${Math.min(100, Math.max(0, (t / Math.max(seconds, 0.001)) * 100))}%`;
   return (
     <div className="stripwrap">
       <canvas
@@ -108,7 +107,6 @@ export function TokenStrip({
       {playhead !== null && playhead !== undefined ? (
         <span className="playhead" style={{ left: `calc(10px + (100% - 20px) * ${Math.min(1, playhead / Math.max(seconds, 0.001))})` }} />
       ) : null}
-      <span className="sr">{pct(playhead ?? 0)}</span>
     </div>
   );
 }
