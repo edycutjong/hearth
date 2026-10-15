@@ -7,30 +7,35 @@ job ID or file that shows it. Where we did something wrong first, we say so.
 
 ## 1. NeMo speech models on a CPU Serverless Job — what a cold start costs
 
-Measured on `cpu-d3` / `4vcpu-16gb` in eu-west1 with the stock `python:3.11` image, worker injected:
+Measured on `cpu-d3` / `4vcpu-16gb` in eu-west1 with the stock `python:3.11` image, worker injected (five harness
+Jobs, `bench/results/d0-*-raw.json`; the benchmark of record is `aijob-e01y33r8hyfcn7np5v`):
 
 | Phase | Time | Where it shows |
 |---|---|---|
-| create → container running (PROVISIONING → STARTING → IMAGE_PULLING → RUNNING) | 158–169 s | `bench/results/d0-*-smoke-raw.json` (`create_to_container_s`) |
-| `uv pip install` of NeMo 3.0.0 `[asr]` + torch 2.13.0+cpu + deps | 18–21 s | same files (`install_s`) |
-| both models from Hugging Face (≈ 2.8 GB) | 153–154 s | `load.download_s` |
-| `import nemo.collections.asr` | 13–14 s | `load.asr_import_s` |
-| ASR `restore_from` (of which unpacking the 2.37 GB `.nemo`: 28 s) | 46–51 s | `load.asr_restore_s`, `load_options.asr_nemo_unpack_s` |
-| NanoCodec `restore_from` | 45–50 s → **1.07 s** (see §2) | `load.codec_restore_s`, `load_options.codec_trimmed_restore_s` |
+| create → container running (PROVISIONING → STARTING → IMAGE_PULLING → RUNNING) | 158–169 s | `create_to_container_s` in each report |
+| `uv pip install` of NeMo 3.0.0 `[asr]` + torch 2.13.0+cpu + deps | 15–21 s | `install_s` |
+| both model files (≈ 2.8 GB): from Hugging Face · from an in-region bucket | 153–154 s · 70 s | `load.download_s` |
+| `import nemo.collections.asr` | 13–24 s | `load.asr_import_s` |
+| ASR `restore_from`: the `.nemo` (unpacking 2.37 GB takes 28–33 s of it) · a pre-extracted folder | 46–51 s · 20 s | `load.asr_restore_s` |
+| NanoCodec `restore_from`: as published · without its training-only parts (§2) | 45–50 s · 26 s | `load.codec_restore_s` |
 
-**Ask:** the time from `POST /ai/v1/jobs` to a running container is the largest single cost for short batch work
-(a 60-second voice note). A documented way to keep model weights near the VM (a regional model cache, or a volume
-type that does not need a bucket mount with credentials) would remove most of the rest.
+A keep through the deployed app therefore spends most of its time before the first audio sample: on a 60-second
+note, about 160 s of start-up, 17 s of install and 150 s of model loading against about 60 s of work (`/proof`
+shows the split for each run). **Ask:** the time from `POST /ai/v1/jobs` to a running container is the largest
+single cost for short batch work. A documented way to keep model weights near the VM (a regional model cache, or a
+volume type that does not need a bucket mount with credentials) would remove most of the rest.
 
 ## 2. NanoCodec's checkpoint downloads two training-only models at load
 
 `AudioCodecModel.restore_from` on `nemo-nano-codec-22khz-1.78kbps-12.5fps` builds the training discriminators —
 including an `SLMDiscriminator` that downloads `microsoft/wavlm-base-plus` — and, because the config has
 `use_scl_loss: true`, a speaker encoder downloaded from Hugging Face. Neither is used to encode or decode. Restoring
-with `discriminator: null` and `use_scl_loss: false` (`worker/worker.py`, `load_codec_trimmed`) loads in **1.07 s
-instead of ~47 s**, and we checked on the same VM that the codes and the decoded audio are **bit-identical** to the
-full load (`load_options.codec_trimmed_codes_equal: true`, `codec_trimmed_decode_max_abs_diff: 0.0`).
-**Ask:** an inference-only config in the model repo, or a line on the card.
+with `discriminator: null` and `use_scl_loss: false` (`worker/worker.py`, `load_codec_trimmed`) takes **26 s instead
+of 45–50 s** in a fresh process (D0 run 2 against runs 1 and the smokes), and about 1 s once the full model has
+been loaded in the same process. On the same VM the codes and the decoded audio are **bit-identical** to the full
+load (`load_options.codec_trimmed_codes_equal: true`, `codec_trimmed_decode_max_abs_diff: 0.0`,
+`bench/results/d0-20261014T222337Z-4vcpu-16gb.json`). **Ask:** an inference-only config in the model repo, or a line
+on the card.
 
 ## 3. The prompt-conditioned ASR rejects file paths in `transcribe()`
 
@@ -89,7 +94,11 @@ client does not pay a provisioning attempt to learn the region is full.
 
 ## 9. NanoCodec on quiet recordings
 
-In the first benchmark run (`aijob-e01ww8sspej92ztqys`), two FLEURS hi_in recordings whose speech peaks near
-−46 dBFS came back from the codec nearly unintelligible to the ASR (one lost its whole first sentence), while
-normal-level clips round-tripped cleanly. Raising quiet input before encoding (the gain is stored with the codes and
-removed on decode) fixed the worst case. **Ask:** a note on the card about the input level the codec expects.
+In the first benchmark run (`aijob-e01ww8sspej92ztqys`), the two FLEURS hi_in clips whose loudest frames sit near
+−46 and −47 dBFS (95th percentile of 25 ms frame level) came back from the codec much harder for the ASR: word error
+rate after the round trip 8.3 % → 62.5 % and 38.9 % → 72.2 %, while normal-level clips round-tripped cleanly. Hearth
+now brings every input to −20 dBFS of speech-active level before encoding (the gain is stored with the codes and
+removed on decode; chosen on FLEURS dev clips, not the reported ones). In the benchmark of record the first clip
+round-trips unchanged (8.3 % → 8.3 %) and the second improves (→ 55.6 %), and across 20 clips the round trip adds
+4.1 points instead of 5.9 — though one normal-level clip got worse (30.4 % → 47.8 %), so this is a better average,
+not a fix for every recording. **Ask:** a note on the card about the input level the codec expects.
