@@ -24,6 +24,7 @@
   ![Python](https://img.shields.io/badge/Python_3.11-3776AB?style=flat&logo=python&logoColor=white)
   ![NVIDIA NeMo](https://img.shields.io/badge/NVIDIA_NeMo-76B900?style=flat&logo=nvidia&logoColor=white)
   ![Nebius](https://img.shields.io/badge/Nebius_AI_Cloud-0b1b3b?style=flat)
+  [![Release](https://img.shields.io/github/v/release/edycutjong/hearth?style=flat)](https://github.com/edycutjong/hearth/releases)
   [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 </div>
@@ -97,7 +98,7 @@ and judges could not install them). Tavily is not used either: nothing in the fl
 | Measure | Result |
 |---|---|
 | Unit and integration tests | **195** vitest (14 files) + **24** pytest, all passing |
-| Browser tests | 8 Playwright tests × 2 projects (desktop 1440 px, phone 375 px) |
+| Browser tests | 10 Playwright tests × 2 projects (desktop 1440 px, phone 375 px), no credentials |
 | ASR real-time factor on 4 vCPU | <!--n:asr_rtf-->0.16<!--/n--> (gate ≤ 0.5) |
 | Peak memory | <!--n:peak_rss_gb-->6.9<!--/n--> GB (gate ≤ 12 GB) |
 | Cost per hour of voice | $<!--n:usd_per_audio_hour-->0.135<!--/n--> (gate ≤ $0.60) |
@@ -131,7 +132,7 @@ Node 22 (what we built and tested on), Python 3.11+. No cloud account is needed 
 ```bash
 git clone https://github.com/edycutjong/hearth && cd hearth
 npm ci && npm test                        # vitest: 195 tests
-python3 -m venv .venv && .venv/bin/pip install numpy jiwer pytest
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt jiwer
 .venv/bin/python -m pytest -q worker scripts   # 24 tests
 .venv/bin/python scripts/d0_report.py bench/results/d0-20261014T231930Z-4vcpu-16gb-raw.json   # recompute the benchmark
 ```
@@ -141,11 +142,27 @@ Running your own Jobs needs a Nebius project and Token Factory key; see [DEMO.md
 ## 🧪 Testing & CI
 
 ```bash
-npm run ci            # lint, typecheck, vitest, npm audit
-npm run test:worker   # pytest
-npm run e2e           # Playwright, desktop + phone, no credentials needed
+make ci               # eslint, tsc, vitest + coverage, npm audit, ruff, pytest (npm run ci + the Python half)
+make e2e              # production build + Playwright, desktop + phone, no credentials needed
+make security-scan    # production audit + gitleaks over the full history
 npm run test:live     # real Nebius + Token Factory (spends cents)
 ```
+
+| Layer | Tool | Where |
+|---|---|---|
+| Quality | ESLint, `tsc --noEmit`, vitest with v8 coverage (Node 20/22/24 on `main`), ruff + pytest on the Python worker | `ci.yml` stage 1 |
+| Secrets | TruffleHog (verified) + gitleaks over the full history | `ci.yml` stage 2, `gitleaks.yml` |
+| Dependencies | `npm audit --omit=dev`, `pip-audit`, license check, Dependabot (grouped, no major bumps; the worker's benchmarked pins are never bumped by a bot) | `ci.yml` stage 2, `dependabot.yml` |
+| Build | `next build` with a bundle-size budget | `ci.yml` stage 3 |
+| E2E | Playwright against the production build with no credentials: `/judge`, `/proof`, 404, 375 px | `ci.yml` stage 4 |
+| Performance | Lighthouse CI on `/judge` and `/proof` (accessibility ≥ 0.9 is a hard gate, the rest advisory) | `ci.yml` stage 5 |
+| SAST | CodeQL (JavaScript/TypeScript + Python); runs once the repo is public, because code scanning needs GitHub Advanced Security on a private repo | `codeql.yml` |
+| Releases | Semantic version tags from Angular-style commit messages | `release.yml` |
+
+**Honest CI status.** GitHub Actions was blocked on the account's billing while this repo was private, so no workflow
+run completed there. The same commands were run locally against HEAD instead, and their output is kept in
+`evidence/ci-local-2026-10-15.txt`. Fixing the billing (or making the repo public, which makes Actions free) is all the
+pipeline needs.
 
 ## 📁 Project Structure
 

@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:           # re-run on demand, e.g. right after the repo goes public
 
 # One run per branch/PR. A superseded run tells you nothing and costs minutes.
 concurrency:
