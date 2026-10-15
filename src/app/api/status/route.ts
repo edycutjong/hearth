@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { readDaily, utcDay, phaseOf } from "@/lib/caps";
 import { keys } from "@/lib/keys";
 import { queuePosition, reconcileSpace, sweepGrace } from "@/lib/pipeline";
@@ -21,7 +22,8 @@ export async function GET() {
   const errors: string[] = [];
   await reconcileSpace(r.ctx, space.uid).catch((e: unknown) => errors.push(`reconcile: ${String(e).slice(0, 160)}`));
   await sweepGrace(r.ctx, space.uid).catch((e: unknown) => errors.push(`grace: ${String(e).slice(0, 160)}`));
-  await pumpMemory(r.store, tfConfig(), space.uid, { budgetMs: 25_000 }).catch((e: unknown) => errors.push(`memory: ${String(e).slice(0, 160)}`));
+  // Memory runs after the response (a Token Factory call takes seconds); the per-note claim keeps it single.
+  after(() => pumpMemory(r.store, tfConfig(), space.uid, { budgetMs: 45_000 }).catch(() => 0));
   const [notes, jobs, memory, daily] = await Promise.all([
     listNotes(r.store, space.uid),
     listJobs(r.store, space.uid),

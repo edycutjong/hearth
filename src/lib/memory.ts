@@ -4,8 +4,12 @@
  * For each kept note: Nemotron 3 Super proposes items from the transcript text -> the quote gate drops what is
  * not verbatim in the transcript -> the field gate removes amounts and dates the quote does not carry -> the
  * resolver dates what is left from the note's own timestamp. Drops are COUNTED and shown, never hidden.
- * A later note can mark an earlier money ask received («पैसे मिल गए»), but only when Super links them AND the
- * amounts agree (or the later quote states none).
+ * A later note can mark an earlier money ask received («पैसे मिल गए»), but only when Super links them, the quote
+ * itself says the money arrived (receiptStated), AND the amounts agree (or the later quote states none). A link that
+ * fails this is dropped and counted — it never becomes a new reminder.
+ *
+ * Exactly one request remembers a note: it claims the note (If-Match on its meta) before calling Token Factory, and
+ * applying an extraction is idempotent per note. A transient Token Factory error is retried twice with backoff.
  *
  * Privacy gate: transcript text reaches Token Factory only for the sample, when Zero Data Retention is on for
  * the organisation (TF_ZDR_ON), or when this space opted in after reading the default-retention sentence.
@@ -14,7 +18,7 @@
 
 import { createHash } from "node:crypto";
 import { localDate, resolveDue, type DueStatus } from "./dates";
-import { fieldGate, quoteGate, type AmountStatus, type ItemKind, type Segment, type WhenStatus } from "./gates";
+import { fieldGate, quoteGate, receiptStated, type AmountStatus, type ItemKind, type Segment, type WhenStatus } from "./gates";
 import type { VerifiedWhen } from "./dates";
 import { keys, spaceTag } from "./keys";
 import type { TokenFactoryConfig } from "./nebius/config";
@@ -100,6 +104,8 @@ export function applyExtraction(
   today: string,
   now: Date,
 ): MemoryDoc {
+  // Idempotent per note: an extraction that already landed for this note is never counted or applied twice.
+  if (call.value && memory.calls.some((c) => c.note === note.id && !c.error)) return memory;
   const next = structuredClone(memory);
   next.calls.push({ note: note.id, requestId: call.requestId, model: call.model, ms: call.durationMs, at: now.toISOString(), ...(call.error ? { error: call.error } : {}) });
   if (!call.value) return next;
@@ -114,16 +120,18 @@ export function applyExtraction(
       next.dropped.push({ note: note.id, quote: item.quote ?? "", reason: q.reason });
       continue;
     }
-    // Received: a later quote resolving an earlier open money ask.
+    // Received: a later quote resolving an earlier open money ask. Never a new reminder, whatever the outcome.
     if (item.resolves) {
       const target = next.items.find((i) => i.id === item.resolves && i.state === "open" && i.kind === "money");
       const f = fieldGate(item, item.quote);
-      if (target && (f.amount === null || f.amount === target.amount)) {
+      if (target && receiptStated(item.quote) && (f.amount === null || f.amount === target.amount)) {
         target.state = "received";
         target.receivedBy = { note: note.id, quote: item.quote, at: now.toISOString() };
         next.stats.resolved += 1;
-        continue;
+      } else {
+        next.dropped.push({ note: note.id, quote: item.quote, reason: target ? "resolve_not_verified" : "resolve_target_unknown" });
       }
+      continue;
     }
     const f = fieldGate(item, item.quote);
     if (f.amountStatus === "removed") next.stats.amountRemoved += 1;
@@ -166,13 +174,21 @@ export function tfAllowed(space: SpaceDoc | null, isSample: boolean, env: Record
   return Boolean(space?.tfOptIn);
 }
 
+/** Errors worth a retry: rate limits, server errors, timeouts, an empty or unparsable answer. */
+export function retryableTfError(error: string | null): boolean {
+  return !!error && /returned (429|5\d\d)|request failed|returned no answer|not valid JSON|aborted|timeout/i.test(error);
+}
+
+export const MEMORY_CLAIM_STALE_MS = 3 * 60_000;
+const MAX_TF_TRIES = 3;
+
 /** Remember one kept note. Returns the memory state the note ends in. */
 export async function rememberNote(
   store: Store,
   tf: TokenFactoryConfig | null,
   uid: string,
   noteId: string,
-  opts: { isSample?: boolean; now?: Date; env?: Record<string, string | undefined> } = {},
+  opts: { isSample?: boolean; now?: Date; env?: Record<string, string | undefined>; timeoutMs?: number; fetchImpl?: typeof fetch } = {},
 ): Promise<NoteMeta["memory"]> {
   const now = opts.now ?? new Date();
   const space = (await store.getJson<SpaceDoc>(keys.space(uid)))?.value ?? null;
@@ -180,29 +196,51 @@ export async function rememberNote(
   const metaGot = await store.getJson<NoteMeta>(keys.meta(uid, noteId));
   if (!metaGot) return "failed";
   const meta = metaGot.value;
-  const save = async (state: NoteMeta["memory"], error?: string) => {
-    meta.memory = state;
-    if (error) meta.memoryError = error;
-    else delete meta.memoryError;
-    await store.putJson(keys.meta(uid, noteId), meta, { tagging: tag });
+  // Every later write re-reads the meta, so a long Token Factory call never overwrites newer state (raw deletion...).
+  const save = async (state: NoteMeta["memory"], patch: Partial<NoteMeta> = {}, error?: string) => {
+    const fresh = (await store.getJson<NoteMeta>(keys.meta(uid, noteId)))?.value ?? meta;
+    Object.assign(fresh, patch);
+    fresh.memory = state;
+    if (error) fresh.memoryError = error;
+    else delete fresh.memoryError;
+    if (state !== "running") delete fresh.memoryClaimedAt;
+    await store.putJson(keys.meta(uid, noteId), fresh, { tagging: tag });
     return state;
   };
   if (!tfAllowed(space, opts.isSample ?? false, opts.env)) return save("paused");
-  if (!tf) return save("failed", "Token Factory is not configured on this deployment");
+  if (!tf) return save("failed", {}, "Token Factory is not configured on this deployment");
   const transcript = (await store.getJson<TranscriptDoc>(keys.transcript(uid, noteId)))?.value;
-  if (!transcript) return save("failed", "no transcript");
+  if (!transcript) return save("failed", {}, "no transcript");
   const lang = meta.kept?.langDetected;
-  if (lang && lang !== "hi-IN" && transcript.lang !== "hi-IN") return save("skipped", "reminders are Hindi-only in v1");
+  if (lang && lang !== "hi-IN" && transcript.lang !== "hi-IN") return save("skipped", {}, "reminders are Hindi-only in v1");
+  // Claim: exactly one request calls Token Factory for this note.
+  const claimed = await store.putJson(
+    keys.meta(uid, noteId),
+    { ...meta, memory: "running", memoryClaimedAt: now.toISOString() },
+    { tagging: tag, condition: metaGot.etag ? { ifMatch: metaGot.etag } : undefined },
+  );
+  if (!claimed.ok) return meta.memory;
   const current = (await store.getJson<MemoryDoc>(keys.memory(uid)))?.value ?? emptyMemory();
+  if (current.calls.some((c) => c.note === noteId && !c.error)) return save("done"); // already remembered
   const openItems = current.items
     .filter((i) => i.state === "open" && i.kind === "money")
     .map((i) => ({ id: i.id, kind: i.kind, what_en: i.what_en, amount_inr: i.amount }));
-  const call = await extract(tf, {
-    senderLabel: meta.label || "the sender",
-    noteDate: `${meta.anchor} (${new Date(`${meta.anchor}T00:00:00Z`).toLocaleDateString("en-GB", { weekday: "long", timeZone: "UTC" })})`,
-    segments: transcript.segments,
-    openItems,
-  });
+  const call = await extract(
+    tf,
+    {
+      senderLabel: meta.label || "the sender",
+      noteDate: `${meta.anchor} (${new Date(`${meta.anchor}T00:00:00Z`).toLocaleDateString("en-GB", { weekday: "long", timeZone: "UTC" })})`,
+      segments: transcript.segments,
+      openItems,
+    },
+    opts.fetchImpl,
+    opts.timeoutMs,
+  );
+  const tries = (meta.memoryTries ?? 0) + 1;
+  if (retryableTfError(call.error) && tries < MAX_TF_TRIES) {
+    // Transient: try again later, without recording a failure.
+    return save("pending", { memoryTries: tries, memoryNextTry: new Date(now.getTime() + tries * 60_000).toISOString() }, call.error ?? undefined);
+  }
   const today = localDate(now, space?.timeZone ?? "UTC");
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const cur = await store.getJson<MemoryDoc>(keys.memory(uid));
@@ -211,7 +249,7 @@ export async function rememberNote(
       tagging: tag,
       condition: cur?.etag ? { ifMatch: cur.etag } : { ifNoneMatch: "*" },
     });
-    if (w.ok) return save(call.error ? "failed" : "done", call.error ?? undefined);
+    if (w.ok) return save(call.error ? "failed" : "done", { memoryTries: tries }, call.error ?? undefined);
   }
-  return save("failed", "memory changed under us three times; try again");
+  return save("failed", { memoryTries: tries }, "memory changed under us three times; try again");
 }

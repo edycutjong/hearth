@@ -5,7 +5,7 @@
 
 import { phaseOf, utcDay } from "./caps";
 import { keys, spaceTag } from "./keys";
-import { rememberNote, type MemoryDoc } from "./memory";
+import { MEMORY_CLAIM_STALE_MS, rememberNote, type MemoryDoc } from "./memory";
 import type { TokenFactoryConfig } from "./nebius/config";
 import type { JobRecord, NoteMeta } from "./pipeline";
 import type { SpaceDoc } from "./space";
@@ -55,31 +55,43 @@ export async function giveBackSpaceKeep(store: Store, uid: string, kept: boolean
   await store.putJson(keys.spaceCaps(uid), { [day]: used - 1 }, { tagging: spaceTag(kept) });
 }
 
-/** Remember pending notes until the time budget runs out. Returns how many were processed. */
+/** Is this note's memory pass due: pending (and past any retry time), or claimed by a request that died? */
+export function memoryDue(meta: NoteMeta, now = Date.now()): boolean {
+  if (meta.status !== "kept") return false;
+  if (meta.memory === "pending") return !meta.memoryNextTry || Date.parse(meta.memoryNextTry) <= now;
+  if (meta.memory === "running") return !meta.memoryClaimedAt || now - Date.parse(meta.memoryClaimedAt) > MEMORY_CLAIM_STALE_MS;
+  return false;
+}
+
+/**
+ * Remember due notes until the time budget runs out. No Token Factory call starts with under 20 s left, and each
+ * call's timeout ends before the budget does. Returns how many were processed.
+ */
 export async function pumpMemory(
   store: Store,
   tf: TokenFactoryConfig | null,
   uid: string,
   opts: { budgetMs?: number; isSample?: boolean } = {},
 ): Promise<number> {
-  const started = Date.now();
-  const budget = opts.budgetMs ?? 35_000;
+  const deadline = Date.now() + (opts.budgetMs ?? 35_000);
   let n = 0;
   for (const meta of await listNotes(store, uid)) {
-    if (Date.now() - started > budget) break;
-    if (meta.status !== "kept" || meta.memory !== "pending") continue;
-    await rememberNote(store, tf, uid, meta.id, { isSample: opts.isSample });
+    if (!memoryDue(meta)) continue;
+    if (deadline - Date.now() < 20_000) break;
+    await rememberNote(store, tf, uid, meta.id, { isSample: opts.isSample, timeoutMs: deadline - Date.now() - 2_000 });
     n += 1;
   }
   return n;
 }
 
-/** Re-run memory for notes paused before the space opted in. */
+/** Re-run memory for kept notes paused before the space opted in (the opt-in route calls this). */
 export async function resumePaused(store: Store, uid: string, space: SpaceDoc): Promise<number> {
   let n = 0;
   for (const meta of await listNotes(store, uid)) {
-    if (meta.memory !== "paused") continue;
+    if (meta.memory !== "paused" || meta.status !== "kept") continue;
     meta.memory = "pending";
+    delete meta.memoryNextTry;
+    delete meta.memoryTries;
     await store.putJson(keys.meta(uid, meta.id), meta, { tagging: spaceTag(space.kept) });
     n += 1;
   }

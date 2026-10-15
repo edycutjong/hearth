@@ -193,8 +193,13 @@ export interface NoteMeta {
     originalHead?: number;
     checkedAt?: string;
   };
-  memory?: "pending" | "done" | "paused" | "skipped" | "failed";
+  memory?: "pending" | "running" | "done" | "paused" | "skipped" | "failed";
   memoryError?: string;
+  /** When a request claimed this note's memory pass ("running"); a stale claim may be taken over. */
+  memoryClaimedAt?: string;
+  memoryTries?: number;
+  /** A transient Token Factory error retries no earlier than this. */
+  memoryNextTry?: string;
   error?: string;
 }
 

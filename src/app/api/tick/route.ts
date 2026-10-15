@@ -32,10 +32,11 @@ export async function POST(req: Request) {
   const rec = await reconcileJob(r.ctx, uid, job);
   const answered = Date.now();
   after(async () => {
-    await pumpMemory(r.store, tfConfig(), uid, { budgetMs: 35_000 }).catch(() => 0);
+    // The queue first (cheap and time-critical), once the finished Job's instance has had time to go; then memory.
     const wait = RELEASE_MS - (Date.now() - answered);
     if (wait > 0) await new Promise((done) => setTimeout(done, wait));
     await dispatch(r.ctx).catch(() => "none");
+    await pumpMemory(r.store, tfConfig(), uid, { budgetMs: 40_000 }).catch(() => 0);
   });
   return json({ job, state: rec?.state ?? null });
 }

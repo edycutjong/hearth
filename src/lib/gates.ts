@@ -19,6 +19,21 @@
 import type { VerifiedWhen } from "./dates";
 import { amountInQuote, parseAmounts } from "./hindi/numbers";
 import { containsTokens, normalizeHi, tokens as hiTokens } from "./hindi/normalize";
+
+/*
+ * Receipt: a later quote may close an earlier money ask only if the quote itself says the money ARRIVED —
+ * «पैसे मिल गए», «आ गए», «पहुँच गए», «मिल चुके», «पैसे मिले». Super's link alone never closes a reminder.
+ * The word lists go to the native reviewer with the weekday and number lists.
+ */
+const RECEIPT_VERB = new Set(["मिल", "आ", "पहुँच", "पहुंच"].map(normalizeHi));
+const RECEIPT_AUX = new Set(["गया", "गए", "गये", "गई", "गयी", "चुका", "चुके", "चुकी"].map(normalizeHi));
+const RECEIPT_SOLO = new Set(["मिला", "मिली", "मिले", "पहुँचा", "पहुँची", "पहुँचे", "पहुंचा", "पहुंची", "पहुंचे"].map(normalizeHi));
+
+/** Does the quote itself say that something arrived? */
+export function receiptStated(quote: string): boolean {
+  const t = hiTokens(quote);
+  return t.some((w, i) => RECEIPT_SOLO.has(w) || (RECEIPT_VERB.has(w) && RECEIPT_AUX.has(t[i + 1] ?? "")));
+}
 import { findWeekdays, weekdayIndex, type Qualifier } from "./hindi/weekdays";
 
 export interface Segment {

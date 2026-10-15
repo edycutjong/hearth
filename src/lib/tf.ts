@@ -29,7 +29,7 @@ export const TF_MAX_TOKENS = 6144;
 
 export async function chatJson<T>(
   tf: TokenFactoryConfig,
-  opts: { name: string; system: string; user: string; schema: object; maxTokens?: number },
+  opts: { name: string; system: string; user: string; schema: object; maxTokens?: number; timeoutMs?: number },
   fetchImpl: typeof fetch = fetch,
 ): Promise<TfCall<T>> {
   const started = Date.now();
@@ -58,7 +58,7 @@ export async function chatJson<T>(
         temperature: 0,
         reasoning_effort: "low",
       }),
-      signal: AbortSignal.timeout(120_000),
+      signal: AbortSignal.timeout(Math.max(1_000, Math.min(120_000, opts.timeoutMs ?? 120_000))),
     });
   } catch (error) {
     return done({ error: `Token Factory request failed: ${error instanceof Error ? error.message : String(error)}` });
@@ -187,10 +187,11 @@ export async function extract(
   tf: TokenFactoryConfig,
   args: Parameters<typeof extractionPrompt>[0],
   fetchImpl: typeof fetch = fetch,
+  timeoutMs?: number,
 ): Promise<TfCall<Extraction>> {
   return chatJson<Extraction>(
     tf,
-    { name: "hearth_memory", system: EXTRACTION_SYSTEM, user: extractionPrompt(args), schema: EXTRACTION_SCHEMA },
+    { name: "hearth_memory", system: EXTRACTION_SYSTEM, user: extractionPrompt(args), schema: EXTRACTION_SCHEMA, timeoutMs },
     fetchImpl,
   );
 }
@@ -212,6 +213,7 @@ export interface Expansion {
   terms_en: string[];
 }
 
+/** Search expansion must fit its 30 s route: it gives up after 15 s and the query runs as typed. */
 export async function expandQuery(tf: TokenFactoryConfig, query: string, fetchImpl: typeof fetch = fetch): Promise<TfCall<Expansion>> {
   return chatJson<Expansion>(
     tf,
@@ -223,6 +225,7 @@ export async function expandQuery(tf: TokenFactoryConfig, query: string, fetchIm
         "घुटना, घुटने) and English words. At most 8 of each. Words only, no sentences.",
       user: `Query: ${query}`,
       schema: EXPANSION_SCHEMA,
+      timeoutMs: 15_000,
       maxTokens: 2048,
     },
     fetchImpl,
@@ -260,6 +263,7 @@ export async function draftReply(
       user: JSON.stringify({ recipient, items }),
       schema: DRAFT_SCHEMA,
       maxTokens: 3072,
+      timeoutMs: 25_000,
     },
     fetchImpl,
   );
