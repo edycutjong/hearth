@@ -43,7 +43,7 @@ def numbers() -> dict[str, str]:
             "wer_orig_strict": f"{w['wer_orig_strict'] * 100:.2f}", "wer_rt_strict": f"{w['wer_rt_strict'] * 100:.2f}",
             "asr_rtf": f"{rtf['asr_s']:.2f}", "codec_rtf": f"{rtf['codec']:.2f}", "encode_rtf": f"{rtf['encode_s']:.2f}",
             "decode_rtf": f"{rtf['decode_s']:.2f}", "total_rtf": f"{rtf['total']:.2f}",
-            "usd_per_audio_hour": f"{L['usd_per_audio_hour']:.3f}", "peak_rss_gb": f"{L['peak_rss_mb'] / 1024:.1f}",
+            "usd_per_audio_hour": f"{L['usd_per_audio_hour']:.4f}", "peak_rss_gb": f"{L['peak_rss_mb'] / 1024:.1f}",
             "create_to_container_s": f"{cold.get('create_to_container_s') or 0:.0f}", "install_s": f"{cold.get('install_s') or 0:.0f}",
             "delete_rate": f"{L['drift_gate']['fleurs20']['delete_rate'] * 100:.0f}",
         })

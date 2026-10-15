@@ -127,7 +127,7 @@ export default function Proof() {
                 <tr><th>WER, FLEURS hi_in</th><td className="num">{b.wer?.fleurs20 ? `${pct(b.wer.fleurs20.wer_orig ?? 0)} original → ${pct(b.wer.fleurs20.wer_rt ?? 0)} after the codec round trip (${b.wer.fleurs20.clips} clips; strict normaliser ${pct(b.wer.fleurs20.wer_orig_strict ?? 0)} → ${pct(b.wer.fleurs20.wer_rt_strict ?? 0)})` : "—"}</td></tr>
                 <tr><th>Real-time factor</th><td className="num">{b.rtf?.all ? `ASR ${b.rtf.all.asr_s?.toFixed(3)} · codec encode+decode ${b.rtf.all.codec?.toFixed(3)} · whole pipeline ${b.rtf.all.total?.toFixed(3)}` : "—"}</td></tr>
                 <tr><th>Cold start</th><td className="num">{coldText(b.cold_start)}</td></tr>
-                <tr><th>Cost</th><td className="num">{b.usd_per_audio_hour !== undefined ? `$${b.usd_per_audio_hour.toFixed(3)} per hour of voice at the cpu-d3 list price` : "—"}</td></tr>
+                <tr><th>Cost</th><td className="num">{b.usd_per_audio_hour !== undefined ? `$${b.usd_per_audio_hour.toFixed(4)} per hour of voice: measured compute time at the cpu-d3 list price, Job start-up excluded` : "—"}</td></tr>
                 <tr><th>Runtime</th><td className="num">{runtimeText(b.runtime)}</td></tr>
                 <tr><th>Versions</th><td className="num">{Object.entries(b.versions ?? {}).filter(([k]) => !k.startsWith("freeze")).map(([k, v]) => `${k} ${v}`).join(" · ")}</td></tr>
                 <tr><th>Codec on CPU</th><td className="num">{determinismText(b.determinism)}</td></tr>

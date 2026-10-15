@@ -76,7 +76,7 @@ Details and the file behind each box: [ARCHITECTURE.md](ARCHITECTURE.md).
 | Layer | Choice |
 |---|---|
 | App | Next.js 15 (App Router, TypeScript) on Vercel; stores nothing, no SQL database |
-| Worker | One Python file injected into a stock `python:3.11` image, run as a Nebius Serverless AI Job (`cpu-d3`, `<!--n:preset-->4vcpu-16gb<!--/n-->`, eu-west1) |
+| Worker | One Python file (gzipped, with a launcher script and its pinned requirements) injected into a stock `python:3.11` image, run as a Nebius Serverless AI Job (`cpu-d3`, `<!--n:preset-->4vcpu-16gb<!--/n-->`, eu-west1) |
 | Speech | NVIDIA `nemotron-3.5-asr-streaming-0.6b` (hi-IN, 1.12 s operating point) and `nemo-nano-codec-22khz-1.78kbps-12.5fps` |
 | Language model | Nebius Token Factory, `nvidia/nemotron-3-super-120b-a12b`, `response_format: json_schema` |
 | Storage | Nebius Object Storage: presigned PUT/GET, `If-Match` conditional writes for versioned memory |
@@ -102,7 +102,7 @@ and judges could not install them). Tavily is not used either: nothing in the fl
 | Browser tests | 13 Playwright tests × 2 projects (desktop 1440 px, phone 375 px), no credentials |
 | ASR real-time factor on 4 vCPU | <!--n:asr_rtf-->0.16<!--/n--> (gate ≤ 0.5) |
 | Peak memory | <!--n:peak_rss_gb-->6.9<!--/n--> GB (gate ≤ 12 GB) |
-| Cost per hour of voice | $<!--n:usd_per_audio_hour-->0.135<!--/n--> (gate ≤ $0.60) |
+| Cost per hour of voice | $<!--n:usd_per_audio_hour-->0.1345<!--/n--> — measured compute time at the cpu-d3 list price, Job start-up excluded (gate ≤ $0.60) |
 | Held-out set `fleurs20b`, never used for a decision | <!--n:wer_orig_b-->12.42<!--/n--> % → <!--n:wer_rt_b-->14.46<!--/n--> % |
 | Live keeps through the deployed app | <!--n:live_kept-->10<!--/n-->/<!--n:live_runs-->10<!--/n--> kept; upload → kept p50 <!--n:ttk_p50_s-->394<!--/n--> s, p95 <!--n:ttk_p95_s-->402<!--/n--> s, cold start included |
 
@@ -161,9 +161,11 @@ npm run test:live     # real Nebius + Token Factory (spends cents)
 | Releases | Semantic version tags from Angular-style commit messages | `release.yml` |
 
 **Honest CI status.** GitHub Actions was blocked on the account's billing while this repo was private, so no workflow
-job ever started there (each run failed at once on the billing block). The same commands were run locally instead, and their output is kept in
+job ever started there (each run failed at once on the billing block). Most of the same commands were run locally instead (eslint, tsc,
+vitest, ruff, pytest, npm audit, pip-audit, gitleaks, the build with its bundle budget, Playwright; Node 22 only), and their output is kept in
 `evidence/ci-local-2026-10-15.txt` and, after the story page and deck were added, `evidence/ci-local-2026-10-15-site.txt`.
-Fixing the billing (or making the repo public, which makes Actions free) is all the pipeline needs.
+TruffleHog, the license check, Lighthouse CI and the Node 20/24 legs have not run yet. Fixing the billing (or making the repo public, which makes
+Actions free) should be all the pipeline needs.
 
 ## 📁 Project Structure
 
@@ -173,7 +175,7 @@ public/                   the judge sample's files, the story page (/about) and 
 src/lib                   pipeline, gates, Hindi date + number resolver, SigV4, Nebius clients, .hct format
 worker/                   the Job: segment → ASR → NanoCodec → pack → decode → re-ASR → drift
 bench/results/            every benchmark measurement behind a number on this page (test counts: evidence/ci-local-*.txt)
-evidence/                 recorded live keep and storage preflight (delete-all listings are in bench/results/live-*.json)
+evidence/                 recorded checks: CI logs, the live Token Factory call, the export decode check, a live keep, storage preflight, cron sweep, the injected-file limit
 export/                   decode.py: tokens back to audio outside Hearth
 ```
 

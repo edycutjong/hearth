@@ -130,7 +130,7 @@ export function BenchBlock({ bench }: { bench: BenchSummary }) {
       <span className="sep">|</span>
       <span>RTF ASR {bench.asrRtf.toFixed(2)} · codec {bench.codecRtf.toFixed(2)}</span>
       <span className="sep">|</span>
-      <span>${bench.usdPerAudioHour.toFixed(3)} per audio-hour</span>
+      <span>${bench.usdPerAudioHour.toFixed(4)} per audio-hour</span>
       <span className="sep">|</span>
       <span>job {bench.jobId} · cpu-d3 4vcpu-16gb</span>
       <Link href="/proof">proof →</Link>
