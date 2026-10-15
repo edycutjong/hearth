@@ -1,0 +1,12 @@
+{
+ "at": "2026-10-15T02:45:20.755Z",
+ "without_secret_http": 401,
+ "with_secret": {
+  "active": 0,
+  "spacesWithRaw": 0,
+  "originalsDeleted": 0,
+  "spacesReaped": 0,
+  "at": "2026-10-15T02:45:20.755Z"
+ },
+ "note": "the daily Vercel cron (vercel.json, 17 3 * * *) calls this with its secret; it reconciles Jobs, deletes originals past their grace, reaps deleted spaces and settles stale reservations"
+}

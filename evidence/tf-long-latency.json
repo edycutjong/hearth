@@ -1,0 +1,24 @@
+{
+ "at": "2026-10-15T02:45:10.790Z",
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "note": "long1 (D0 run 2): 290.9 s of FLEURS hi_in read speech, transcript text only",
+ "segments": 19,
+ "characters": 2875,
+ "runs": [
+  {
+   "requestId": "chatcmpl-960dfa3b321fe36f",
+   "ms": 4510,
+   "error": null,
+   "items": 0,
+   "glosses": 19
+  },
+  {
+   "requestId": "chatcmpl-8b1d38a44854027c",
+   "ms": 4042,
+   "error": null,
+   "items": 0,
+   "glosses": 19
+  }
+ ],
+ "budget_ms": 43000
+}
