@@ -16,8 +16,8 @@ install. The last one spends cents on your own Nebius project.
 2. Open **/proof**: the Nebius Job IDs that produced the sample and the benchmark, preset, region, timings, the
    sha256 of the stored tokens, and the `HEAD … 404` that proves the pipeline's copy of the raw audio is gone.
 3. Your own note: **Open an empty space** on `/judge`, tick the agreement, upload up to 60 seconds. A real Nebius
-   Job keeps it: on this deployment that took <!--n:ttk_p50_min-->7.6<!--/n--> min at the median from upload to
-   kept (<!--n:ttk_p95_min-->7.8<!--/n--> min at p95, <!--n:live_runs-->3<!--/n--> runs), cold start included —
+   Job keeps it: on this deployment that took <!--n:ttk_p50_min-->6.6<!--/n--> min at the median from upload to
+   kept (<!--n:ttk_p95_min-->6.7<!--/n--> min at p95, <!--n:live_runs-->10<!--/n--> runs), cold start included —
    most of it is the Job starting and loading two models on CPU (`/proof` shows the split for your run).
    Reminders are Hindi-only; any transcription-ready language except Japanese and Korean is kept and searchable.
 

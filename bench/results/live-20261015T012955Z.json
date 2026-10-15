@@ -1,0 +1,368 @@
+{
+ "base": "https://hearth-alpha-six.vercel.app",
+ "clip": "bench/fleurs/clip60.opus",
+ "runs": [
+  {
+   "run": 1,
+   "status": "kept",
+   "time_to_kept_s": 397.4,
+   "queue_wait_s": 0.9,
+   "nebius_job": "aijob-e01cyb6bwemn5feaec",
+   "hearth_job": "202610152ed2a88d",
+   "polls": 36,
+   "audio_s": 60,
+   "bytes_hct": 13532,
+   "drift": 0.1468,
+   "error": null,
+   "job_timings_s": {
+    "queueS": 0,
+    "startupS": 168.7,
+    "installS": 17.3,
+    "modelsS": 140.4,
+    "workS": 61,
+    "prefetchS": 83.9
+   },
+   "delete_all_listings": [
+    {
+     "prefix": "raw/c2b49cd6\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "cache/c2b49cd6\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "u/c2b49cd6\u2026/",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "status": "kept",
+   "time_to_kept_s": 394.8,
+   "queue_wait_s": 0.4,
+   "nebius_job": "aijob-e01ya5cz8es5d264z1",
+   "hearth_job": "2026101526cf1076",
+   "polls": 36,
+   "audio_s": 60,
+   "bytes_hct": 13532,
+   "drift": 0.1468,
+   "error": null,
+   "job_timings_s": {
+    "queueS": 0,
+    "startupS": 164.4,
+    "installS": 16.2,
+    "modelsS": 138.9,
+    "workS": 69.1,
+    "prefetchS": 84.33
+   },
+   "delete_all_listings": [
+    {
+     "prefix": "raw/76950c0a\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "cache/76950c0a\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "u/76950c0a\u2026/",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "run": 3,
+   "status": "kept",
+   "time_to_kept_s": 394.2,
+   "queue_wait_s": 0.4,
+   "nebius_job": "aijob-e01r9scte2g4yynncg",
+   "hearth_job": "20261015aa983cc0",
+   "polls": 36,
+   "audio_s": 60,
+   "bytes_hct": 13532,
+   "drift": 0.1468,
+   "error": null,
+   "job_timings_s": {
+    "queueS": 0,
+    "startupS": 163.6,
+    "installS": 16.9,
+    "modelsS": 138.5,
+    "workS": 73.2,
+    "prefetchS": 85.01
+   },
+   "delete_all_listings": [
+    {
+     "prefix": "raw/3b9b8186\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "cache/3b9b8186\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "u/3b9b8186\u2026/",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "run": 4,
+   "status": "kept",
+   "time_to_kept_s": 401.7,
+   "queue_wait_s": 0.5,
+   "nebius_job": "aijob-e01qah7whx3ze5aqyp",
+   "hearth_job": "20261015134f820c",
+   "polls": 36,
+   "audio_s": 60,
+   "bytes_hct": 13532,
+   "drift": 0.1468,
+   "error": null,
+   "job_timings_s": {
+    "queueS": 0,
+    "startupS": 179,
+    "installS": 17.4,
+    "modelsS": 144.4,
+    "workS": 57.9,
+    "prefetchS": 83.82
+   },
+   "delete_all_listings": [
+    {
+     "prefix": "raw/fc46a189\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "cache/fc46a189\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "u/fc46a189\u2026/",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "run": 5,
+   "status": "kept",
+   "time_to_kept_s": 395.3,
+   "queue_wait_s": 0.5,
+   "nebius_job": "aijob-e01c4b05x7r6f6tx8z",
+   "hearth_job": "20261015fe9e7402",
+   "polls": 36,
+   "audio_s": 60,
+   "bytes_hct": 13532,
+   "drift": 0.1468,
+   "error": null,
+   "job_timings_s": {
+    "queueS": 0,
+    "startupS": 167.8,
+    "installS": 13.8,
+    "modelsS": 143.5,
+    "workS": 59.5,
+    "prefetchS": 88.87
+   },
+   "delete_all_listings": [
+    {
+     "prefix": "raw/030ec91c\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "cache/030ec91c\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "u/030ec91c\u2026/",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "run": 6,
+   "status": "kept",
+   "time_to_kept_s": 395.9,
+   "queue_wait_s": 0.5,
+   "nebius_job": "aijob-e01kxz0k4198y64zjq",
+   "hearth_job": "20261015cea3f66a",
+   "polls": 36,
+   "audio_s": 60,
+   "bytes_hct": 13532,
+   "drift": 0.1468,
+   "error": null,
+   "job_timings_s": {
+    "queueS": 0,
+    "startupS": 161.8,
+    "installS": 16.2,
+    "modelsS": 141.9,
+    "workS": 72.8,
+    "prefetchS": 86.82
+   },
+   "delete_all_listings": [
+    {
+     "prefix": "raw/89673611\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "cache/89673611\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "u/89673611\u2026/",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "run": 7,
+   "status": "kept",
+   "time_to_kept_s": 387.0,
+   "queue_wait_s": 0.5,
+   "nebius_job": "aijob-e01mfes6tgrd0aggcq",
+   "hearth_job": "20261015df8c1e7e",
+   "polls": 35,
+   "audio_s": 60,
+   "bytes_hct": 13532,
+   "drift": 0.1468,
+   "error": null,
+   "job_timings_s": {
+    "queueS": 0,
+    "startupS": 170.5,
+    "installS": 16.2,
+    "modelsS": 143,
+    "workS": 55.1,
+    "prefetchS": 83.79
+   },
+   "delete_all_listings": [
+    {
+     "prefix": "raw/ac74a6c3\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "cache/ac74a6c3\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "u/ac74a6c3\u2026/",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "run": 8,
+   "status": "kept",
+   "time_to_kept_s": 384.8,
+   "queue_wait_s": 0.5,
+   "nebius_job": "aijob-e01fwzy21a2sexewk6",
+   "hearth_job": "20261015cc1ba9b2",
+   "polls": 35,
+   "audio_s": 60,
+   "bytes_hct": 13532,
+   "drift": 0.1468,
+   "error": null,
+   "job_timings_s": {
+    "queueS": 0,
+    "startupS": 157.8,
+    "installS": 14.4,
+    "modelsS": 145.1,
+    "workS": 61.8,
+    "prefetchS": 90.15
+   },
+   "delete_all_listings": [
+    {
+     "prefix": "raw/861beb42\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "cache/861beb42\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "u/861beb42\u2026/",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "run": 9,
+   "status": "kept",
+   "time_to_kept_s": 393.5,
+   "queue_wait_s": 0.5,
+   "nebius_job": "aijob-e01d05j2nqnad3hppt",
+   "hearth_job": "20261015d88dd66d",
+   "polls": 36,
+   "audio_s": 60,
+   "bytes_hct": 13532,
+   "drift": 0.1468,
+   "error": null,
+   "job_timings_s": {
+    "queueS": 0,
+    "startupS": 159.1,
+    "installS": 16.2,
+    "modelsS": 142,
+    "workS": 68.4,
+    "prefetchS": 83.94
+   },
+   "delete_all_listings": [
+    {
+     "prefix": "raw/9806ebc7\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "cache/9806ebc7\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "u/9806ebc7\u2026/",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "run": 10,
+   "status": "kept",
+   "time_to_kept_s": 389.2,
+   "queue_wait_s": 0.4,
+   "nebius_job": "aijob-e01kyffc60fpxn4c0e",
+   "hearth_job": "20261015cec13601",
+   "polls": 35,
+   "audio_s": 60,
+   "bytes_hct": 13532,
+   "drift": 0.1468,
+   "error": null,
+   "job_timings_s": {
+    "queueS": 0,
+    "startupS": 170.5,
+    "installS": 17.5,
+    "modelsS": 141.2,
+    "workS": 55.6,
+    "prefetchS": 83.13
+   },
+   "delete_all_listings": [
+    {
+     "prefix": "raw/38f630d5\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "cache/38f630d5\u2026/",
+     "count": 0
+    },
+    {
+     "prefix": "u/38f630d5\u2026/",
+     "count": 0
+    }
+   ]
+  }
+ ],
+ "kept": 10,
+ "of": 10,
+ "time_to_kept_s": {
+  "p50": 394.2,
+  "p95": 401.7,
+  "median": 394.5
+ },
+ "queue_wait_s": {
+  "p50": 0.5,
+  "p95": 0.9
+ },
+ "note": "time to kept = upload complete -> the note reads 'kept' (validation done), cold start and queue wait included"
+}
