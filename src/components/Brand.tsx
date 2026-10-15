@@ -26,6 +26,8 @@ export function TopBar({ current, chip }: { current?: "app" | "judge" | "proof";
         <Link href="/" aria-current={current === "app" ? "page" : undefined}>Your notes</Link>
         <Link href="/judge" aria-current={current === "judge" ? "page" : undefined}>Judge sample</Link>
         <Link href="/proof" aria-current={current === "proof" ? "page" : undefined}>Proof</Link>
+        {/* /about is a static page served by a rewrite, so a full page load, not a client route */}
+        <a href="/about">About</a>
       </nav>
       {chip ? <span className="chip">{chip}</span> : <span />}
     </header>
