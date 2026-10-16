@@ -12,7 +12,7 @@ Jobs, `bench/results/d0-*-raw.json`; the benchmark of record is `aijob-e01y33r8h
 
 | Phase | Time | Where it shows |
 |---|---|---|
-| create → container running (PROVISIONING → STARTING → IMAGE_PULLING → RUNNING) | 158–169 s | `create_to_container_s` in each report |
+| create → container running (PROVISIONING → STARTING → IMAGE_PULLING → RUNNING) | 157.8–179.0 s (3 harness Jobs: 157.8, 161.8, 163.7; 10 live Jobs: up to 179.0) | `create_to_container_s` in each report |
 | `uv pip install` of NeMo 3.0.0 `[asr]` + torch 2.13.0+cpu + deps | 15–21 s | `install_s` |
 | both model files (≈ 2.8 GB): from Hugging Face · from an in-region bucket | 153–154 s · 70 s | `load.download_s` |
 | `import nemo.collections.asr` | 13–24 s | `load.asr_import_s` |
@@ -96,7 +96,7 @@ client does not pay a provisioning attempt to learn the region is full.
 
 In the first benchmark run (`aijob-e01ww8sspej92ztqys`), the two FLEURS hi_in clips whose loudest frames sit near
 −46 and −47 dBFS (95th percentile of 25 ms frame level) came back from the codec much harder for the ASR: word error
-rate after the round trip 8.3 % → 62.5 % and 38.9 % → 72.2 %, while normal-level clips round-tripped cleanly. Hearth
+rate after the round trip 8.3 % → 62.5 % and 38.9 % → 72.2 %, while 13 of the 20 clips came back with no change in word error (five others added 6–17 points). Hearth
 now brings every input to −20 dBFS of speech-active level before encoding (the gain is stored with the codes and
 removed on decode; chosen on FLEURS dev clips, not the reported ones). In the benchmark of record the first clip
 round-trips unchanged (8.3 % → 8.3 %) and the second improves (→ 55.6 %), and across 20 clips the round trip adds
