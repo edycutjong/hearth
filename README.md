@@ -164,7 +164,7 @@ npm run test:live     # real Nebius + Token Factory (spends cents)
 |---|---|---|
 | Quality | ESLint, `tsc --noEmit`, vitest with v8 coverage (Node 20/22/24 on `main`), ruff + pytest on the Python worker | `ci.yml` stage 1 |
 | Secrets | TruffleHog (verified) + gitleaks over the full history | `ci.yml` stage 2, `gitleaks.yml` |
-| Dependencies | `npm audit --omit=dev`, `pip-audit`, license check, Dependabot (grouped, no major bumps; `worker/requirements.txt` is left out of version updates because its pins are the benchmarked environment — Dependabot's security PRs against it are open, unmerged) | `ci.yml` stage 2, `dependabot.yml` |
+| Dependencies | `npm audit --omit=dev`, `pip-audit`, license check, Dependabot (grouped, no major bumps; `worker/requirements.txt` is left out of version updates because its pins are the benchmarked environment — its security alerts are fixed by a re-measured bump (hydra-core, DEMO.md §2) or dismissed with a reachability note where the fix breaks NeMo 3.0.0) | `ci.yml` stage 2, `dependabot.yml` |
 | Build | `next build` with a bundle-size budget | `ci.yml` stage 3 |
 | E2E | Playwright against the production build with no credentials: `/judge`, `/proof`, `/about`, `/pitch`, 404, 375 px | `ci.yml` stage 4 |
 | Performance | Lighthouse CI on `/judge` and `/proof` (accessibility ≥ 0.9 is a hard gate, the rest advisory) | `ci.yml` stage 5 |
