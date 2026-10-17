@@ -175,16 +175,15 @@ jobs:
           temporaryPublicStorage: true
         continue-on-error: true      # advisory until a baseline exists
 
-  # ── STAGE 6: Gate (main only). Deploy is NOT here: see the note below. ──────
+  # ── STAGE 6: Gate (main only). Stage 7 deploys only after this passes. ─────────
   deploy-gate:
     name: "Stage 6 · Deploy gate"
     needs: [quality, quality-python, secret-scan, dependency-audit, build, e2e, performance]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      # The Vercel project `hearth` is not git-linked: production is deployed from a commit SHA
-      # (Vercel MCP create_deployment / `vercel deploy`), and /api/proof reports the serving commit.
-      # A green gate here means this SHA is safe to deploy.
+      # The Vercel project `hearth` is not git-linked: Stage 7 deploys this exact commit SHA through the
+      # Vercel API (gitSource), and /api/proof reports the serving commit.
       - name: Pipeline summary
         run: |
           {
@@ -197,4 +196,76 @@ jobs:
             echo "| 3 · Build + bundle budget | passed |"
             echo "| 4 · E2E (Playwright, desktop + 375 px, no credentials) | passed |"
             echo "| 5 · Performance (Lighthouse) | advisory |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ── STAGE 7: Deploy (main only) → GitHub environment "production" ────────────
+  # Deploys THIS commit from GitHub (Vercel API gitSource, so /api/proof reports the serving SHA), waits until it is
+  # READY and aliased, then smoke-tests the live routes. Frozen after the submission deadline so the judged build
+  # never moves; a manual workflow_dispatch can still redeploy on purpose.
+  deploy:
+    name: "Stage 7 · Deploy (Vercel production)"
+    needs: [deploy-gate]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://hearth.edycu.dev
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    env:
+      TEAM_ID: team_RJcQx4a22v5LqjetHv8HhhLY
+      PROJECT: hearth
+      FREEZE_AT: "2026-10-30T17:00:00Z"   # Devpost deadline, 10:00 PDT
+    steps:
+      - name: Deadline freeze
+        id: freeze
+        run: |
+          if [ "$(date -u +%s)" -ge "$(date -u -d "$FREEZE_AT" +%s)" ]; then
+            echo "frozen=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Past the submission deadline: production stays on the judged commit."
+          fi
+      - name: Create deployment from ${{ github.sha }}
+        if: steps.freeze.outputs.frozen != 'true'
+        id: create
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          body=$(jq -n --arg sha "$GITHUB_SHA" --arg p "$PROJECT" \
+            '{name:$p, project:$p, target:"production",
+              gitSource:{type:"github", org:"edycutjong", repo:"hearth", ref:"main", sha:$sha}}')
+          res=$(curl -sS -X POST "https://api.vercel.com/v13/deployments?teamId=$TEAM_ID&forceNew=1" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" -d "$body")
+          id=$(echo "$res" | jq -r '.id // empty')
+          if [ -z "$id" ]; then echo "$res" | jq '{error}' ; exit 1; fi
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+          echo "url=https://$(echo "$res" | jq -r '.url')" >> "$GITHUB_OUTPUT"
+      - name: Wait until READY
+        if: steps.freeze.outputs.frozen != 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          for i in $(seq 1 60); do
+            state=$(curl -sS "https://api.vercel.com/v13/deployments/${{ steps.create.outputs.id }}?teamId=$TEAM_ID" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" | jq -r '.readyState')
+            echo "readyState=$state"
+            case "$state" in READY) exit 0 ;; ERROR|CANCELED) exit 1 ;; esac
+            sleep 10
+          done
+          echo "::error::deployment not READY after 10 minutes"; exit 1
+      - name: Smoke-test production
+        if: steps.freeze.outputs.frozen != 'true'
+        run: |
+          sleep 5
+          for path in / /judge /proof /about /pitch /api/proof; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://hearth.edycu.dev$path")
+            echo "$path $code"; [ "$code" = 200 ] || exit 1
+          done
+          served=$(curl -s https://hearth.edycu.dev/api/proof | jq -r '.deployed.commit')
+          echo "serving $served"; [ "$served" = "$GITHUB_SHA" ] || { echo "::error::alias serves $served, not $GITHUB_SHA"; exit 1; }
+          {
+            echo "### Deployed ${GITHUB_SHA::7} to production"
+            echo ""
+            echo "- Live: https://hearth.edycu.dev (serving \`${served::7}\`)"
+            echo "- Deployment: ${{ steps.create.outputs.url }}"
           } >> "$GITHUB_STEP_SUMMARY"
