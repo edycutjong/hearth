@@ -21,7 +21,7 @@ test-coverage: ## vitest with v8 coverage
 	npm run test:coverage
 
 test-worker: ## pytest over worker/ and scripts/
-	.venv/bin/python -m pytest -q worker scripts
+	.venv/bin/python -m pytest -q worker scripts --cov=worker --cov=scripts --cov-fail-under=100
 
 lint-worker: ## ruff over the Python side
 	.venv/bin/ruff check worker scripts

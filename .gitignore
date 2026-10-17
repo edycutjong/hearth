@@ -32,3 +32,4 @@ coverage/
 # The judge sample is published on purpose: FLEURS (CC BY 4.0, attributed on the page) or the consented actor pair
 !public/sample/*.flac
 !public/sample/*.opus
+.coverage
