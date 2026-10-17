@@ -1,0 +1,95 @@
+{
+ "what": "The live keep shown in the Hearth demo video (P6, 2026-10-17): one upload on the live app into a fresh anonymous space, kept by a real Nebius Serverless AI Job, searched, its original deleted, then the whole space deleted. Every figure on screen in the video's live scenes comes from this record.",
+ "app": {
+  "url": "https://hearth.edycu.dev",
+  "commit": "51b3acad1cfd3530f2b44e1eb4f1e17053889515"
+ },
+ "upload": {
+  "file": "fleurs-readers.opus",
+  "bytes": 69745,
+  "seconds": 37.15,
+  "format": "Ogg Opus, 16 kbps mono (the recipe of bench/fleurs/clip60.opus)",
+  "content": "three Google FLEURS hi_in test clips, concatenated: 18134504222802844474, 834255654721637854, 8152842849716801870 (CC BY 4.0, revision 70bb2e84; sha256 prefixes as in bench/fleurs-files.sha256). Read speech, not a family note.",
+  "label": "FLEURS readers",
+  "uploaded": "2026-10-17T00:26:43.747Z"
+ },
+ "note": {
+  "id": "dae6293b697e",
+  "hearthJob": "20261017a49572a9",
+  "nebiusJob": "aijob-e01z6f3emyf9bsb1xd",
+  "preset": "cpu-d3 4vcpu-16gb",
+  "region": "eu-west1",
+  "kept": {
+   "at": "2026-10-17T00:33:05.142Z",
+   "bytesHct": 8438,
+   "frames": 468,
+   "audioS": 37.15,
+   "inputBytes": 69745,
+   "sha256": "8cbdc70ceaabc8d678baf6411aae9037c86261c7a0d3f6675d38d1b2cc84d153",
+   "driftNote": 0.0241,
+   "maxDriftLongSegment": 0.0244,
+   "driftPass": true,
+   "langDetected": "hi-IN",
+   "timings": {
+    "load_s": 3.347,
+    "segment_s": 0.002,
+    "lang_check_s": 3.713,
+    "asr_s": 6.151,
+    "encode_s": 8.323,
+    "pack_s": 0,
+    "decode_s": 11.7,
+    "rt_asr_s": 6.197
+   }
+  },
+  "agreementPct": 97.6,
+  "segments": [
+   {
+    "i": 0,
+    "t0": 0,
+    "t1": 18.16
+   },
+   {
+    "i": 1,
+    "t0": 18.16,
+    "t1": 37.15
+   }
+  ]
+ },
+ "timeline_s_from_keep_click": {
+  "nebius_job_created": 15.6,
+  "vm_provisioned": 67.7,
+  "container_started": 141.9,
+  "image_pulled": 192.0,
+  "kept_seen_in_app": 382.8,
+  "note": "seen by the app's 5 s status poll; uploaded → kept by the note's own timestamps: 381.4 s"
+ },
+ "search": {
+  "query": "tigers",
+  "hits_on_camera": 1,
+  "hit": {
+   "note": "dae6293b697e",
+   "segment": 1,
+   "t0": 18.16,
+   "t1": 37.15
+  },
+  "expansion_on_camera": "Nemotron 3 Super expanded it to: बाघ · बाघों · शेर · जंगली बिल्ली · बाघिन · बाघ बच्चा · बाघ का शावक · बाघ की दहाड़ · tiger · tigers · big cat · Bengal tiger · Siberian tiger · white tiger · cub · roar Ranked by code (BM25) over the Hindi and its translation.",
+  "note_on_expansion": "Nemotron 3 Super's expansion differs between calls (an LLM); a second take that day expanded more widely and also matched segment 0 through 'wildlife'."
+ },
+ "delete_original": "Deleted: raw HEAD 404 · originals HEAD 404 at 01:32:10 UTC",
+ "export": "Ready: 17.8 KB, built in this browser. The tokens, transcrip",
+ "delete_all": {
+  "listing": [
+   "raw/07d70cb0…/ → 0 objects",
+   "cache/07d70cb0…/ → 0 objects",
+   "u/07d70cb0…/ → 0 objects"
+  ]
+ },
+ "real_latency_ms_on_camera": {
+  "/api/notes/dae6293b697e": 260,
+  "/api/notes/dae6293b697e/delete-original": 348,
+  "/api/search": 1466,
+  "/api/export": 253,
+  "/api/delete-all": 561,
+  "/api/agree": 217
+ }
+}
