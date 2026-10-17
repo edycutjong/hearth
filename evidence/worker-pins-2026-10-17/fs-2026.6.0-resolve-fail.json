@@ -1,0 +1,108 @@
+{
+ "run": "20261017T051152Z-4vcpu-16gb",
+ "preset": "4vcpu-16gb",
+ "image": "python:3.11",
+ "nebius_job_id": "aijob-e01r7asr69dfmtdqj0",
+ "created": 1792213912.7531362,
+ "job": {
+  "metadata": {
+   "id": "aijob-e01r7asr69dfmtdqj0",
+   "parent_id": "project-e01phrcvpa003r6v2aep14",
+   "name": "hearth-d0-20261017t051152z-4vcpu-16gb",
+   "resource_version": "1",
+   "created_at": "2026-10-17T05:11:53.039688Z",
+   "updated_at": "2026-10-17T05:11:53.039688Z"
+  },
+  "spec": {
+   "image": "python:3.11",
+   "environment_variables": [
+    {
+     "name": "MODE",
+     "value": "d0"
+    },
+    {
+     "name": "MANIFEST_URL",
+     "value": "https://storage.eu-west1.nebius.cloud/hearth-data/bench/d0/20261017T051152Z-4vcpu-16gb/manifest.json?<presigned>"
+    },
+    {
+     "name": "HEARTH_JOB_NAME",
+     "value": "hearth-d0-20261017t051152z-4vcpu-16gb"
+    }
+   ],
+   "container_command": "bash",
+   "args": "/opt/hearth/run.sh",
+   "platform": "cpu-d3",
+   "preset": "4vcpu-16gb",
+   "disk": {
+    "type": "NETWORK_SSD",
+    "size_bytes": "68719476736"
+   },
+   "subnet_id": "vpcsubnet-e01mdp8yxx4t2hccw5",
+   "timeout": "7200s",
+   "injected_files": [
+    {
+     "container_path": "/opt/hearth/run.sh"
+    },
+    {
+     "container_path": "/opt/hearth/worker.py.gz"
+    },
+    {
+     "container_path": "/opt/hearth/requirements.txt.gz"
+    }
+   ]
+  },
+  "status": {
+   "instances": [
+    {
+     "state": "FAILED",
+     "compute_instance_id": "computeinstance-e01b247q3mncz6swjm",
+     "compute_instance_state": "RUNNING",
+     "private_ip": "10.48.0.59"
+    }
+   ],
+   "state": "FAILED",
+   "state_details": {
+    "code": "ContainerFailed",
+    "message": "Container exited with non-zero exit code."
+   },
+   "started_at": "2026-10-17T05:14:48.442015035Z",
+   "finished_at": "2026-10-17T05:14:52.573859226Z"
+  }
+ },
+ "report": {
+  "version": 1,
+  "context": {
+   "python": "3.11.17",
+   "machine": "x86_64",
+   "cpus": 4,
+   "worker_start": 1792214092.4938948,
+   "nebius_job_hint": "hearth-d0-20261017t051152z-4vcpu-16gb",
+   "t0": 1792214088.6361792,
+   "t_install": 1792214092.4343736,
+   "install_rc": 1,
+   "ffmpeg": "imageio-ffmpeg (static)",
+   "cpu_model": "AMD EPYC-Genoa Processor",
+   "mem_total_kb": 16376124
+  },
+  "mode": "d0",
+  "job": "d0-20261017T051152Z-4vcpu-16gb",
+  "status": "failed",
+  "error": "dependency install failed (see install_tail)",
+  "trace": "Traceback (most recent call last):\n  File \"/tmp/hearth/worker.py\", line 971, in main\n    raise RuntimeError(\"dependency install failed (see install_tail)\")\nRuntimeError: dependency install failed (see install_tail)\n",
+  "install_tail": "WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv\n\n[notice] A new release of pip is available: 24.0 -> 26.2.1\n[notice] To update, run: pip install --upgrade pip\nUsing Python 3.11.17 environment at: /usr/local\nerror: No solution found when resolving dependencies\n  cause: Because lightning==2.4.0 depends on fsspec[http]>=2022.5.0,<2026.0 and you require fsspec==2026.6.0, we can conclude that your requirements and lightning==2.4.0 are incompatible.\n         And because you require lightning==2.4.0, we can conclude that your requirements are unsatisfiable.\n",
+  "peak_rss_mb": 26.7,
+  "finished": 1792214092.5119367,
+  "log": [
+   "     0.0s job failed: dependency install failed (see install_tail)"
+  ]
+ },
+ "status": {
+  "stage": "failed",
+  "t": 1792214092.544996,
+  "elapsed_s": 0.1,
+  "rss_mb": 26.7,
+  "log": [
+   "     0.0s job failed: dependency install failed (see install_tail)"
+  ]
+ }
+}

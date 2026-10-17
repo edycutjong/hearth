@@ -59,6 +59,11 @@ than 22.05 kHz 16-bit PCM. On the disjoint `fleurs20b` set, never used for any d
 <!--n:wer_rt_b-->14.46<!--/n--> %. The earlier run that **failed** the round-trip gate (+5.94 pts, before the codec input was
 normalised) is committed beside it: `bench/results/d0-20261014T222337Z-4vcpu-16gb.json`.
 
+**Worker pins changed after this run** (security advisories): hydra-core 1.3.2 → 1.3.7. Re-run on `fleurs20` only as
+Nebius job aijob-e01jwhd7v18b1bpn75: all 20 stored `.hct` files are byte-identical (sha256) to this run's, so the
+fleurs20 WER above is unchanged; the other sets were not re-run. lightning and fsspec stay at the measured pins: the
+patched lightning breaks the NeMo 3.0.0 import. Raw reports: `evidence/worker-pins-2026-10-17/`.
+
 **Play a kept note without Hearth** — the stored `.hct` decodes with the open model alone:
 
 ```bash

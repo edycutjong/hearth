@@ -1,0 +1,108 @@
+{
+ "run": "20261017T050602Z-4vcpu-16gb",
+ "preset": "4vcpu-16gb",
+ "image": "python:3.11",
+ "nebius_job_id": "aijob-e01w14zm170anwhphq",
+ "created": 1792213563.126438,
+ "job": {
+  "metadata": {
+   "id": "aijob-e01w14zm170anwhphq",
+   "parent_id": "project-e01phrcvpa003r6v2aep14",
+   "name": "hearth-d0-20261017t050602z-4vcpu-16gb",
+   "resource_version": "1",
+   "created_at": "2026-10-17T05:06:03.422044Z",
+   "updated_at": "2026-10-17T05:06:03.422044Z"
+  },
+  "spec": {
+   "image": "python:3.11",
+   "environment_variables": [
+    {
+     "name": "MODE",
+     "value": "d0"
+    },
+    {
+     "name": "MANIFEST_URL",
+     "value": "https://storage.eu-west1.nebius.cloud/hearth-data/bench/d0/20261017T050602Z-4vcpu-16gb/manifest.json?<presigned>"
+    },
+    {
+     "name": "HEARTH_JOB_NAME",
+     "value": "hearth-d0-20261017t050602z-4vcpu-16gb"
+    }
+   ],
+   "container_command": "bash",
+   "args": "/opt/hearth/run.sh",
+   "platform": "cpu-d3",
+   "preset": "4vcpu-16gb",
+   "disk": {
+    "type": "NETWORK_SSD",
+    "size_bytes": "68719476736"
+   },
+   "subnet_id": "vpcsubnet-e01mdp8yxx4t2hccw5",
+   "timeout": "7200s",
+   "injected_files": [
+    {
+     "container_path": "/opt/hearth/run.sh"
+    },
+    {
+     "container_path": "/opt/hearth/worker.py.gz"
+    },
+    {
+     "container_path": "/opt/hearth/requirements.txt.gz"
+    }
+   ]
+  },
+  "status": {
+   "instances": [
+    {
+     "state": "FAILED",
+     "compute_instance_id": "computeinstance-e01cq9f8dhqm6e1jh9",
+     "compute_instance_state": "RUNNING",
+     "private_ip": "10.48.0.43"
+    }
+   ],
+   "state": "FAILED",
+   "state_details": {
+    "code": "ContainerFailed",
+    "message": "Container exited with non-zero exit code."
+   },
+   "started_at": "2026-10-17T05:08:47.969595674Z",
+   "finished_at": "2026-10-17T05:09:26.071923130Z"
+  }
+ },
+ "report": {
+  "version": 1,
+  "context": {
+   "python": "3.11.17",
+   "machine": "x86_64",
+   "cpus": 4,
+   "worker_start": 1792213743.5832336,
+   "nebius_job_hint": "hearth-d0-20261017t050602z-4vcpu-16gb",
+   "t0": 1792213728.1520839,
+   "t_install": 1792213743.4048815,
+   "install_rc": 0,
+   "ffmpeg": "imageio-ffmpeg (static)",
+   "cpu_model": "AMD EPYC-Genoa Processor",
+   "mem_total_kb": 16376124
+  },
+  "mode": "d0",
+  "job": "d0-20261017T050602Z-4vcpu-16gb",
+  "status": "failed",
+  "error": "`OneLoggerPTLTrainer.save_checkpoint: weights_only must be a supertype of `typing.Optional[bool]` but is `<class 'bool'>`",
+  "trace": "s\"), trimmed_codec=bool(manifest.get(\"trimmed_codec\")), asr=mode != \"decode\")\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/hearth/worker.py\", line 473, in __init__\n    import nemo.collections.asr as nemo_asr\n  File \"/usr/local/lib/python3.11/site-packages/nemo/collections/asr/__init__.py\", line 15, in <module>\n    from nemo.collections.asr import data, losses, models, modules\n  File \"/usr/local/lib/python3.11/site-packages/nemo/collections/asr/losses/__init__.py\", line 15, in <module>\n    from nemo.collections.asr.losses.angularloss import AngularSoftmaxLoss\n  File \"/usr/local/lib/python3.11/site-packages/nemo/collections/asr/losses/angularloss.py\", line 18, in <module>\n    from nemo.core.classes import Loss, Typing, typecheck\n  File \"/usr/local/lib/python3.11/site-packages/nemo/core/__init__.py\", line 16, in <module>\n    from nemo.core.classes import *\n  File \"/usr/local/lib/python3.11/site-packages/nemo/core/classes/__init__.py\", line 33, in <module>\n    from nemo.core.classes.modelPT import ModelPT\n  File \"/usr/local/lib/python3.11/site-packages/nemo/core/classes/modelPT.py\", line 37, in <module>\n    from nemo.lightning.callback_group import CallbackGroup\n  File \"/usr/local/lib/python3.11/site-packages/nemo/lightning/callback_group.py\", line 21, in <module>\n    from nemo.lightning.one_logger_callback import OneLoggerNeMoCallback\n  File \"/usr/local/lib/python3.11/site-packages/nemo/lightning/one_logger_callback.py\", line 29, in <module>\n    from nv_one_logger.training_telemetry.integration.pytorch_lightning import TimeEventCallback as OneLoggerPTLCallback\n  File \"/usr/local/lib/python3.11/site-packages/nv_one_logger/training_telemetry/integration/pytorch_lightning.py\", line 251, in <module>\n    class OneLoggerPTLTrainer(Trainer):\n  File \"/usr/local/lib/python3.11/site-packages/nv_one_logger/training_telemetry/integration/pytorch_lightning.py\", line 274, in OneLoggerPTLTrainer\n    @override\n     ^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/overrides/overrides.py\", line 143, in override\n    return _overrides(method, check_signature, check_at_runtime)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/overrides/overrides.py\", line 172, in _overrides\n    _validate_method(method, super_class, check_signature)\n  File \"/usr/local/lib/python3.11/site-packages/overrides/overrides.py\", line 191, in _validate_method\n    ensure_signature_is_compatible(super_method, method, is_static)\n  File \"/usr/local/lib/python3.11/site-packages/overrides/signature.py\", line 104, in ensure_signature_is_compatible\n    ensure_all_kwargs_defined_in_sub(\n  File \"/usr/local/lib/python3.11/site-packages/overrides/signature.py\", line 165, in ensure_all_kwargs_defined_in_sub\n    raise TypeError(\nTypeError: `OneLoggerPTLTrainer.save_checkpoint: weights_only must be a supertype of `typing.Optional[bool]` but is `<class 'bool'>`\n",
+  "install_tail": "t\n      Built antlr4-python3-runtime==4.9.3\n Downloaded fonttools\n Downloaded lxml\n Downloaded tensorboard\n Downloaded sympy\n Downloaded tensorboard-data-server\n Downloaded pillow\n Downloaded cuda-bindings\n Downloaded grpcio\n Downloaded pypinyin-dict\n Downloaded scikit-learn\n Downloaded matplotlib\n Downloaded onnx\n Downloaded pandas\n Downloaded transformers\n Downloaded numpy\n Downloaded janome\n Downloaded imageio-ffmpeg\n Downloaded wandb\n Downloaded scipy\n Downloaded pyarrow\n Downloaded llvmlite\n      Built jieba==0.42.1\n Downloaded torch\nPrepared 151 packages in 3.39s\nUninstalled 1 package in 1.23s\nInstalled 151 packages in 5.47s\n + absl-py==2.5.1\n + aiohappyeyeballs==2.7.1\n + aiohttp==3.14.5\n + aiosignal==1.4.0\n + aistore==2.0.0\n + annotated-doc==0.0.5\n + annotated-types==0.8.0\n + antlr4-python3-runtime==4.9.3\n + anyio==4.15.1\n + attrs==26.1.0\n + audioread==3.1.0\n + braceexpand==0.1.7\n + certifi==2026.7.22\n + cffi==2.1.1\n + charset-normalizer==3.5.2\n + click==8.5.0\n + cloudpickle==3.1.2\n + colorama==0.4.6\n + contourpy==1.3.3\n + cuda-bindings==13.4.4\n + cuda-pathfinder==1.8.3\n + cycler==0.12.1\n + cytoolz==1.2.0\n + datasets==5.1.0\n + decorator==5.3.1\n + defusedxml==0.7.1\n + dill==0.4.1\n + einops==0.8.2\n + filelock==4.2.0\n + fonttools==4.67.0\n + frozenlist==1.8.0\n + fsspec==2026.6.0\n + googleapis-common-protos==1.75.5\n + grpcio==1.84.0\n + h11==0.16.0\n + hf-xet==1.7.0\n + httpcore2==2.13.1\n + httpx2==2.13.1\n + huggingface-hub==2.2.0\n + humanize==4.16.0\n + hydra-core==1.3.7\n + idna==3.20\n + imageio-ffmpeg==0.6.0\n + indic-numtowords==1.1.0\n + intervaltree==3.2.1\n + janome==0.5.0\n + jieba==0.42.1\n + jinja2==3.1.6\n + joblib==1.6.0\n + kaldialign==0.12.0\n + kiwisolver==1.5.1\n + lazy-loader==0.6\n + lhotse==1.33.0\n + librosa==0.11.0\n + lightning==2.6.6\n + lightning-utilities==0.15.3\n + llvmlite==0.50.0\n + lxml==6.1.3\n + markdown==3.11.1\n + markdown-it-py==4.2.0\n + markupsafe==3.0.4\n + matplotlib==3.11.2\n + mdurl==0.1.2\n + ml-dtypes==0.6.0\n + more-itertools==11.2.1\n + mpmath==1.3.0\n + msgpack==1.2.3\n + msgspec==0.22.0\n + multidict==7.1.0\n + multiprocess==0.70.19\n + narwhals==2.27.1\n + nemo-toolkit==3.0.0\n + networkx==3.6.1\n + nltk==3.10.3\n + numba==0.68.0\n + numpy==2.4.6\n + nv-one-logger-core==2.3.1\n + nv-one-logger-pytorch-lightning-integration==2.3.1\n + nv-one-logger-training-telemetry==2.3.1\n + omegaconf==2.3.0\n + onnx==1.23.2\n + opentelemetry-api==1.45.1\n + opentelemetry-exporter-http-transport==0.66b1\n + opentelemetry-exporter-otlp-common==0.66b1\n + opentelemetry-exporter-otlp-proto-common==1.45.1\n + opentelemetry-exporter-otlp-proto-http==1.45.1\n + opentelemetry-proto==1.45.1\n + opentelemetry-sdk==1.45.1\n + opentelemetry-semantic-conventions==0.66b1\n + overrides==7.7.0\n - packaging==26.3\n + packaging==24.2\n + pandas==3.0.6\n + pillow==12.3.0\n + platformdirs==4.13.0\n + pooch==1.9.0\n + portalocker==4.4.0\n + propcache==0.5.4\n + protobuf==7.36.2\n + pyarrow==26.0.0\n + pycparser==3.11\n + pydantic==2.14.1\n + pydantic-core==2.50.1\n + pygments==2.21.0\n + pyparsing==3.3.3\n + pypinyin==0.55.0\n + pypinyin-dict==0.9.0\n + python-dateutil==2.9.0.post0\n + pytorch-lightning==2.6.6\n + pyyaml==6.0.3\n + regex==2026.9.29\n + requests==2.34.2\n + rich==15.0.0\n + sacrebleu==2.6.0\n + safetensors==0.8.0\n + scikit-learn==1.9.1\n + scipy==1.17.1\n + sentencepiece==0.2.2\n + shellingham==1.5.4\n + six==1.17.0\n + smart-open==8.0.3\n + sortedcontainers==2.4.0\n + soundfile==0.14.0\n + soxr==1.1.0\n + strenum==0.4.15\n + sympy==1.14.0\n + tabulate==0.10.0\n + tenacity==9.2.1\n + tensorboard==2.21.0\n + tensorboard-data-server==0.7.2\n + text-unidecode==1.3\n + text2num==3.1.0\n + threadpoolctl==3.7.0\n + tokenizers==0.23.3\n + toml==0.10.2\n + toolz==1.2.0\n + torch==2.13.0+cpu\n + torchmetrics==1.9.0\n + tqdm==4.70.1\n + transformers==5.19.0\n + truststore==0.10.5\n + typer==0.27.3\n + typing-extensions==4.16.0\n + typing-inspection==0.4.4\n + urllib3==2.8.0\n + wandb==0.30.0\n + webdataset==1.0.2\n + werkzeug==3.1.9\n + whisper-normalizer==0.1.15\n + wrapt==2.5.1\n + xxhash==4.0.1\n + yarl==1.25.1\n",
+  "peak_rss_mb": 594.2,
+  "finished": 1792213765.0857177,
+  "log": [
+   "    21.5s job failed: `OneLoggerPTLTrainer.save_checkpoint: weights_only must be a supertype of `typing.Optional[bool]` but is `<class 'bool'>`"
+  ]
+ },
+ "status": {
+  "stage": "failed",
+  "t": 1792213765.1024828,
+  "elapsed_s": 21.5,
+  "rss_mb": 594.2,
+  "log": [
+   "    21.5s job failed: `OneLoggerPTLTrainer.save_checkpoint: weights_only must be a supertype of `typing.Optional[bool]` but is `<class 'bool'>`"
+  ]
+ }
+}

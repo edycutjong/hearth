@@ -1,0 +1,1346 @@
+{
+ "run": "20261017T051550Z-4vcpu-16gb",
+ "preset": "4vcpu-16gb",
+ "image": "python:3.11",
+ "nebius_job_id": "aijob-e01jwhd7v18b1bpn75",
+ "created": 1792214151.663774,
+ "job": {
+  "metadata": {
+   "id": "aijob-e01jwhd7v18b1bpn75",
+   "parent_id": "project-e01phrcvpa003r6v2aep14",
+   "name": "hearth-d0-20261017t051550z-4vcpu-16gb",
+   "resource_version": "1",
+   "created_at": "2026-10-17T05:15:51.952208Z",
+   "updated_at": "2026-10-17T05:15:51.952208Z"
+  },
+  "spec": {
+   "image": "python:3.11",
+   "environment_variables": [
+    {
+     "name": "MODE",
+     "value": "d0"
+    },
+    {
+     "name": "MANIFEST_URL",
+     "value": "https://storage.eu-west1.nebius.cloud/hearth-data/bench/d0/20261017T051550Z-4vcpu-16gb/manifest.json?<presigned>"
+    },
+    {
+     "name": "HEARTH_JOB_NAME",
+     "value": "hearth-d0-20261017t051550z-4vcpu-16gb"
+    }
+   ],
+   "container_command": "bash",
+   "args": "/opt/hearth/run.sh",
+   "platform": "cpu-d3",
+   "preset": "4vcpu-16gb",
+   "disk": {
+    "type": "NETWORK_SSD",
+    "size_bytes": "68719476736"
+   },
+   "subnet_id": "vpcsubnet-e01mdp8yxx4t2hccw5",
+   "timeout": "7200s",
+   "injected_files": [
+    {
+     "container_path": "/opt/hearth/run.sh"
+    },
+    {
+     "container_path": "/opt/hearth/worker.py.gz"
+    },
+    {
+     "container_path": "/opt/hearth/requirements.txt.gz"
+    }
+   ]
+  },
+  "status": {
+   "instances": [
+    {
+     "state": "RUNNING",
+     "compute_instance_id": "computeinstance-e01nhp38myk853evpn",
+     "compute_instance_state": "RUNNING",
+     "private_ip": "10.48.0.12"
+    }
+   ],
+   "state": "COMPLETED",
+   "started_at": "2026-10-17T05:18:38.918165227Z",
+   "finished_at": "2026-10-17T05:26:11.964992029Z"
+  }
+ },
+ "report": {
+  "version": 1,
+  "context": {
+   "python": "3.11.17",
+   "machine": "x86_64",
+   "cpus": 4,
+   "worker_start": 1792214337.1680565,
+   "nebius_job_hint": "hearth-d0-20261017t051550z-4vcpu-16gb",
+   "t0": 1792214319.1060355,
+   "t_install": 1792214337.0298262,
+   "install_rc": 0,
+   "ffmpeg": "imageio-ffmpeg (static)",
+   "cpu_model": "AMD EPYC-Genoa Processor",
+   "mem_total_kb": 16376120
+  },
+  "mode": "d0",
+  "job": "d0-20261017T051550Z-4vcpu-16gb",
+  "load": {
+   "asr_import_s": 17.83,
+   "codec_import_s": 2.83,
+   "prefetch_s": 86.6,
+   "download_s": 61.03,
+   "asr_restore_s": 18.63,
+   "codec_restore_s": 35.66,
+   "codec_trimmed": 1.0,
+   "total_s": 140.84
+  },
+  "runtime": {
+   "codec_samples_per_frame": 1764,
+   "codec_sample_rate": 22050,
+   "torch_threads": 4,
+   "weights_source": "bucket",
+   "weights_prefetched": true,
+   "asr": "nemo",
+   "asr_class": "EncDecRNNTBPEModelWithPrompt",
+   "att_context_size": [
+    56,
+    13
+   ],
+   "att_context_size_all": [
+    [
+     56,
+     3
+    ],
+    [
+     56,
+     0
+    ],
+    [
+     56,
+     6
+    ],
+    [
+     56,
+     13
+    ]
+   ],
+   "chunk_s": 1.12,
+   "asr_sample_rate": 16000
+  },
+  "versions": {
+   "torch": "2.13.0+cpu",
+   "nemo": "3.0.0",
+   "transformers": "5.19.0",
+   "numpy": "2.4.6",
+   "librosa": "0.11.0",
+   "soundfile": "0.14.0",
+   "huggingface_hub": "2.2.0",
+   "lightning": "2.4.0",
+   "freeze_sha256": "28ca1f81d557b0a50e58700bb363f429c47ef39f67bb72605557aa3b6ab7592a",
+   "freeze_count": 155,
+   "freeze": [
+    "Janome==0.5.0",
+    "Jinja2==3.1.6",
+    "Markdown==3.11.1",
+    "MarkupSafe==3.0.4",
+    "PyYAML==6.0.3",
+    "Pygments==2.21.0",
+    "StrEnum==0.4.15",
+    "Werkzeug==3.1.9",
+    "absl-py==2.5.1",
+    "aiohappyeyeballs==2.7.1",
+    "aiohttp==3.14.5",
+    "aiosignal==1.4.0",
+    "aistore==2.0.0",
+    "annotated-doc==0.0.5",
+    "annotated-types==0.8.0",
+    "antlr4-python3-runtime==4.9.3",
+    "anyio==4.15.1",
+    "attrs==26.1.0",
+    "audioread==3.1.0",
+    "braceexpand==0.1.7",
+    "certifi==2026.7.22",
+    "cffi==2.1.1",
+    "charset-normalizer==3.5.2",
+    "click==8.5.0",
+    "cloudpickle==3.1.2",
+    "colorama==0.4.6",
+    "contourpy==1.3.3",
+    "cuda-bindings==13.4.4",
+    "cuda-pathfinder==1.8.3",
+    "cycler==0.12.1",
+    "cytoolz==1.2.0",
+    "datasets==5.1.0",
+    "decorator==5.3.1",
+    "defusedxml==0.7.1",
+    "dill==0.4.1",
+    "einops==0.8.2",
+    "filelock==4.2.0",
+    "fonttools==4.67.0",
+    "frozenlist==1.8.0",
+    "fsspec==2025.12.0",
+    "googleapis-common-protos==1.75.5",
+    "grpcio==1.84.0",
+    "h11==0.16.0",
+    "hf-xet==1.7.0",
+    "httpcore2==2.13.1",
+    "httpx2==2.13.1",
+    "huggingface_hub==2.2.0",
+    "humanize==4.16.0",
+    "hydra-core==1.3.7",
+    "idna==3.20",
+    "imageio-ffmpeg==0.6.0",
+    "indic_numtowords==1.1.0",
+    "intervaltree==3.2.1",
+    "jieba==0.42.1",
+    "joblib==1.6.0",
+    "kaldialign==0.12.0",
+    "kiwisolver==1.5.1",
+    "lazy-loader==0.6",
+    "lhotse==1.33.0",
+    "librosa==0.11.0",
+    "lightning-utilities==0.15.3",
+    "lightning==2.4.0",
+    "llvmlite==0.50.0",
+    "lxml==6.1.3",
+    "markdown-it-py==4.2.0",
+    "matplotlib==3.11.2",
+    "mdurl==0.1.2",
+    "ml_dtypes==0.6.0",
+    "more-itertools==11.2.1",
+    "mpmath==1.3.0",
+    "msgpack==1.2.3",
+    "msgspec==0.22.0",
+    "multidict==7.1.0",
+    "multiprocess==0.70.19",
+    "narwhals==2.27.1",
+    "nemo-toolkit==3.0.0",
+    "networkx==3.6.1",
+    "nltk==3.10.3",
+    "numba==0.68.0",
+    "numpy==2.4.6",
+    "nv-one-logger-core==2.3.1",
+    "nv-one-logger-pytorch-lightning-integration==2.3.1",
+    "nv-one-logger-training-telemetry==2.3.1",
+    "omegaconf==2.3.0",
+    "onnx==1.23.2",
+    "opentelemetry-api==1.45.1",
+    "opentelemetry-exporter-http-transport==0.66b1",
+    "opentelemetry-exporter-otlp-common==0.66b1",
+    "opentelemetry-exporter-otlp-proto-common==1.45.1",
+    "opentelemetry-exporter-otlp-proto-http==1.45.1",
+    "opentelemetry-proto==1.45.1",
+    "opentelemetry-sdk==1.45.1",
+    "opentelemetry-semantic-conventions==0.66b1",
+    "overrides==7.7.0",
+    "packaging==24.2",
+    "pandas==3.0.6",
+    "pillow==12.3.0",
+    "pip==24.0",
+    "platformdirs==4.13.0",
+    "pooch==1.9.0",
+    "portalocker==4.4.0",
+    "propcache==0.5.4",
+    "protobuf==7.36.2",
+    "pyarrow==26.0.0",
+    "pycparser==3.11",
+    "pydantic==2.14.1",
+    "pydantic_core==2.50.1",
+    "pyparsing==3.3.3",
+    "pypinyin-dict==0.9.0",
+    "pypinyin==0.55.0",
+    "python-dateutil==2.9.0.post0",
+    "pytorch-lightning==2.6.6",
+    "regex==2026.9.29",
+    "requests==2.34.2",
+    "rich==15.0.0",
+    "sacrebleu==2.6.0",
+    "safetensors==0.8.0",
+    "scikit-learn==1.9.1",
+    "scipy==1.17.1",
+    "sentencepiece==0.2.2",
+    "setuptools==79.0.1",
+    "shellingham==1.5.4",
+    "six==1.17.0",
+    "smart_open==8.0.3",
+    "sortedcontainers==2.4.0",
+    "soundfile==0.14.0",
+    "soxr==1.1.0",
+    "sympy==1.14.0",
+    "tabulate==0.10.0",
+    "tenacity==9.2.1",
+    "tensorboard-data-server==0.7.2",
+    "tensorboard==2.21.0",
+    "text-unidecode==1.3",
+    "text2num==3.1.0",
+    "threadpoolctl==3.7.0",
+    "tokenizers==0.23.3",
+    "toml==0.10.2",
+    "toolz==1.2.0",
+    "torch==2.13.0+cpu",
+    "torchmetrics==1.9.0",
+    "tqdm==4.70.1",
+    "transformers==5.19.0",
+    "truststore==0.10.5",
+    "typer==0.27.3",
+    "typing-inspection==0.4.4",
+    "typing_extensions==4.16.0",
+    "urllib3==2.8.0",
+    "uv==0.13.1",
+    "wandb==0.30.0",
+    "webdataset==1.0.2",
+    "wheel==0.46.3",
+    "whisper_normalizer==0.1.15",
+    "wrapt==2.5.1",
+    "xxhash==4.0.1",
+    "yarl==1.25.1"
+   ]
+  },
+  "items": [
+   {
+    "id": "18105264127277992595",
+    "set": "fleurs20",
+    "get_s": 0.061,
+    "audio_s": 13.74,
+    "input_bytes": 879418,
+    "input_sample_rate": 16000,
+    "bytes_hct": 3197,
+    "sha256_hct": "dd8cc925d8eb208ae20aa26e970f2a792f0ba227fc3589b247d8e93ab127f0a8",
+    "frames": 175,
+    "windows": [
+     175
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 13.74,
+      "speech": true,
+      "text": "रूमानियत में सांस्कृतिक नीयत इवाद का बड़ा महत्व था जो गोय थे फिचते और स्लेकल जैसे लेखकों से लिया गया।",
+      "rt_text": "रूमानी एटमी सांस्कृतिक नीयत ही वैद का बड़ा महत्व था जो गोई थे फिचते और स्लेकल जैसे लेखकों से लिया गया।",
+      "words": 20,
+      "drift": 0.25
+     }
+    ],
+    "segmentation": {
+     "floor_db": -80.9,
+     "loud_db": -47.3,
+     "threshold_db": -68.9,
+     "silences": 5
+    },
+    "drift_note": 0.25,
+    "codec_gain_db": 30.0,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.25,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 1.742,
+     "segment_s": 0.001,
+     "lang_check_s": 2.369,
+     "asr_s": 2.51,
+     "encode_s": 2.747,
+     "pack_s": 0.0,
+     "decode_s": 4.434,
+     "rt_asr_s": 2.493
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 29.797
+   },
+   {
+    "id": "13477439939514320448",
+    "set": "fleurs20",
+    "get_s": 0.086,
+    "audio_s": 10.44,
+    "input_bytes": 668218,
+    "input_sample_rate": 16000,
+    "bytes_hct": 2464,
+    "sha256_hct": "c85ac04ff7d079c62ec389d404dc33c07f8e54e4799a406803950a9ccdfe4cd4",
+    "frames": 134,
+    "windows": [
+     134
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 10.44,
+      "speech": true,
+      "text": "यह कहते हुए वे चीन के आर्थिक उत्पादन के आधार पर बनाए जाएंगे।   उन्होंने कटौती के लिए कोई आंकड़ा निर्धारित नहीं किया।",
+      "rt_text": "यह कहते हुए वे चून के आर्थिक उत्पादन के आधार पर बनाए जाएंगे।   उन्होंने कटौती के लिए कोई आंकड़ा निर्धारित नहीं किया।",
+      "words": 22,
+      "drift": 0.0455
+     }
+    ],
+    "segmentation": {
+     "floor_db": -68.1,
+     "loud_db": -20.6,
+     "threshold_db": -56.1,
+     "silences": 2
+    },
+    "drift_note": 0.0455,
+    "codec_gain_db": 5.14,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.0455,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.002,
+     "segment_s": 0.001,
+     "lang_check_s": 2.009,
+     "asr_s": 2.289,
+     "encode_s": 2.197,
+     "pack_s": 0.0,
+     "decode_s": 3.004,
+     "rt_asr_s": 2.724
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 12.332
+   },
+   {
+    "id": "2084431273077832179",
+    "set": "fleurs20",
+    "get_s": 0.093,
+    "audio_s": 10.62,
+    "input_bytes": 679738,
+    "input_sample_rate": 16000,
+    "bytes_hct": 2499,
+    "sha256_hct": "3a37bd01de44fb943c19f4f0b0a0da2f5f5ececbd165ac3e22d05304c5c40454",
+    "frames": 136,
+    "windows": [
+     136
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 10.62,
+      "speech": true,
+      "text": "लीक के अनुसार दस्तावेज सीमा विवाद को संदर्भित करेगा जो फिलिस्तीन नाइन्टीन सिक्स्टी सेवन के मध्यपूर्व युद्ध से पहले सीमाओं के आधार पर चाहता है",
+      "rt_text": "पल्ल किए न सात दस सावेश सीमा विवाद को संदर्भित करेगा जो फिलिस्तीन नाइन्टीन सिक्स्टी सेवन के मध्य पूर्व युद्ध से पहले सीमाओं के आधार पर चाहता है",
+      "words": 25,
+      "drift": 0.32
+     }
+    ],
+    "segmentation": {
+     "floor_db": -40.4,
+     "loud_db": -23.0,
+     "threshold_db": -43.0,
+     "silences": 0
+    },
+    "drift_note": 0.32,
+    "codec_gain_db": 8.14,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.32,
+    "lang_detected": null,
+    "timings": {
+     "load_s": 0.002,
+     "segment_s": 0.001,
+     "lang_check_s": 2.122,
+     "asr_s": 2.139,
+     "encode_s": 1.99,
+     "pack_s": 0.0,
+     "decode_s": 3.007,
+     "rt_asr_s": 2.206
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 11.578
+   },
+   {
+    "id": "10107687492910459268",
+    "set": "fleurs20",
+    "get_s": 0.056,
+    "audio_s": 10.62,
+    "input_bytes": 679738,
+    "input_sample_rate": 16000,
+    "bytes_hct": 2499,
+    "sha256_hct": "7caf7ffd223ae0a682453ec10c03cd9748e097f59825e0ccce6b093acd49b1c6",
+    "frames": 136,
+    "windows": [
+     136
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 10.62,
+      "speech": true,
+      "text": "अपनी सरकार के अलावा अन्य देशों की सरकारों की सलाह ले सकते हैं, हालांकि उनकी सलाह उनके नागरिकों को ध्यान में रखकर दी जाती है।",
+      "rt_text": "अपनी सरकार के अलावा अन्य देशों की सरकारों की सलाह ले सकते हैं, हालांकि उनकी सलाह उनके नागरिकों को ध्यान में रखकर दी जाती है।",
+      "words": 25,
+      "drift": 0.0
+     }
+    ],
+    "segmentation": {
+     "floor_db": -33.3,
+     "loud_db": -15.8,
+     "threshold_db": -35.8,
+     "silences": 0
+    },
+    "drift_note": 0.0,
+    "codec_gain_db": 1.24,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.0,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.002,
+     "segment_s": 0.001,
+     "lang_check_s": 2.073,
+     "asr_s": 2.062,
+     "encode_s": 1.95,
+     "pack_s": 0.0,
+     "decode_s": 2.83,
+     "rt_asr_s": 2.118
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 11.109
+   },
+   {
+    "id": "5676772040210847328",
+    "set": "fleurs20",
+    "get_s": 0.095,
+    "audio_s": 14.4,
+    "input_bytes": 921658,
+    "input_sample_rate": 16000,
+    "bytes_hct": 3340,
+    "sha256_hct": "3b1a340060924b6b53d9083adcee661b19b3871f0eb4432cc456aaf7da7e8f9b",
+    "frames": 183,
+    "windows": [
+     183
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 14.4,
+      "speech": true,
+      "text": "आम शब्दों में जब प्रबंधक अपने पूर्व सहयोगियों का नेतृत्व करना शुरू करते हैं तो दो तरह के बर्ताव सामने आते हैं स्पेक्ट्रम का एक सिरा उन लड़कों में से एक या लड़कियों में से एक बने रहने की कोशिश कर रहा है।",
+      "rt_text": "आम शब्दों में जब प्रबंधक अपने पूर्व सहयोगियों का नेतृत्व करना शुरू करते हैं तो दो तरह के बर्ताव सामने आते हैं स्पेक्ट्रम का एक सिरा उन लड़कों में से एक लड़कियों में से एक बने रहने की कोशिश कर रहा है।",
+      "words": 43,
+      "drift": 0.0233
+     }
+    ],
+    "segmentation": {
+     "floor_db": -52.7,
+     "loud_db": -30.4,
+     "threshold_db": -50.4,
+     "silences": 2
+    },
+    "drift_note": 0.0233,
+    "codec_gain_db": 15.18,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.0233,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.003,
+     "segment_s": 0.001,
+     "lang_check_s": 2.877,
+     "asr_s": 2.918,
+     "encode_s": 2.979,
+     "pack_s": 0.0,
+     "decode_s": 4.683,
+     "rt_asr_s": 2.799
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 16.373
+   },
+   {
+    "id": "15502428720282733551",
+    "set": "fleurs20",
+    "get_s": 0.086,
+    "audio_s": 11.46,
+    "input_bytes": 733498,
+    "input_sample_rate": 16000,
+    "bytes_hct": 2696,
+    "sha256_hct": "989ae3f42bd73d2079cfd2a986d63fd94bf47eff80c80fcffe5f9598cdaee282",
+    "frames": 147,
+    "windows": [
+     147
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 11.46,
+      "speech": true,
+      "text": "वाइल्ड कार्ड खरीद लेना फायदेमंद भी हो सकता है क्योंकि इससे आप दक्षिण अफ्रीका के चुनिंदा पार्क या सभी दक्षिण अफ्रीकी नेशनल पार्क देख सकते हैं।",
+      "rt_text": "वाइल्ड कार्ड खरीद लेना फायदेमंद भी हो सकता है क्योंकि इससे आप दक्षिण अफ्रीका के चुनिंदा पार्क या सभी दक्षिण अफ्रीकी नेशनल पार्क देख सकते हैं।",
+      "words": 26,
+      "drift": 0.0
+     }
+    ],
+    "segmentation": {
+     "floor_db": -51.5,
+     "loud_db": -29.8,
+     "threshold_db": -49.8,
+     "silences": 0
+    },
+    "drift_note": 0.0,
+    "codec_gain_db": 16.46,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.0,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.002,
+     "segment_s": 0.001,
+     "lang_check_s": 2.284,
+     "asr_s": 2.277,
+     "encode_s": 2.299,
+     "pack_s": 0.0,
+     "decode_s": 3.336,
+     "rt_asr_s": 2.281
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 12.585
+   },
+   {
+    "id": "11384310733046890772",
+    "set": "fleurs20",
+    "get_s": 0.076,
+    "audio_s": 8.7,
+    "input_bytes": 556858,
+    "input_sample_rate": 16000,
+    "bytes_hct": 2070,
+    "sha256_hct": "0d1a06602377df30c392b92791a525d45da06a1b1f20ddd831d6b924fe64710d",
+    "frames": 112,
+    "windows": [
+     112
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 8.7,
+      "speech": true,
+      "text": "पुलिस अधीक्षक चंद्रशेखर सोलंकी ने कहा कि आरोपी ढके हुए चेहरे के साथ अदालत में पेश हुए थे।",
+      "rt_text": "पुलिस अधीक्षक चंद्रशेखर सोलंकी ने कहा कि आरोपी ढके हुए चेहरे के साथ अदालत में पेश हुए थे।",
+      "words": 18,
+      "drift": 0.0
+     }
+    ],
+    "segmentation": {
+     "floor_db": -67.3,
+     "loud_db": -21.2,
+     "threshold_db": -55.3,
+     "silences": 2
+    },
+    "drift_note": 0.0,
+    "codec_gain_db": 5.46,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.0,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.002,
+     "segment_s": 0.001,
+     "lang_check_s": 1.722,
+     "asr_s": 1.756,
+     "encode_s": 1.754,
+     "pack_s": 0.0,
+     "decode_s": 2.353,
+     "rt_asr_s": 1.756
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 9.438
+   },
+   {
+    "id": "2588226543601176326",
+    "set": "fleurs20",
+    "get_s": 0.065,
+    "audio_s": 19.62,
+    "input_bytes": 1255738,
+    "input_sample_rate": 16000,
+    "bytes_hct": 4519,
+    "sha256_hct": "ca0a4d0dc4dab3fd57f45d05fad13fc1cfa50c7b605be37ed039ccdf31868fc6",
+    "frames": 249,
+    "windows": [
+     249
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 19.62,
+      "speech": true,
+      "text": "उनका ऊष्मीय व्यवहार पृथ्वी की बड़ी गुफाओं जैसे स्थिर नहीं है जो अक्सर काफी स्थित तापमान बनाए रखती हैं लेकिन यह जमीन के इन गहरे क्षेत्र के अनुरूप हैं यूनाइटेड स्टेट्स जियोलॉजिकल सर्वे की भूगर्भीय टीम और फ्लैग स्टाफ अरिजोना में स्थित उत्तरी एरिजोना विश्वविद्यालय के ग्लेन कुशिंग ने कहा",
+      "rt_text": "उनका ऊष्मीय व्यवहार पृथ्वी की बड़ी कुफाऊं जैसे स्थित नहीं है जो अक्सर काफी स्थित तापमान बनाए रखती हैं, लेकिन यह जमीन के इन गहरे क्षेत्र के अनुरूप हैं यूनाइटेड स्टेट्स जियोलॉजिकल सर्वे की भूबरबीय टीम और फ्लैग स्टाफ आरिजोना में स्थित उत्तरी एरिजोना विश्वविद्यालय के ग्लेन कुशिंग ने कहा",
+      "words": 50,
+      "drift": 0.08
+     }
+    ],
+    "segmentation": {
+     "floor_db": -58.7,
+     "loud_db": -14.8,
+     "threshold_db": -46.7,
+     "silences": 3
+    },
+    "drift_note": 0.08,
+    "codec_gain_db": -1.03,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.08,
+    "lang_detected": null,
+    "timings": {
+     "load_s": 0.003,
+     "segment_s": 0.001,
+     "lang_check_s": 4.064,
+     "asr_s": 4.03,
+     "encode_s": 5.37,
+     "pack_s": 0.0,
+     "decode_s": 7.321,
+     "rt_asr_s": 4.092
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 24.967
+   },
+   {
+    "id": "5478097136543186772",
+    "set": "fleurs20",
+    "get_s": 0.075,
+    "audio_s": 13.44,
+    "input_bytes": 860218,
+    "input_sample_rate": 16000,
+    "bytes_hct": 3125,
+    "sha256_hct": "636435fb564035974b4bce4eb887451708bab99d58ec990c884e709d68ec1e72",
+    "frames": 171,
+    "windows": [
+     171
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 13.44,
+      "speech": true,
+      "text": "सावधान रहे, कि कपड़ी को बहुत गर्म न होने दे जो सिकूड़ने का कारण बन सकता है या बहुत गर्म होने पर जल सकता है।",
+      "rt_text": "सावधान रहे कि कपड़े को बहुत गर्म न होने दे जो सिकूड़ने का कारण बन सकता है या बहुत गर्म होने पर जल सकता है।",
+      "words": 25,
+      "drift": 0.04
+     }
+    ],
+    "segmentation": {
+     "floor_db": -79.8,
+     "loud_db": -46.3,
+     "threshold_db": -67.8,
+     "silences": 6
+    },
+    "drift_note": 0.04,
+    "codec_gain_db": 30.0,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.04,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.003,
+     "segment_s": 0.001,
+     "lang_check_s": 2.297,
+     "asr_s": 2.33,
+     "encode_s": 2.965,
+     "pack_s": 0.0,
+     "decode_s": 4.317,
+     "rt_asr_s": 2.37
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 14.374
+   },
+   {
+    "id": "14578853254924901868",
+    "set": "fleurs20",
+    "get_s": 0.052,
+    "audio_s": 14.04,
+    "input_bytes": 898618,
+    "input_sample_rate": 16000,
+    "bytes_hct": 3268,
+    "sha256_hct": "1799c5f0450e776c2348ed920272222026e16d4565778f30ee967c085574ab3a",
+    "frames": 179,
+    "windows": [
+     179
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 14.04,
+      "speech": true,
+      "text": "कन्फेडरेशन के अनुच्छेद के तहत क्रांतिकारी युद्ध के दौरान तेरह राज्यों से पहली बार एक कमजोर केंद्रीय सरकार का गठन किया जिसमें कांग्रेस इसका एकमात्र घटक थी।",
+      "rt_text": "कन्फेडरेशन के अनुच्छेद के तहत क्रांतिकारी युद्ध के दौरान तेरह राज्य से पहली बार एक कमजोर के लिए सरकार का घटक किया जिसमें कांग्रेस इसका एकमात्र घटक थी।",
+      "words": 27,
+      "drift": 0.1481
+     }
+    ],
+    "segmentation": {
+     "floor_db": -33.9,
+     "loud_db": -18.9,
+     "threshold_db": -38.9,
+     "silences": 0
+    },
+    "drift_note": 0.1481,
+    "codec_gain_db": 0.93,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.1481,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.003,
+     "segment_s": 0.001,
+     "lang_check_s": 2.687,
+     "asr_s": 2.73,
+     "encode_s": 3.078,
+     "pack_s": 0.0,
+     "decode_s": 5.517,
+     "rt_asr_s": 2.659
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 16.744
+   },
+   {
+    "id": "16577983044171271983",
+    "set": "fleurs20",
+    "get_s": 0.04,
+    "audio_s": 7.2,
+    "input_bytes": 460858,
+    "input_sample_rate": 16000,
+    "bytes_hct": 1731,
+    "sha256_hct": "3f64b0afdca6b539d24e39a40944bb29be3a8968d455f19395ab8ac25cd277c6",
+    "frames": 93,
+    "windows": [
+     93
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 7.2,
+      "speech": true,
+      "text": "कुछ सेतों में पानी को एक मिनट के लिए उबलना काफी होता है।   अन्य क्षेत्रों में कई मिनट तक उबलने की आवश्यकता होती है।",
+      "rt_text": "कुछ क्षेत्रों में पानी को एक मिनट लिए उबलना काफी होता है।   धन्य क्षेत्रों में कई मिनट तक उबलने की आवश्यकता होती है।",
+      "words": 24,
+      "drift": 0.125
+     }
+    ],
+    "segmentation": {
+     "floor_db": -52.1,
+     "loud_db": -25.6,
+     "threshold_db": -45.6,
+     "silences": 1
+    },
+    "drift_note": 0.125,
+    "codec_gain_db": 11.2,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.125,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.002,
+     "segment_s": 0.001,
+     "lang_check_s": 1.512,
+     "asr_s": 1.545,
+     "encode_s": 1.526,
+     "pack_s": 0.0,
+     "decode_s": 2.053,
+     "rt_asr_s": 1.593
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 8.29
+   },
+   {
+    "id": "13282941554654573058",
+    "set": "fleurs20",
+    "get_s": 0.059,
+    "audio_s": 8.52,
+    "input_bytes": 545338,
+    "input_sample_rate": 16000,
+    "bytes_hct": 2035,
+    "sha256_hct": "da5aac7332cf01319fce0cfce8eb58dd730c1636a274e9099786bbe134d1e932",
+    "frames": 110,
+    "windows": [
+     110
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 8.52,
+      "speech": true,
+      "text": "साई के साथ साथ सभी संज्ञा शब्द हमेशा अंग्रेजी के बड़े अक्षर से ही शुरू होते हैं, भले ही वे वाक्य के बीच में ही क्यों न हों",
+      "rt_text": "साई के साथ साथ सभी संज्ञा शब्द हमेशा अंग्रेजी के बड़े अक्षर से ही शुरू होते हैं, भले ही वे वाक्य के बीच में ही क्यों न हों।",
+      "words": 28,
+      "drift": 0.0
+     }
+    ],
+    "segmentation": {
+     "floor_db": -58.3,
+     "loud_db": -30.5,
+     "threshold_db": -50.5,
+     "silences": 2
+    },
+    "drift_note": 0.0,
+    "codec_gain_db": 15.24,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.0,
+    "lang_detected": null,
+    "timings": {
+     "load_s": 0.002,
+     "segment_s": 0.001,
+     "lang_check_s": 1.834,
+     "asr_s": 1.758,
+     "encode_s": 1.742,
+     "pack_s": 0.0,
+     "decode_s": 2.512,
+     "rt_asr_s": 1.864
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 9.789
+   },
+   {
+    "id": "494043310014297040",
+    "set": "fleurs20",
+    "get_s": 0.07,
+    "audio_s": 6.48,
+    "input_bytes": 414778,
+    "input_sample_rate": 16000,
+    "bytes_hct": 1570,
+    "sha256_hct": "7f155b68e70c2eef12eec2871c6d7f7fdf0020a6ed1163ac3a0d3988dc66f37e",
+    "frames": 84,
+    "windows": [
+     84
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 6.48,
+      "speech": true,
+      "text": "सभी दक्षिण अफ्रीकी राष्ट्रीय उद्यानों के साथ ही पार्क में दैनिक संरक्षण और प्रवेश के लिए शुरू लगता है।",
+      "rt_text": "सभी दक्षिण अफ्रीकी राष्ट्रीय उद्यानों के साथ ही पार्क में दैनिक संरक्षण और प्रवेश के लिए शुरू लगता है।",
+      "words": 19,
+      "drift": 0.0
+     }
+    ],
+    "segmentation": {
+     "floor_db": -95.6,
+     "loud_db": -18.0,
+     "threshold_db": -83.6,
+     "silences": 0
+    },
+    "drift_note": 0.0,
+    "codec_gain_db": 2.11,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.0,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.002,
+     "segment_s": 0.0,
+     "lang_check_s": 1.388,
+     "asr_s": 1.416,
+     "encode_s": 1.258,
+     "pack_s": 0.0,
+     "decode_s": 1.964,
+     "rt_asr_s": 1.408
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 7.522
+   },
+   {
+    "id": "17127945247681772175",
+    "set": "fleurs20",
+    "get_s": 0.046,
+    "audio_s": 8.28,
+    "input_bytes": 529978,
+    "input_sample_rate": 16000,
+    "bytes_hct": 1981,
+    "sha256_hct": "76992361533fd96dd77b19d4d016a8c46ab349a8c4cccfc7949aa6e074539cfc",
+    "frames": 107,
+    "windows": [
+     107
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 8.28,
+      "speech": true,
+      "text": "वर्तमान में जो कीड़े अपने पंखों को वापस नहीं मोड़ सकते हैं उनमें केवल ड्रैगनफ्लाई की मेफलीज है।",
+      "rt_text": "वर्तमान में जो कीड़े अपने पंखों को वापस नहीं मोड़ सकते हैं, उनमें केवल ड्रैगनफ्लाई की मेफलीज है।",
+      "words": 18,
+      "drift": 0.0
+     }
+    ],
+    "segmentation": {
+     "floor_db": -40.5,
+     "loud_db": -17.7,
+     "threshold_db": -37.7,
+     "silences": 0
+    },
+    "drift_note": 0.0,
+    "codec_gain_db": 4.31,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.0,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.002,
+     "segment_s": 0.001,
+     "lang_check_s": 1.65,
+     "asr_s": 1.667,
+     "encode_s": 1.741,
+     "pack_s": 0.0,
+     "decode_s": 2.363,
+     "rt_asr_s": 1.67
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 9.157
+   },
+   {
+    "id": "1911894352301811711",
+    "set": "fleurs20",
+    "get_s": 0.081,
+    "audio_s": 14.94,
+    "input_bytes": 956218,
+    "input_sample_rate": 16000,
+    "bytes_hct": 3465,
+    "sha256_hct": "722772867fc25bf64fc37c9a58f37afa0fb5b2778955eeb2be011b3dbb430df7",
+    "frames": 190,
+    "windows": [
+     190
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 14.94,
+      "speech": true,
+      "text": "ओलिवर सैक्स ने अपने पेपर द प्रेसिडेंट स्पीच में संकेत दिया कि कैसे जो लोग दिमागी नुकसान के कारण भाषण को समझ नहीं पाते हैं, फिर भी वे ईमानदारी का सही आकलन कर पाते हैं।",
+      "rt_text": "उन्हींवर सैक्स ने अपने पेपर द प्रेसिडेंट स्पीच में संकेत दिया कि कैसे जो लोग दिमागी नुकसान के कारण भाषण को समझ नहीं पाते हैं, फिर भी वे ईमानदारी का सही आकलन कर पाते हैं।",
+      "words": 35,
+      "drift": 0.0286
+     }
+    ],
+    "segmentation": {
+     "floor_db": -67.3,
+     "loud_db": -19.9,
+     "threshold_db": -55.3,
+     "silences": 3
+    },
+    "drift_note": 0.0286,
+    "codec_gain_db": 4.65,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.0286,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.003,
+     "segment_s": 0.001,
+     "lang_check_s": 2.859,
+     "asr_s": 2.738,
+     "encode_s": 3.319,
+     "pack_s": 0.0,
+     "decode_s": 5.954,
+     "rt_asr_s": 2.87
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 17.844
+   },
+   {
+    "id": "16619587412189752284",
+    "set": "fleurs20",
+    "get_s": 0.043,
+    "audio_s": 7.38,
+    "input_bytes": 472378,
+    "input_sample_rate": 16000,
+    "bytes_hct": 1784,
+    "sha256_hct": "a392ed4732f2c9dcb7efa41c980094d54247ad187bb96ae0826ccba171883cdc",
+    "frames": 96,
+    "windows": [
+     96
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 7.38,
+      "speech": true,
+      "text": "एरो स्मिथ ने अपने दौरे अपने शेष संगीत कार्यक्रमों को रद्द कर दिया है।",
+      "rt_text": "एरो स्मिथ ने अपने दौरे अपने शेष संगीत कार्यक्रमों को रद्द कर दिया है।",
+      "words": 14,
+      "drift": 0.0
+     }
+    ],
+    "segmentation": {
+     "floor_db": -68.5,
+     "loud_db": -22.2,
+     "threshold_db": -56.5,
+     "silences": 3
+    },
+    "drift_note": 0.0,
+    "codec_gain_db": 5.88,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.0,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.002,
+     "segment_s": 0.001,
+     "lang_check_s": 1.523,
+     "asr_s": 1.439,
+     "encode_s": 1.459,
+     "pack_s": 0.0,
+     "decode_s": 2.178,
+     "rt_asr_s": 1.416
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 8.079
+   },
+   {
+    "id": "10622951485514869484",
+    "set": "fleurs20",
+    "get_s": 0.055,
+    "audio_s": 17.94,
+    "input_bytes": 1148218,
+    "input_sample_rate": 16000,
+    "bytes_hct": 4144,
+    "sha256_hct": "2ec424ccfc404e83f8e4139c18a523475556765f4fcc7397fac040579d4ab762",
+    "frames": 228,
+    "windows": [
+     228
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 17.94,
+      "speech": true,
+      "text": "हालांकि यह अकेला नहीं है, प्रयोग करना और प्रयोग एक ऐसा परीक्षण होता है जिसका इस्तेमाल करने एक या इससे ज्यादा संभावित परिकल्पनाओं को खत्म करने के सवाल करने और अवलोकन करने से ही वैज्ञानिक शोध को मार्गदर्शन मिलता है।",
+      "rt_text": "हालांकि यह अकेला नहीं है, प्रयोग करना और प्रयोग एक ऐसा परीक्षण होता है जिसका इस्तेमाल करने एक या इससे ज्यादा संभावित परिकल्पनाओं को खत्म करने के सवाल करने और अवलोकन करने से ही वैज्ञानिक शोध को मार्गदर्शन मिलता है।",
+      "words": 40,
+      "drift": 0.0
+     }
+    ],
+    "segmentation": {
+     "floor_db": -62.8,
+     "loud_db": -24.8,
+     "threshold_db": -50.8,
+     "silences": 4
+    },
+    "drift_note": 0.0,
+    "codec_gain_db": 9.45,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.0,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.003,
+     "segment_s": 0.001,
+     "lang_check_s": 3.423,
+     "asr_s": 4.822,
+     "encode_s": 5.416,
+     "pack_s": 0.0,
+     "decode_s": 6.929,
+     "rt_asr_s": 3.445
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 24.114
+   },
+   {
+    "id": "10921902647446458507",
+    "set": "fleurs20",
+    "get_s": 0.054,
+    "audio_s": 14.94,
+    "input_bytes": 956218,
+    "input_sample_rate": 16000,
+    "bytes_hct": 3465,
+    "sha256_hct": "ae93c0b291f1b8b3377881d44196e22dc923561d3c78aa8b2bf80dd1e249f4a8",
+    "frames": 190,
+    "windows": [
+     190
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 14.94,
+      "speech": true,
+      "text": "यहूदी और गैर यहूदी की तरह अभी भी ऐसे कई पुरुष और महिलाएं जीवित हैं जो उस समय बचने में सफल रहे और कई जिनके प्रियजनों को मार दिया गया या उनके मरने तक उनसे काम करवाया गया।",
+      "rt_text": "यहूदी और गैर यहूदी की तरह अभी भी ऐसे कई पुरुष और महिलाएं जीवित हैं जो उस समय बचने में सफल लड़े और कई जिनके प्रियजनों को मार दिया गया या उनके मरने तक उनसे काम करवाया गया।",
+      "words": 38,
+      "drift": 0.0263
+     }
+    ],
+    "segmentation": {
+     "floor_db": -47.1,
+     "loud_db": -28.6,
+     "threshold_db": -48.6,
+     "silences": 0
+    },
+    "drift_note": 0.0263,
+    "codec_gain_db": 13.74,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.0263,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.003,
+     "segment_s": 0.001,
+     "lang_check_s": 2.873,
+     "asr_s": 2.865,
+     "encode_s": 3.148,
+     "pack_s": 0.0,
+     "decode_s": 5.917,
+     "rt_asr_s": 2.881
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 17.76
+   },
+   {
+    "id": "8152842849716801870",
+    "set": "fleurs20",
+    "get_s": 0.104,
+    "audio_s": 9.42,
+    "input_bytes": 602938,
+    "input_sample_rate": 16000,
+    "bytes_hct": 2231,
+    "sha256_hct": "56b205916c098509df9337bb114e00ed3f8c180e56eb12779029c4a30eaf63b1",
+    "frames": 121,
+    "windows": [
+     121
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 9.42,
+      "speech": true,
+      "text": "आपिया समोआ की राजधानी है।   यह शहर उपोलू द्वीप पर है और इसकी आबादी चालीस हजार से भी कम है।",
+      "rt_text": "आपिया समोआ की राजधानी है।   यह शहर उपोलू द्वीप पर है और इसकी आबादी चालीस हजार से भी कम है।",
+      "words": 20,
+      "drift": 0.0
+     }
+    ],
+    "segmentation": {
+     "floor_db": -47.7,
+     "loud_db": -18.1,
+     "threshold_db": -38.1,
+     "silences": 3
+    },
+    "drift_note": 0.0,
+    "codec_gain_db": 2.23,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.0,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.002,
+     "segment_s": 0.001,
+     "lang_check_s": 1.807,
+     "asr_s": 1.752,
+     "encode_s": 1.957,
+     "pack_s": 0.0,
+     "decode_s": 2.92,
+     "rt_asr_s": 1.789
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 10.35
+   },
+   {
+    "id": "8920059957255554825",
+    "set": "fleurs20",
+    "get_s": 0.053,
+    "audio_s": 15.36,
+    "input_bytes": 983098,
+    "input_sample_rate": 16000,
+    "bytes_hct": 3554,
+    "sha256_hct": "cfdc5e033355a634e76217966efa352d76f9d0e30ca0520a1b7bcc2c83bbb7a5",
+    "frames": 195,
+    "windows": [
+     195
+    ],
+    "segments": [
+     {
+      "i": 0,
+      "t0": 0.0,
+      "t1": 15.36,
+      "speech": true,
+      "text": "उदाहरण के लिए दुनिया में सबसे ज्यादा इस्तेमाल होने वाला फोटोग्राफी फॉर्मेट पैंतीस एमएम है।   यह एनालॉग फिल्म दौर के आखिर में काफी प्रचलित था",
+      "rt_text": "उदाहरण के लिए दुनिया में सबसे ज्यादा इस्तेमाल होने वाला फोटोग्राफी फॉर्मेट पैंतीस एम है।   यह एनालॉग फिल्म दौर के आखिर में काफी प्रचलित था",
+      "words": 25,
+      "drift": 0.04
+     }
+    ],
+    "segmentation": {
+     "floor_db": -78.1,
+     "loud_db": -46.0,
+     "threshold_db": -66.1,
+     "silences": 7
+    },
+    "drift_note": 0.04,
+    "codec_gain_db": 30.0,
+    "codec_lead_frames": 3,
+    "max_drift_long_segment": 0.04,
+    "lang_detected": "hi-IN",
+    "timings": {
+     "load_s": 0.003,
+     "segment_s": 0.001,
+     "lang_check_s": 2.917,
+     "asr_s": 2.892,
+     "encode_s": 3.399,
+     "pack_s": 0.0,
+     "decode_s": 6.121,
+     "rt_asr_s": 2.928
+    },
+    "peak_rss_mb": 5849.4,
+    "status": "processed",
+    "rss_before_mb": 5849.4,
+    "wall_s": 18.331
+   }
+  ],
+  "first_audio_done": 1792214494.5162563,
+  "determinism": {
+   "encode_twice_equal": true,
+   "hct_roundtrip_equals_fresh_encode": true,
+   "decode_twice_max_abs_diff": 0.0
+  },
+  "peak_rss_mb": 5849.4,
+  "load_options": {
+   "codec_trimmed_error": "skipped: the main codec is already the trimmed load (full vs trimmed is checked by a run without --trimmed)"
+  },
+  "status": "done",
+  "finished": 1792214769.358243,
+  "log": [
+   "    86.6s weights ready after a 61.03 s wait, from bucket",
+   "   140.9s models loaded: {'asr_import_s': 17.83, 'codec_import_s': 2.83, 'prefetch_s': 86.6, 'download_s': 61.03, 'asr_restore_s': 18.63, 'codec_restore_s': 35.66, 'codec_trimmed': 1.0} {'codec_samples_per_frame': 1764, 'codec_sample_rate': 22050, 'torch_threads': 4, 'weights_source': 'bucket', 'weights_prefetched': True, 'asr': 'nemo', 'asr_class': 'EncDecRNNTBPEModelWithPrompt', 'att_context_size': [56, 13], 'att_context_size_all': [[56, 3], [56, 0], [56, 6], [56, 13]], 'chunk_s': 1.12, 'asr_sample_rate': 16000}"
+  ]
+ },
+ "status": {
+  "stage": "done",
+  "t": 1792214769.375463,
+  "elapsed_s": 432.2,
+  "rss_mb": 5849.4,
+  "log": [
+   "    86.6s weights ready after a 61.03 s wait, from bucket",
+   "   140.9s models loaded: {'asr_import_s': 17.83, 'codec_import_s': 2.83, 'prefetch_s': 86.6, 'download_s': 61.03, 'asr_restore_s': 18.63, 'codec_restore_s': 35.66, 'codec_trimmed': 1.0} {'codec_samples_per_frame': 1764, 'codec_sample_rate': 22050, 'torch_threads': 4, 'weights_source': 'bucket', 'weights_prefetched': True, 'asr': 'nemo', 'asr_class': 'EncDecRNNTBPEModelWithPrompt', 'att_context_size': [56, 13], 'att_context_size_all': [[56, 3], [56, 0], [56, 6], [56, 13]], 'chunk_s': 1.12, 'asr_sample_rate': 16000}"
+  ]
+ }
+}
