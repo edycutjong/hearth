@@ -193,6 +193,7 @@ export async function getObjectTagging(
   const out: Record<string, string> = {};
   // Nebius answers pretty-printed XML (newlines and indentation between the elements): match with whitespace allowed.
   for (const m of xml.matchAll(/<Tag>\s*<Key>([^<]*)<\/Key>\s*<Value>([^<]*)<\/Value>\s*<\/Tag>/g)) {
+    /* v8 ignore next -- regex groups 1 and 2 always participate; the fallback only satisfies noUncheckedIndexedAccess */
     out[decodeXmlEntities(m[1] ?? "")] = decodeXmlEntities(m[2] ?? "");
   }
   return out;
@@ -214,6 +215,7 @@ export async function listObjects(config: NebiusConfig, prefix: string, fetchImp
     if (!res.ok) throw new StorageError(`LIST ${prefix} failed: ${res.status}`, res.status);
     const xml = await res.text();
     for (const m of xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)) {
+      /* v8 ignore next -- group 1 always participates; fallback only satisfies noUncheckedIndexedAccess */
       const block = m[1] ?? "";
       const key = block.match(/<Key>([^<]*)<\/Key>/)?.[1];
       const size = block.match(/<Size>(\d+)<\/Size>/)?.[1];
@@ -230,6 +232,7 @@ const XML_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot:
 
 /** One pass, so a key holding a literal "&lt;" (sent as "&amp;lt;") is not decoded twice. */
 export function decodeXmlEntities(value: string): string {
+  /* v8 ignore next -- the regex admits only the five names in the map; fallback only satisfies noUncheckedIndexedAccess */
   return value.replace(/&(amp|lt|gt|quot|apos);/g, (_, name: string) => XML_ENTITIES[name] ?? "");
 }
 
