@@ -64,6 +64,13 @@ alarms) for a phone's calendar to subscribe to; delivery on a real phone is not 
 
 ## 🏗️ Architecture & Tech Stack
 
+<p align="center"><img src="docs/architecture.png" width="100%" alt="Hearth architecture: the browser uploads a voice note straight to Nebius Object Storage by presigned URL; the Next.js app on Vercel queues one Nebius Serverless AI Job that transcribes it with NVIDIA Nemotron ASR and keeps it as NanoCodec codes; Memory gates send transcript text to Nemotron 3 Super on Token Factory and keep only quote-matched reminders, served as a calendar feed; the original is deleted only after a verified round trip."></p>
+
+The numbers follow one note through the system. The header is the judge sample's real data: its waveform as uploaded, and the first 40 of its 183 NanoCodec frames. Details and the file behind each box: [ARCHITECTURE.md](ARCHITECTURE.md).
+
+<details>
+<summary>The same flow as a Mermaid diagram</summary>
+
 ```mermaid
 flowchart LR
     B["Browser<br/>forward · notes · find · export"] -- "presigned PUT" --> OS[("Nebius Object Storage<br/>hearth-data, eu-west1")]
@@ -74,7 +81,7 @@ flowchart LR
     A -- "transcript text only" --> TF["Token Factory<br/>Nemotron 3 Super · json_schema"]
 ```
 
-Details and the file behind each box: [ARCHITECTURE.md](ARCHITECTURE.md).
+</details>
 
 | Layer | Choice |
 |---|---|
