@@ -1,0 +1,41 @@
+# Local CI run — most of the commands .github/workflows/ci.yml runs (not TruffleHog, the license check, Lighthouse CI or the Node 20/24 legs), on this machine, beside GitHub Actions
+# base commit d84aa33 + this change set (the /about P1 pass and the /pitch echo) · node v22.22.0 · Python 3.11.1 (fresh venv) · 2026-10-17T06:10Z · exit status of all stages: 0
+
+## Stage 1 · eslint
+
+## Stage 1 · tsc --noEmit
+
+## Stage 1 · vitest with coverage
+ Test Files  26 passed (26)
+      Tests  457 passed (457)
+Statements   : 100% ( 1701/1701 )
+Branches     : 100% ( 1236/1236 )
+Functions    : 100% ( 383/383 )
+Lines        : 100% ( 1421/1421 )
+
+## Stage 1 · Python (fresh venv from requirements-dev.txt): ruff
+ruff 0.17.1
+All checks passed!
+
+## Stage 1 · Python: pytest worker scripts, coverage gate 100 %
+TOTAL                                    1811      0   100%
+Required test coverage of 100% reached. Total coverage: 100.00%
+205 passed in 1.08s
+
+## Stage 2 · npm audit --omit=dev --audit-level=high
+found 0 vulnerabilities
+
+## Stage 2 · pip-audit -r requirements-dev.txt
+No known vulnerabilities found
+
+## Stage 2 · gitleaks, full history
+[90m1:10PM[0m [32mINF[0m [1m83 commits scanned.[0m
+[90m1:10PM[0m [32mINF[0m [1mscanned ~3467159 bytes (3.47 MB) in 607ms[0m
+[90m1:10PM[0m [32mINF[0m [1mno leaks found[0m
+
+## Stage 3 · next build + bundle budget
+ ✓ Compiled successfully in 1359ms
+static assets: 1724 KB (budget 2000 KB)
+
+## Stage 4 · Playwright (production build, no credentials)
+  26 passed (5.0s)
