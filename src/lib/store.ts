@@ -100,7 +100,7 @@ export class MemoryStore implements Store {
 
   private etag(body: Uint8Array): string {
     this.seq += 1;
-    return `"${createHash("md5").update(body).update(String(this.seq)).digest("hex")}"`;
+    return `"${createHash("sha256").update(body).update(String(this.seq)).digest("hex")}"`;
   }
   private bytes(body: string | Uint8Array): Uint8Array {
     return typeof body === "string" ? new TextEncoder().encode(body) : body;
