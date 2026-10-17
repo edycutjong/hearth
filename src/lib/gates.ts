@@ -74,7 +74,7 @@ const MIN_QUOTE_TOKENS = 2;
 export function quoteGate(quote: string, segment: number, segments: Segment[]): QuoteGate {
   const q = normalizeHi(quote);
   if (q.split(" ").filter(Boolean).length < MIN_QUOTE_TOKENS) return { ok: false, reason: "quote_too_short" };
-  const text = (i: number) => normalizeHi(segments.find((s) => s.i === i)?.text ?? "");
+  const text = (i: number) => normalizeHi((segments.find((s) => s.i === i) as Segment).text);
   const tries: number[][] = [[segment], [segment, segment + 1], [segment - 1, segment]];
   for (const ids of tries) {
     if (ids.some((i) => !segments.some((s) => s.i === i))) continue;

@@ -61,7 +61,7 @@ jobs:
         run: ruff check --output-format=github worker scripts
       # The worker's unit tests import worker.py without torch/NeMo (those install only inside the Job).
       - name: Worker + harness tests
-        run: python -m pytest -q worker scripts
+        run: python -m pytest -q worker scripts --cov=worker --cov=scripts --cov-report=term-missing --cov-fail-under=100
 
   # ── STAGE 2: Security (parallel with Stage 1) ───────────────────────────────
   secret-scan:

@@ -207,6 +207,8 @@ export interface NoteMeta {
 }
 
 const iso = (d: Date) => d.toISOString();
+/** The last path segment of an object key (split().pop() would only add a branch that cannot happen). */
+const tail = (key: string) => key.slice(key.lastIndexOf("/") + 1);
 const clock = (ctx: PipelineCtx) => (ctx.now ? ctx.now() : new Date());
 
 export function tickToken(secret: string, uid: string, job: string): string {
@@ -325,7 +327,7 @@ async function dispatchLocked(ctx: PipelineCtx): Promise<DispatchOutcome> {
       continue;
     }
     if (new Date(entry.nextTry) > now) continue;
-    const name = obj.key.split("/").pop() ?? obj.key;
+    const name = tail(obj.key);
     const claim = await store.putJson(keys.claim(name), { at: iso(now) }, { condition: { ifNoneMatch: "*" } });
     if (!claim.ok) {
       const c = await store.getJson<{ at: string }>(keys.claim(name));
@@ -335,7 +337,7 @@ async function dispatchLocked(ctx: PipelineCtx): Promise<DispatchOutcome> {
     try {
       let live = 0;
       try {
-        const activeJobs = new Set(active.map((o) => (o.key.split("/").pop() ?? "").replace(/\.json$/, "")));
+        const activeJobs = new Set(active.map((o) => tail(o.key).replace(/\.json$/, "")));
         live = (await ctx.backend.liveJobs()).filter((j) => holdsSlot(j, activeJobs)).length;
       } catch {
         live = ctx.regionSlots; // the region cannot be read: on a shared quota, wait rather than guess it is empty
@@ -824,7 +826,7 @@ export async function sweepGrace(ctx: PipelineCtx, uid: string): Promise<number>
 export async function reconcileSpace(ctx: PipelineCtx, uid: string): Promise<void> {
   for (const obj of await ctx.store.list(keys.jobsPrefix(uid))) {
     const m = /\/jobs\/([^/]+)\.json$/.exec(obj.key);
-    if (!m || m[1]?.includes(".")) continue;
+    if (!m || (m[1] as string).includes(".")) continue;
     await reconcileJob(ctx, uid, m[1] as string);
   }
   await dispatch(ctx);
@@ -837,7 +839,7 @@ export async function reconcileSpace(ctx: PipelineCtx, uid: string): Promise<voi
 export async function reapOrphanMarkers(ctx: PipelineCtx, active: Array<{ key: string }>): Promise<number> {
   let n = 0;
   for (const obj of active) {
-    const job = obj.key.split("/").pop()?.replace(/\.json$/, "") ?? "";
+    const job = tail(obj.key).replace(/\.json$/, "");
     const marker = (await ctx.store.getJson<{ uid: string; nebiusId?: string }>(obj.key))?.value;
     if (!marker) continue;
     const gone = (await ctx.store.head(keys.job(marker.uid, job))).status === 404 || (await isDeleting(ctx.store, marker.uid));
@@ -854,10 +856,10 @@ export async function reapOrphanMarkers(ctx: PipelineCtx, active: Array<{ key: s
 export async function reconcileActive(ctx: PipelineCtx): Promise<number> {
   let active = await ctx.store.list(keys.activePrefix());
   if (await reapOrphanMarkers(ctx, active)) active = await ctx.store.list(keys.activePrefix());
-  const live = new Set(active.map((o) => (o.key.split("/").pop() ?? "").replace(/\.json$/, "")));
+  const live = new Set(active.map((o) => tail(o.key).replace(/\.json$/, "")));
   await settleStale(ctx.store, live, clock(ctx)).catch(() => 0);
   for (const obj of active) {
-    const job = obj.key.split("/").pop()?.replace(/\.json$/, "") ?? "";
+    const job = tail(obj.key).replace(/\.json$/, "");
     const marker = (await ctx.store.getJson<{ uid: string }>(obj.key))?.value;
     if (marker) await reconcileJob(ctx, marker.uid, job);
   }

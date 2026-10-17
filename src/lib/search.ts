@@ -76,13 +76,14 @@ export function rank(docs: SearchDoc[], terms: string[], limit = 5): Hit[] {
   const n = docs.length;
   const hits: Hit[] = [];
   docs.forEach((d, i) => {
-    const bag = bags[i] ?? [];
+    const bag = bags[i] as string[];
     let score = 0;
     const matched: string[] = [];
     for (const t of terms) {
       const tf = bag.filter((x) => x === t).length;
       if (!tf) continue;
-      const idf = Math.log(1 + (n - (df.get(t) ?? 0) + 0.5) / ((df.get(t) ?? 0) + 0.5));
+      const dft = df.get(t) as number; // t occurs in this bag, so it is counted in df
+      const idf = Math.log(1 + (n - dft + 0.5) / (dft + 0.5));
       score += idf * ((tf * (K1 + 1)) / (tf + K1 * (1 - B + (B * bag.length) / avg)));
       matched.push(t);
     }

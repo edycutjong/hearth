@@ -57,6 +57,6 @@ export function isId(v: unknown): v is string {
 export const AUDIO_EXTS = ["opus", "ogg", "m4a", "mp3", "wav", "aac", "amr", "flac", "webm", "mp4"] as const;
 export type AudioExt = (typeof AUDIO_EXTS)[number];
 export function audioExt(name: string): AudioExt | null {
-  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  const ext = name.slice(name.lastIndexOf(".") + 1).toLowerCase();
   return (AUDIO_EXTS as readonly string[]).includes(ext) ? (ext as AudioExt) : null;
 }

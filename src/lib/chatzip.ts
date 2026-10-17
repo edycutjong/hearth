@@ -37,7 +37,7 @@ export function audiosFromEntries(entries: Array<{ name: string; size: number }>
   return entries
     .filter((e) => audioExt(e.name) !== null)
     .map((e) => {
-      const base = e.name.split("/").pop() ?? e.name;
+      const base = e.name.slice(e.name.lastIndexOf("/") + 1);
       return { name: base, anchor: anchorFromFilename(base), sender: senders.get(base) ?? null, size: e.size };
     })
     .sort((a, b) => (a.anchor ?? "").localeCompare(b.anchor ?? "") || a.name.localeCompare(b.name));
@@ -74,7 +74,7 @@ export async function readChatZip(file: Blob): Promise<{ audios: Array<ChatAudio
   for (const f of files) {
     if (audioExt(f.name) === null) continue;
     const blob = await f.async("blob");
-    const base = f.name.split("/").pop() ?? f.name;
+    const base = f.name.slice(f.name.lastIndexOf("/") + 1);
     blobs.set(base, blob);
     entries.push({ name: base, size: blob.size });
   }

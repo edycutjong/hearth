@@ -121,9 +121,6 @@ export function anchorFromFilename(name: string): string | null {
   const m = a ?? i;
   if (!m) return null;
   const iso = `${m[1]}-${m[2]}-${m[3]}`;
-  try {
-    return formatDate(parseDate(iso)) === iso ? iso : null;
-  } catch {
-    return null;
-  }
+  // The patterns above guarantee a well-formed YYYY-MM-DD, so parseDate cannot throw here.
+  return formatDate(parseDate(iso)) === iso ? iso : null;
 }
