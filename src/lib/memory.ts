@@ -139,7 +139,7 @@ export function applyExtraction(
     if (f.whenStatus === "removed") next.stats.whenRemoved += 1;
     const due = resolveDue(f.when, note.anchor, today);
     const segs = transcript.segments.filter((s) => q.segments.includes(s.i));
-    const id = itemId(note.id, q.segments[0] ?? 0, item.quote);
+    const id = itemId(note.id, q.segments[0] as number, item.quote);
     if (next.items.some((i) => i.id === id)) continue;
     next.items.push({
       id,
@@ -209,7 +209,7 @@ export async function rememberNote(
     fresh.memory = state;
     if (error) fresh.memoryError = error;
     else delete fresh.memoryError;
-    if (state !== "running") delete fresh.memoryClaimedAt;
+    delete fresh.memoryClaimedAt; // only the claim itself (written below, not through save) sets it
     await store.putJson(keys.meta(uid, noteId), fresh, { tagging: await tagNow() });
     return state;
   };
@@ -245,7 +245,7 @@ export async function rememberNote(
   const tries = (meta.memoryTries ?? 0) + 1;
   if (retryableTfError(call.error) && tries < MAX_TF_TRIES) {
     // Transient: try again later, without recording a failure.
-    return save("pending", { memoryTries: tries, memoryNextTry: new Date(now.getTime() + tries * 60_000).toISOString() }, call.error ?? undefined);
+    return save("pending", { memoryTries: tries, memoryNextTry: new Date(now.getTime() + tries * 60_000).toISOString() }, call.error as string); // retryable implies a non-empty error
   }
   const today = localDate(now, space.timeZone ?? "UTC");
   for (let attempt = 0; attempt < 3; attempt += 1) {

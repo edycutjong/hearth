@@ -99,7 +99,7 @@ async function updateSpend(store: Store, mutate: (doc: SpendDoc) => SpendDoc | n
 
 /** Reserve the worst case for a Job about to be created. Returns false (nothing reserved) when over budget. */
 export async function reserve(store: Store, job: string, preset: string, now = new Date()): Promise<BudgetCheck> {
-  const usd = (PRICE_PER_HOUR[preset] ?? PRICE_PER_HOUR["4vcpu-16gb"] ?? 0.132) * JOB_TIMEOUT_HOURS;
+  const usd = (PRICE_PER_HOUR[preset] ?? (PRICE_PER_HOUR["4vcpu-16gb"] as number)) * JOB_TIMEOUT_HOURS;
   const day = utcDay(now);
   let verdict: BudgetCheck = { ok: true };
   await updateSpend(store, (doc) => {
