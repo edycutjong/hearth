@@ -49,6 +49,18 @@ after the round trip, and a search box that jumps to the segment holding a word,
 Until the consented, actor-voiced family sample exists, the sample note is **FLEURS read speech** (Google FLEURS `hi_in`, CC BY 4.0),
 and the page says so. It is not a family note and is never presented as one.
 
+<p align="center"><img src="docs/broll-judge.gif" width="100%" alt="Screen recording of hearth.edycu.dev/judge: pressing Original, then Kept, moves one playhead across the 13-row NanoCodec token strip of the 0:14 FLEURS note kept in 3.3 KB; typing colleagues and pressing Find shows the query Nemotron 3 Super expanded and the matching Hindi segment at 0:00."></p>
+
+<sub>▶ Original, then ▶ Kept: one playhead over the token strip the kept audio is decoded from; a search for “colleagues” lands on the Hindi segment. Live <a href="https://hearth.edycu.dev/judge">/judge</a>, real time, silent.</sub>
+
+<p align="center"><img src="docs/broll-signature.gif" width="100%" alt="Screen recording of hearth.edycu.dev/about: a real 60-second FLEURS note's 13-row token strip (13,532 B) draws in, a violet postmark strikes at 0:15, and a reminder slip slides out quoting the Hindi ask; the caption beside it is labelled GATE TEST."></p>
+
+<sub>The <a href="https://hearth.edycu.dev/about">/about</a> signature: a real one-minute strip, the postmark at 0:15, the reminder slip. Labelled <b>gate test</b> on the page: the stamp comes from a live Nemotron 3 Super call on a transcript we wrote, not from a family voice.</sub>
+
+<p align="center"><img src="docs/broll-replay.gif" width="100%" alt="Screen recording of the Job replay on hearth.edycu.dev/about: the judge sample's Job record, queued at 00:10:10, Nebius job aijob-e01ncwsnrzpd08qcv3 provisioning, starting and running, the report validating the note at 3,340 B and 97.7 % agreement, then HEAD on the raw upload and the original returning 404 at T+7:02."></p>
+
+<sub>The judge sample's own Job record from <code>/api/proof</code>, replayed by the page at ×30 and shown here at 2× that, ending on <code>HEAD raw/… → 404</code>.</sub>
+
 ## 💡 The Problem & Solution
 
 ### The Problem
