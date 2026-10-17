@@ -13,6 +13,7 @@
   <br/>
 
   [![Live Demo](https://img.shields.io/badge/🚀_Live-Demo-06b6d4?style=for-the-badge)](https://hearth.edycu.dev/judge)
+  [![Landing Page](https://img.shields.io/badge/✉️_Landing-Page-5E2A8C?style=for-the-badge)](https://hearth.edycu.dev/about)
   [![Demo Video](https://img.shields.io/badge/▶️_Demo-Video-ff0000?style=for-the-badge)](https://youtu.be/VMcvyFoCKO4)
   [![Proof](https://img.shields.io/badge/🔎_Job-Proof-f59e0b?style=for-the-badge)](https://hearth.edycu.dev/proof)
   [![Pitch Deck](https://img.shields.io/badge/🎞️_Pitch-Deck-2C4A6B?style=for-the-badge)](https://hearth.edycu.dev/pitch)
