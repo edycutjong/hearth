@@ -108,7 +108,8 @@ and judges could not install them). Tavily is not used either: nothing in the fl
 
 | Measure | Result |
 |---|---|
-| Unit and integration tests | **195** vitest (14 files) + **24** pytest, all passing |
+| Unit and integration tests | **457** vitest (26 files) + **205** pytest, all passing |
+| Coverage (enforced in CI) | **100 %** statements, branches, functions and lines on `src/lib` (vitest, v8); **100 %** statements on `worker/` + `scripts/` (pytest-cov) |
 | Browser tests | 13 Playwright tests × 2 projects (desktop 1440 px, phone 375 px), no credentials |
 | ASR real-time factor on 4 vCPU | <!--n:asr_rtf-->0.16<!--/n--> (gate ≤ 0.5) |
 | Peak memory | <!--n:peak_rss_gb-->6.9<!--/n--> GB (gate ≤ 12 GB) |
@@ -142,9 +143,9 @@ Node 22 (what we built and tested on), Python 3.11+. No cloud account is needed 
 ### Installation
 ```bash
 git clone https://github.com/edycutjong/hearth && cd hearth
-npm ci && npm test                        # vitest: 195 tests
+npm ci && npm test                        # vitest: 457 tests, 100 % coverage gate (npm run test:coverage)
 python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt jiwer
-.venv/bin/python -m pytest -q worker scripts   # 24 tests
+.venv/bin/python -m pytest -q worker scripts --cov=worker --cov=scripts --cov-fail-under=100   # 205 tests
 .venv/bin/python scripts/d0_report.py bench/results/d0-20261014T231930Z-4vcpu-16gb-raw.json   # recompute the benchmark
 ```
 
