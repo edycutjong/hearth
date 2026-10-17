@@ -12,9 +12,11 @@
 
   <br/>
 
-  [![Live Demo](https://img.shields.io/badge/🚀_Live-Demo-06b6d4?style=for-the-badge)](https://hearth-alpha-six.vercel.app/judge)
-  [![Proof](https://img.shields.io/badge/🔎_Job-Proof-f59e0b?style=for-the-badge)](https://hearth-alpha-six.vercel.app/proof)
-  [![Pitch Deck](https://img.shields.io/badge/🎞️_Pitch-Deck-2C4A6B?style=for-the-badge)](https://hearth-alpha-six.vercel.app/pitch)
+  [![Live Demo](https://img.shields.io/badge/🚀_Live-Demo-06b6d4?style=for-the-badge)](https://hearth.edycu.dev/judge)
+  [![Demo Video](https://img.shields.io/badge/▶️_Demo-Video-ff0000?style=for-the-badge)](https://youtu.be/VMcvyFoCKO4)
+  [![CI](https://github.com/edycutjong/hearth/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/hearth/actions/workflows/ci.yml)
+  [![Proof](https://img.shields.io/badge/🔎_Job-Proof-f59e0b?style=for-the-badge)](https://hearth.edycu.dev/proof)
+  [![Pitch Deck](https://img.shields.io/badge/🎞️_Pitch-Deck-2C4A6B?style=for-the-badge)](https://hearth.edycu.dev/pitch)
   [![Feedback](https://img.shields.io/badge/📝_Feedback-for_Nebius_&_NVIDIA-ef4444?style=for-the-badge)](FEEDBACK.md)
   [![Built for Nebius x NVIDIA Global AI Hackathon](https://img.shields.io/badge/Devpost-Nebius_×_NVIDIA_Global_AI_Hackathon-8b5cf6?style=for-the-badge)](https://nebiusglobalaihackathon.devpost.com/)
 
@@ -32,8 +34,8 @@
 
 ---
 
-> **No account, no install:** open [/judge](https://hearth-alpha-six.vercel.app/judge) (one note kept by the real pipeline, original
-> and kept side by side), then [/proof](https://hearth-alpha-six.vercel.app/proof) (Job IDs, timings, the `HEAD … 404` on the raw audio).
+> **No account, no install:** open [/judge](https://hearth.edycu.dev/judge) (one note kept by the real pipeline, original
+> and kept side by side), then [/proof](https://hearth.edycu.dev/proof) (Job IDs, timings, the `HEAD … 404` on the raw audio).
 > Or read the benchmark of record: [`bench/results/latest.json`](bench/results/latest.json). What we learned building it on Nebius and
 > NVIDIA, for the teams that run them: [**FEEDBACK.md**](FEEDBACK.md). Full walkthrough: [DEMO.md](DEMO.md).
 
@@ -182,8 +184,8 @@ export/                   decode.py: tokens back to audio outside Hearth
 
 ## 📽️ Demo Materials
 
-[Live app](https://hearth-alpha-six.vercel.app) · [/judge](https://hearth-alpha-six.vercel.app/judge) · [/proof](https://hearth-alpha-six.vercel.app/proof) ·
-[Story page (/about)](https://hearth-alpha-six.vercel.app/about) · [Pitch deck (/pitch)](https://hearth-alpha-six.vercel.app/pitch) ·
+[Live app](https://hearth.edycu.dev) · [/judge](https://hearth.edycu.dev/judge) · [/proof](https://hearth.edycu.dev/proof) ·
+[Story page (/about)](https://hearth.edycu.dev/about) · [Pitch deck (/pitch)](https://hearth.edycu.dev/pitch) ·
 [DEMO.md](DEMO.md) · [FEEDBACK.md](FEEDBACK.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · [docs/SOURCES.md](docs/SOURCES.md) (where the outside facts come from)
 
 ## 📄 License
