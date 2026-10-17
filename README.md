@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="docs/icon.svg" alt="Hearth icon" width="144">
-  <h1>Hearth 🔥</h1>
+  <img src="docs/icon-animated.svg" alt="Hearth icon" width="144">
+  <h1>Hearth 🗣️</h1>
   <p><em>Forward the family voice notes. Each voice is kept as codec tokens with a searchable Hindi transcript, and every promise in it becomes a reminder quoted word for word.</em></p>
   <img src="docs/readme-hero.svg" alt="Hearth: a loose voice note folded into a thin token strip, and the ask in it stamped as a dated reminder (design illustration; sizes marked est.)" width="100%">
 
@@ -14,7 +14,6 @@
 
   [![Live Demo](https://img.shields.io/badge/🚀_Live-Demo-06b6d4?style=for-the-badge)](https://hearth.edycu.dev/judge)
   [![Demo Video](https://img.shields.io/badge/▶️_Demo-Video-ff0000?style=for-the-badge)](https://youtu.be/VMcvyFoCKO4)
-  [![CI](https://github.com/edycutjong/hearth/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/hearth/actions/workflows/ci.yml)
   [![Proof](https://img.shields.io/badge/🔎_Job-Proof-f59e0b?style=for-the-badge)](https://hearth.edycu.dev/proof)
   [![Pitch Deck](https://img.shields.io/badge/🎞️_Pitch-Deck-2C4A6B?style=for-the-badge)](https://hearth.edycu.dev/pitch)
   [![Feedback](https://img.shields.io/badge/📝_Feedback-for_Nebius_&_NVIDIA-ef4444?style=for-the-badge)](FEEDBACK.md)
@@ -27,8 +26,9 @@
   ![Python](https://img.shields.io/badge/Python_3.11-3776AB?style=flat&logo=python&logoColor=white)
   ![NVIDIA NeMo](https://img.shields.io/badge/NVIDIA_NeMo-76B900?style=flat&logo=nvidia&logoColor=white)
   ![Nebius](https://img.shields.io/badge/Nebius_AI_Cloud-0b1b3b?style=flat)
-  [![Release](https://img.shields.io/github/v/release/edycutjong/hearth?style=flat)](https://github.com/edycutjong/hearth/releases)
   [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+  [![CI](https://github.com/edycutjong/hearth/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/hearth/actions/workflows/ci.yml)
+  [![Release](https://img.shields.io/github/v/release/edycutjong/hearth?style=flat)](https://github.com/edycutjong/hearth/releases)
 
 </div>
 
