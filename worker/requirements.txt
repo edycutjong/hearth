@@ -37,7 +37,7 @@ decorator==5.3.1
 defusedxml==0.7.1
 dill==0.4.1
 einops==0.8.2
-filelock==4.2.0
+filelock==4.2.1
 fonttools==4.67.0
 frozenlist==1.8.0
 fsspec==2025.12.0
