@@ -2,7 +2,7 @@
 # The worker's own runtime pins (torch, NeMo, 150 packages) live in worker/requirements.txt and are only
 # installed inside the Nebius Job; the unit tests import worker.py without them.
 pytest>=8
-numpy>=1.26
+numpy>=2.5.4
 ruff>=0.17.0
 pip-audit>=2.10.1
 pytest-cov>=5
