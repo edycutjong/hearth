@@ -82,7 +82,7 @@ multiprocess==0.70.19
 narwhals==2.27.1
 nemo-toolkit==3.0.0
 networkx==3.6.1
-nltk==3.10.3
+nltk==3.10.4
 numba==0.68.0
 numpy==2.4.6
 nv-one-logger-core==2.3.1
