@@ -90,7 +90,7 @@ nv-one-logger-pytorch-lightning-integration==2.3.1
 nv-one-logger-training-telemetry==2.3.1
 omegaconf==2.3.0
 onnx==1.23.2
-opentelemetry-api==1.45.1
+opentelemetry-api==1.45.2
 opentelemetry-exporter-http-transport==0.66b1
 opentelemetry-exporter-otlp-common==0.66b1
 opentelemetry-exporter-otlp-proto-common==1.45.1
